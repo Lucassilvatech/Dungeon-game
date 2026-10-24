@@ -223,6 +223,10 @@ export function Map({
           .setBounds(0, 0, m.width * 32, m.height * 32)
           .setZoom(1.3)
           .startFollow(this.hero, true, 0.12, 0.12);
+        if (m.width * 32 < 960 / 1.3 && m.height * 32 < 544 / 1.3) {
+          this.cameras.main.stopFollow().removeBounds();
+          this.cameras.main.centerOn(m.width * 16, m.height * 16);
+        }
         this.cameras.main.fadeIn(220, 16, 26, 30);
       }
       label(x: number, y: number, text: string) {

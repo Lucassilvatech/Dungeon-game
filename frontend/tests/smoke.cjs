@@ -70,6 +70,22 @@ const base = process.env.BASE_URL || "http://127.0.0.1:8080";
         require("node:os").tmpdir(),
         "tower-phase2-city.png",
       );
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForTimeout(300);
+    assert(
+      await page.evaluate(
+        () => document.body.scrollWidth <= window.innerWidth + 1,
+      ),
+    );
+    await page.screenshot({
+      path: require("node:path").join(
+        require("node:os").tmpdir(),
+        "tower-phase2-mobile.png",
+      ),
+      fullPage: true,
+    });
+    await page.setViewportSize({ width: 1440, height: 1100 });
+    await page.waitForTimeout(300);
     await page.screenshot({ path: screenshot, fullPage: true });
     await exitAt(9, 7);
     assert.equal((await state()).room.id, "guild");
