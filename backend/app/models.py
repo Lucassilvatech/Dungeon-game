@@ -2,6 +2,8 @@ from .clock import utc_now
 from datetime import datetime
 from sqlalchemy import (
     UniqueConstraint,
+    Index,
+    text,
     String,
     Integer,
     ForeignKey,
@@ -59,10 +61,14 @@ class Character(Base):
 
 class ItemDefinition(Base):
     __tablename__ = "item_definitions"
+    __table_args__ = (CheckConstraint("max_stack_size > 0"),)
     id: Mapped[str] = mapped_column(String(30), primary_key=True)
     name: Mapped[str] = mapped_column(String(60))
     kind: Mapped[str] = mapped_column(String(20))
     power: Mapped[int] = mapped_column(default=0)
+    stackable: Mapped[bool] = mapped_column(default=False, server_default="false")
+    max_stack_size: Mapped[int] = mapped_column(default=1, server_default="1")
+    description: Mapped[str] = mapped_column(String(200), default="", server_default="")
 
 
 class Item(Base):
@@ -78,8 +84,17 @@ class Item(Base):
 
 class Battle(Base):
     __tablename__ = "battles"
+    __table_args__ = (
+        Index(
+            "uq_enemy_victory",
+            "enemy_id",
+            unique=True,
+            postgresql_where=text("status = 'won' AND enemy_id IS NOT NULL"),
+        ),
+    )
     id: Mapped[int] = mapped_column(primary_key=True)
     character_id: Mapped[int] = mapped_column(ForeignKey("characters.id"))
+    enemy_id: Mapped[int | None] = mapped_column(ForeignKey("enemy_instances.id"))
     monster: Mapped[str] = mapped_column(String(20))
     hp: Mapped[int] = mapped_column()
     turn: Mapped[int] = mapped_column(default=0)
@@ -152,6 +167,7 @@ class RoomState(Base):
     room_id: Mapped[str] = mapped_column(ForeignKey("rooms.id"), primary_key=True)
     completed: Mapped[bool] = mapped_column(default=False)
     visits: Mapped[int] = mapped_column(default=0)
+    generation: Mapped[int] = mapped_column(default=0, server_default="0")
     codex: Mapped[dict] = mapped_column(JSON, default=dict)
 
 
@@ -169,3 +185,31 @@ class RaidMember(Base):
     character_id: Mapped[int] = mapped_column(
         ForeignKey("characters.id"), primary_key=True
     )
+
+
+class EnemyInstance(Base):
+    __tablename__ = "enemy_instances"
+    __table_args__ = (
+        UniqueConstraint("character_id", "room_id", "generation", "spawn_key"),
+        CheckConstraint("hp >= 0 AND max_hp > 0"),
+        CheckConstraint("state IN ('ALIVE','IN_COMBAT','DYING','DEAD')"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id"), index=True)
+    room_id: Mapped[str] = mapped_column(ForeignKey("rooms.id"))
+    generation: Mapped[int] = mapped_column(default=0)
+    spawn_key: Mapped[str] = mapped_column(String(40))
+    species: Mapped[str] = mapped_column(String(20))
+    state: Mapped[str] = mapped_column(String(20), default="ALIVE")
+    hp: Mapped[int] = mapped_column()
+    max_hp: Mapped[int] = mapped_column()
+    level: Mapped[int] = mapped_column(default=1)
+    attack: Mapped[int] = mapped_column(default=6)
+    defense: Mapped[int] = mapped_column(default=2)
+    x: Mapped[int] = mapped_column()
+    y: Mapped[int] = mapped_column()
+    home_x: Mapped[int] = mapped_column()
+    home_y: Mapped[int] = mapped_column()
+    ai_state: Mapped[str] = mapped_column(String(20), default="IDLE")
+    moved_at: Mapped[datetime] = mapped_column(default=utc_now)
+    death_at: Mapped[datetime | None] = mapped_column(DateTime)
