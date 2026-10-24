@@ -56,26 +56,69 @@ def adventure(db, c, request_id):
         return {
             "message": f"Entrada descoberta: {secret.name}. Use Ir para masmorra. Conteúdo ainda desconhecido."
         }
-    room_id = f"procedural:{c.id}:{c.floor}"
-    room = db.get(Room, room_id)
-    if not room:
-        seed = secrets.randbelow(2**31)
-        room = Room(
-            id=room_id,
-            floor_id=c.floor,
-            name="Refúgio errante",
-            kind=RoomType.PROCEDURAL,
-            owner_id=c.id,
-            seed=seed,
-            data=template(seed),
+    from uuid import uuid4
+    from .layouts import THEMES
+
+    room_id = f"proc:{c.id}:{uuid4().hex}"
+    previous = db.scalar(
+        select(Room)
+        .where(Room.owner_id == c.id, Room.kind == RoomType.PROCEDURAL)
+        .order_by(Room.id.desc())
+        .limit(1)
+    )
+    # Different themes across consecutive expeditions, but reproducible from saved seed.
+    recent = db.scalar(
+        select(WorldEvent)
+        .where(
+            WorldEvent.kind == "ADVENTURE_STARTED",
+            WorldEvent.payload["character"].as_integer() == c.id,
         )
-        db.add(room)
-        db.flush()
-        db.add(RoomConnection(source=room.id, target="common_a", x=2, y=9))
+        .order_by(WorldEvent.id.desc())
+    )
+    previous_id = recent.payload.get("result") if recent else None
+    previous = (
+        db.get(Room, previous_id)
+        if previous_id and previous_id != "secret"
+        else previous
+    )
+    for _ in range(100):
+        seed = secrets.randbelow(2**31)
+        data = template(seed)
+        if not previous or previous.data.get("theme") != data["theme"]:
+            break
+    else:
+        game.fail("Não foi possível gerar outra expedição; tente novamente")
+    room = Room(
+        id=room_id,
+        floor_id=c.floor,
+        name="Expedição · "
+        + {
+            "moss_stone": "Pedra e musgo",
+            "wild_ruins": "Ruínas silvestres",
+            "crystal_bones": "Gruta dos cristais",
+            "abandoned_wood": "Entreposto esquecido",
+        }[data["theme"]],
+        kind=RoomType.PROCEDURAL,
+        owner_id=c.id,
+        seed=seed,
+        data=data,
+    )
+    db.add(room)
+    db.flush()
+    db.add(RoomConnection(source=room.id, target="common_a", x=2, y=9))
+    event(
+        db,
+        "ROOM_GENERATED",
+        c,
+        room.id,
+        key=f"generated:{room.id}",
+        seed=seed,
+        theme=data["theme"],
+    )
     event(db, DomainEvent.ADVENTURE_STARTED, c, key=key, result=room.id)
     enter(db, c, room)
     return {
-        "message": "Você encontrou uma clareira procedural. A seed foi preservada para novas visitas."
+        "message": "Nova expedição criada. Seed e baixas são preservadas nesta instância."
     }
 
 
@@ -88,6 +131,11 @@ def secret_travel(db, c, room_id):
         or not db.get(RoomState, (c.id, room.id))
     ):
         game.fail("Destino desconhecido", 404)
+    if c.room_id == room.id:
+        game.fail("Saia da masmorra antes de iniciar outra tentativa")
+    rs = db.get(RoomState, (c.id, room.id))
+    if rs.visits:
+        rs.generation += 1
     enter(db, c, room)
 
 

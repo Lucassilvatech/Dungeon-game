@@ -24,7 +24,21 @@ def seed():
             ("crystal", "Cristal da clareira", "material", 0),
         ]:
             if not db.get(ItemDefinition, key):
-                db.add(ItemDefinition(id=key, name=name, kind=kind, power=power))
+                db.add(
+                    ItemDefinition(
+                        id=key,
+                        name=name,
+                        kind=kind,
+                        power=power,
+                        stackable=kind == "material",
+                        max_stack_size=99 if kind == "material" else 1,
+                        description=(
+                            "Material de expedição."
+                            if kind == "material"
+                            else "Equipamento individual; ataque +3."
+                        ),
+                    )
+                )
         if not db.get(Treasury, 1):
             db.add(Treasury(id=1, balance=settings.initial_treasury))
             db.add(

@@ -66,75 +66,15 @@ def event(db, kind, c, room_id=None, key=None, **payload):
 
 
 def template(seed):
-    rng = random.Random(seed)
-    name = rng.choice(list(RoomTemplate))
-    data = map_data(1)
-    data["monsters"] = ENEMY_SPAWN_TABLE[name]
-    data.update(
-        npc=None,
-        portal=None,
-        theme=ENVIRONMENT_THEMES[name],
-        template=str(name),
-        resources=RESOURCE_SPAWN_TABLE[name],
-        difficulty=1,
-    )
-    # Interior obstacle column has a guaranteed corridor at y=5.
-    return data
+    from .layouts import generate
+
+    return generate("PROCEDURAL", seed)
 
 
-def basic(kind):
-    d = map_data(1)
-    d.update(theme="forest", resources=[], difficulty=1)
-    if kind == RoomType.CITY:
-        d.update(width=28, height=20, theme="city", monsters={}, portal=[24, 3])
-        d["walls"] = [
-            [x, y] for x in range(28) for y in range(20) if x in (0, 27) or y in (0, 19)
-        ]
-        d["buildings"] = [
-            {"x": 7, "y": 3, "width": 6, "height": 4, "name": "Guilda"},
-            {"x": 17, "y": 4, "width": 5, "height": 4, "name": "Mercado · em breve"},
-        ]
-        for b in d["buildings"]:
-            d["walls"] += [
-                [x, y]
-                for x in range(b["x"], b["x"] + b["width"])
-                for y in range(b["y"], b["y"] + b["height"])
-            ]
-    elif kind in (RoomType.GUILD, RoomType.TRAINING):
-        d.update(
-            theme="interior",
-            portal=None,
-            monsters={"dummy": (10, 6)} if kind == RoomType.TRAINING else {},
-            npc=[3, 3],
-        )
-    elif kind == RoomType.BOSS:
-        d.update(
-            theme="ruins",
-            monsters={"boss": (12, 8)},
-            npc=None,
-            portal=None,
-            recommended_level=3,
-            difficulty="EXTREMA",
-            recommended_group=4,
-        )
-    elif kind == RoomType.SECRET_DUNGEON:
-        d.update(
-            theme="water",
-            monsters={"warden": (10, 7)},
-            npc=None,
-            portal=None,
-            recommended_level=8,
-            difficulty="PERIGOSA",
-            enemy_level=8,
-            enemy_hp=65,
-            enemy_attack=14,
-        )
-    elif kind == RoomType.SPECIAL:
-        d.update(monsters={}, theme="water")
-    else:
-        d["monsters"] = {"slime": (5, 6)}
-        d["portal"] = None
-    return d
+def basic(kind,seed=0):
+    from .layouts import generate
+
+    return generate(str(kind),seed)
 
 
 STATIC_ROOMS = [
@@ -150,11 +90,11 @@ STATIC_ROOMS = [
 ]
 EDGES = [
     ("city1", "guild", (9, 7), (2, 9)),
-    ("guild", "training", (13, 5), (2, 9)),
-    ("city1", "common_a", (26, 10), (2, 9)),
-    ("common_a", "common_b", (14, 5), (2, 9)),
-    ("common_b", "combat", (14, 5), (2, 9)),
-    ("combat", "boss", (14, 5), (2, 9)),
+    ("guild", "training", (35, 10), (2, 9)),
+    ("city1", "common_a", (50, 18), (2, 9)),
+    ("common_a", "common_b", (32, 13), (2, 9)),
+    ("common_b", "combat", (32, 13), (2, 9)),
+    ("combat", "boss", (38, 14), (2, 9)),
 ]
 
 
@@ -172,7 +112,19 @@ def seed_world(db):
                     name=name,
                     kind=str(kind),
                     seed=0,
-                    data=basic(kind),
+                    data=(
+                        basic(kind)
+                        if floor == 1
+                        else {
+                            **map_data(2),
+                            "width": 28,
+                            "height": 20,
+                            "theme": "city",
+                            "npc": None,
+                            "monsters": {},
+                            "portal": [24, 3],
+                        }
+                    ),
                 )
             )
     db.flush()
