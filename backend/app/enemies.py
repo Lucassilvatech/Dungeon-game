@@ -52,7 +52,11 @@ def instances(db, c, wander=False):
                 Battle.monster == key,
                 Battle.enemy_id == None,
             )
-            .order_by((Battle.status == "active").desc(), Battle.id.desc())
+            .order_by(
+                (Battle.status == "active").desc(),
+                (Battle.status == "won").desc(),
+                Battle.id.desc(),
+            )
         )
         state = EnemyState.ALIVE
         if rs.generation == 0 and old and old.status in ("won", "active"):

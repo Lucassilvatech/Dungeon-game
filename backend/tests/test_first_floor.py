@@ -259,6 +259,18 @@ def test_legacy_victory_is_backfilled_as_dead(client):
                 room_id="common_a",
             )
         )
+    with Session.begin() as db:
+        db.add(
+            Battle(
+                character_id=cid,
+                monster="slime",
+                hp=3,
+                turn=5,
+                status="lost",
+                claimed=False,
+                room_id="common_a",
+            )
+        )
     s = state(client, h)
     e = next(e for e in s["map"]["enemies"] if e["spawn_key"] == "slime")
     assert e["state"] == "DEAD"
@@ -279,3 +291,32 @@ def test_guild_batch_rolls_back_when_budget_insufficient(client):
     assert client.post("/guild/claim", json={}, headers=h).status_code == 409
     assert client.get("/guild/rewards", headers=h).json()["count"] == 1
     assert state(client, h)["character"]["coins"] == 0
+
+
+def test_legacy_active_battle_is_resumed_without_reset(client):
+    h = player(client)
+    cid = state(client, h)["character"]["id"]
+    with Session.begin() as db:
+        db.query(EnemyInstance).filter(EnemyInstance.character_id == cid).delete()
+        db.add(
+            Battle(
+                character_id=cid,
+                monster="slime",
+                hp=6,
+                turn=2,
+                status="active",
+                claimed=False,
+                room_id="common_a",
+            )
+        )
+    s = state(client, h)
+    b = s["battle"]
+    assert b["hp"] == 6 and b["turn"] == 2 and b["enemy_id"]
+    response = client.post(
+        f'/battles/{b["id"]}/action', json={"turn": 2, "action": "attack"}, headers=h
+    )
+    assert (
+        response.status_code == 200
+        and response.json()["turn"] == 3
+        and response.json()["hp"] == 3
+    )
