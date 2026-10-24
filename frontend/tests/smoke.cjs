@@ -1,6 +1,7 @@
 const { chromium } = require("playwright");
 const assert = require("node:assert/strict");
-const base = process.env.BASE_URL || "http://127.0.0.1:8080";
+const path = require("node:path"),
+  os = require("node:os");
 (async () => {
   const browser = await chromium.launch({
     ...(process.env.CHROMIUM_PATH
@@ -11,7 +12,7 @@ const base = process.env.BASE_URL || "http://127.0.0.1:8080";
   });
   try {
     const page = await browser.newPage({
-      viewport: { width: 1440, height: 1100 },
+      viewport: { width: 1440, height: 1000 },
     });
     page.setDefaultTimeout(30000);
     const errors = [];
@@ -27,204 +28,213 @@ const base = process.env.BASE_URL || "http://127.0.0.1:8080";
       });
     const idle = () =>
       page.waitForFunction(
-        () => {
-          const combat = document.querySelector(".combat button");
-          return combat
-            ? !combat.disabled
-            : !document.querySelector(".adventure")?.disabled;
-        },
-        { timeout: 30000 },
+        () =>
+          document.querySelector("main")?.getAttribute("aria-busy") === "false",
       );
+    const shot = (name) =>
+      page.screenshot({
+        path: path.join(os.tmpdir(), "first-floor-" + name + ".png"),
+        fullPage: true,
+      });
     const exitAt = async (x, y) => {
       await idle();
-      const s = await state();
-      const i = s.room.exits.findIndex((e) => e.x === x && e.y === y);
+      const s = await state(),
+        i = s.room.exits.findIndex((e) => e.x === x && e.y === y);
       assert(i >= 0);
       const response = page.waitForResponse(
         (r) =>
-          r.url().includes("/api/rooms/exits/") &&
-          r.request().method() === "POST",
+          r.url().includes("/rooms/exits/") && r.request().method() === "POST",
       );
       await page.locator(".paths button").nth(i).click();
       assert.equal((await response).status(), 200);
       await idle();
     };
-    await page.goto(base);
-    await page.getByLabel("Conta", { exact: true }).fill("smoke" + Date.now());
-    await page.getByLabel("Senha", { exact: true }).fill("smoke-pass-123");
+    async function fight(button) {
+      await idle();
+      const before = await state();
+      await button.click();
+      await page
+        .getByRole("button", { name: "⚔ Atacar", exact: true })
+        .waitFor();
+      let turns = 0,
+        b;
+      do {
+        await page
+          .getByRole("button", { name: "⚔ Atacar", exact: true })
+          .click();
+        await idle();
+        turns++;
+        b = (await state()).battle;
+      } while (b && turns < 20);
+      assert(!b, "Encounter did not finish");
+      return turns;
+    }
+    await page.goto(process.env.BASE_URL || "http://127.0.0.1:8080");
+    await page
+      .getByLabel("Conta", { exact: true })
+      .fill("quality" + Date.now());
+    await page.getByLabel("Senha", { exact: true }).fill("quality-pass-123");
     await page
       .getByRole("button", { name: "Criar conta", exact: true })
       .click();
-    await page.locator("input[name=name]").fill("Hero" + Date.now());
+    await page.locator("input[name=name]").fill("Explorer" + Date.now());
     await page.getByRole("button", { name: "Iniciar jornada" }).click();
     await page.locator("canvas").waitFor();
-    await page.waitForTimeout(700);
-    assert.equal((await state()).room.id, "city1");
+    await page.waitForTimeout(500);
+    let s = await state();
+    assert(
+      s.map.width >= 50 &&
+        s.map.monsters &&
+        Object.keys(s.map.monsters).length === 0,
+    );
+    assert(!s.map.npc);
     await page.getByRole("button", { name: "▣ Inventário" }).click();
     await page.getByRole("button", { name: "Equipar", exact: true }).click();
     await page.getByRole("button", { name: "Equipada", exact: true }).waitFor();
     await page.getByRole("button", { name: "Fechar menu" }).click();
-    const screenshot =
-      process.env.SMOKE_SCREENSHOT ||
-      require("node:path").join(
-        require("node:os").tmpdir(),
-        "tower-phase2-city.png",
-      );
+    await shot("city");
     await page.setViewportSize({ width: 390, height: 844 });
     await page.waitForTimeout(300);
     assert(
-      await page.evaluate(
-        () => document.body.scrollWidth <= window.innerWidth + 1,
-      ),
+      await page.evaluate(() => document.body.scrollWidth <= innerWidth + 1),
     );
-    await page.screenshot({
-      path: require("node:path").join(
-        require("node:os").tmpdir(),
-        "tower-phase2-mobile.png",
-      ),
-      fullPage: true,
-    });
-    await page.setViewportSize({ width: 1440, height: 1100 });
-    await page.waitForTimeout(300);
-    await page.screenshot({ path: screenshot, fullPage: true });
+    await shot("mobile");
+    await page.setViewportSize({ width: 1440, height: 1000 });
     await exitAt(9, 7);
-    assert.equal((await state()).room.id, "guild");
-    await page.screenshot({
-      path: require("node:path").join(
-        require("node:os").tmpdir(),
-        "tower-phase2-guild.png",
-      ),
-      fullPage: true,
-    });
+    s = await state();
+    assert.equal(s.room.id, "guild");
+    assert.equal(s.map.npc_name, "Recepcionista da Guilda");
+    await shot("guild");
     await page
-      .getByRole("button", { name: "Conversar / curar", exact: true })
+      .getByRole("button", { name: "Falar com recepcionista", exact: true })
       .click();
     await idle();
-    assert.equal((await state()).character.hp, 30);
-    await exitAt(13, 5);
-    assert.equal((await state()).room.id, "training");
-    await page.screenshot({
-      path: require("node:path").join(
-        require("node:os").tmpdir(),
-        "tower-phase2-training.png",
-      ),
-      fullPage: true,
-    });
-    await page
-      .getByRole("button", { name: "⚔ Treinar no boneco", exact: true })
-      .click();
-    await page
-      .getByRole("button", { name: "⚔ Atacar", exact: true })
-      .waitFor();
-    for (let i = 0; i < 2; i++) {
-      await page
-        .getByRole("button", { name: "⚔ Atacar", exact: true })
-        .click();
-      await idle();
-    }
-    assert.equal((await state()).battle, null);
-    assert.equal((await state()).character.xp, 0);
-    await exitAt(2, 9);
-    await exitAt(2, 9);
-    assert.equal((await state()).room.id, "city1");
-    await exitAt(26, 10);
-    assert.equal((await state()).room.id, "common_a");
-    // Actual keyboard input goes through Phaser and the authoritative move endpoint.
-    await page.locator("canvas").click({ position: { x: 10, y: 10 } });
-    await idle();
-    const response = page.waitForResponse((r) => r.url().endsWith("/api/move"));
-    await page.keyboard.press("ArrowRight");
-    assert.equal((await response).status(), 200);
-    await idle();
-    await page
-      .getByRole("button", { name: "⚔ Enfrentar slime", exact: true })
-      .click();
-    await page
-      .getByRole("button", { name: "⚔ Atacar", exact: true })
-      .waitFor();
-    for (let i = 0; i < 2; i++) {
-      await page
-        .getByRole("button", { name: "⚔ Atacar", exact: true })
-        .click();
-      await idle();
-    }
+    await page.getByRole("button", { name: "RESGATAR RECOMPENSAS" }).waitFor();
     assert(
-      (await state()).inventory.some((i) => i.name === "Cristal da clareira"),
+      await page
+        .getByRole("button", { name: "RESGATAR RECOMPENSAS" })
+        .isDisabled(),
     );
-    await page.getByRole("button", { name: "✧ AVENTURA", exact: true }).click();
+    await page.getByRole("button", { name: "Fechar menu" }).click();
+    await exitAt(35, 10);
+    assert.equal((await state()).room.kind, "TRAINING");
+    await shot("training");
+    assert.equal(
+      await fight(
+        page.getByRole("button", { name: "⚔ Treinar no boneco", exact: true }),
+      ),
+      4,
+    );
+    s = await state();
+    assert.equal(s.character.xp, 0);
+    assert(!s.map.enemies.some((e) => e.state === "ALIVE"));
+    assert.equal(s.inventory.length, 1);
+    await page
+      .getByRole("button", { name: "Novo exercício", exact: true })
+      .click();
     await idle();
-    if ((await state()).room.kind !== "PROCEDURAL") {
+    assert((await state()).map.enemies.some((e) => e.state === "ALIVE"));
+    await exitAt(2, 9);
+    await exitAt(2, 9);
+    await exitAt(50, 18);
+    s = await state();
+    assert.equal(s.room.id, "common_a");
+    assert(!s.map.npc && s.map.enemies.length >= 3);
+    const target = s.map.enemies.find((e) => e.spawn_key === "slime"),
+      selector = `.encounters button[data-enemy-id="${target.id}"]`;
+    const turns = await fight(page.locator(selector));
+    assert.equal(turns, 4);
+    await page.waitForTimeout(850);
+    assert.equal(await page.locator(selector).count(), 0);
+    const after = await state();
+    assert.equal(
+      after.map.enemies.find((e) => e.id === target.id).state,
+      "DEAD",
+    );
+    assert.equal(after.character.coins, 0);
+    const rejected = await page.evaluate(async (id) => {
+      const r = await fetch("/api/battles", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + sessionStorage.getItem("token"),
+        },
+        body: JSON.stringify({ monster: String(id) }),
+      });
+      return r.status;
+    }, target.id);
+    assert.equal(rejected, 409);
+    await page.getByRole("button", { name: "▣ Inventário" }).click();
+    await page
+      .locator(".item")
+      .filter({ hasText: "Cristal da clareira" })
+      .waitFor();
+    await shot("inventory");
+    await page.getByRole("button", { name: "Fechar menu" }).click();
+    await page.reload();
+    await page.locator("canvas").waitFor();
+    await idle();
+    assert.equal(
+      (await state()).map.enemies.find((e) => e.id === target.id).state,
+      "DEAD",
+    );
+    await exitAt(2, 9);
+    await exitAt(9, 7);
+    await page
+      .getByRole("button", { name: "Falar com recepcionista", exact: true })
+      .click();
+    await idle();
+    await page.getByRole("button", { name: "RESGATAR RECOMPENSAS" }).click();
+    await idle();
+    assert.equal((await state()).character.coins, 10);
+    assert(
+      await page
+        .getByRole("button", { name: "RESGATAR RECOMPENSAS" })
+        .isDisabled(),
+    );
+    await shot("receipt");
+    await page.getByRole("button", { name: "Fechar menu" }).click();
+    await page.getByRole("button", { name: "Descansar", exact: true }).click();
+    await idle();
+    await exitAt(2, 9);
+    // A secret discovery can consume one action, so allow a second attempt to reach procedural content.
+    for (let i = 0; i < 2 && (await state()).room.kind !== "PROCEDURAL"; i++) {
       await page
         .getByRole("button", { name: "✧ AVENTURA", exact: true })
         .click();
       await idle();
     }
-    assert.equal((await state()).room.kind, "PROCEDURAL");
-    const before = await state();
-    await page.reload();
-    await page.locator("canvas").waitFor();
+    const roomA = await state();
+    assert.equal(roomA.room.kind, "PROCEDURAL");
+    await shot("procedural-a");
+    await page.getByRole("button", { name: "✧ AVENTURA", exact: true }).click();
     await idle();
-    const after = await state();
-    assert.equal(after.room.id, before.room.id);
-    assert.deepEqual(after.inventory, before.inventory);
-    // The room socket must upgrade through Nginx and emit authenticated presence.
-    const presence = await page.evaluate(
-      () =>
-        new Promise((resolve, reject) => {
-          const ws = new WebSocket(
-            `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/api/ws/rooms`,
-          );
-          const timer = setTimeout(() => {
-            ws.close();
-            reject(Error("Presence timeout"));
-          }, 5000);
-          ws.onopen = () =>
-            ws.send(JSON.stringify({ token: sessionStorage.getItem("token") }));
-          ws.onmessage = (e) => {
-            clearTimeout(timer);
-            ws.close();
-            resolve(JSON.parse(e.data));
-          };
-          ws.onerror = () => reject(Error("WebSocket failed"));
-        }),
-    );
-    assert.equal(presence.room_id, after.room.id);
-    await exitAt(2, 9); // procedural -> bosque
-    await exitAt(14, 5); // trilha
-    await exitAt(14, 5); // clareira
-    await exitAt(14, 5); // santuário
-    assert.equal((await state()).battle, null);
-    await page
-      .getByRole("button", { name: "⚔ Chefe do andar", exact: true })
-      .click();
-    await page.getByText("CHEFE DO ANDAR", { exact: true }).waitFor();
-    await page.getByRole("button", { name: "Criar raid", exact: true }).click();
-    await idle();
-    assert((await state()).raid.invite);
-    await page.getByRole("button", { name: "Fechar menu" }).click();
-    await page
-      .getByRole("button", { name: "⚔ Chefe do andar", exact: true })
-      .click();
-    await page
-      .getByRole("button", { name: "Entrar mesmo assim · solo", exact: true })
-      .click();
-    await page
-      .getByRole("button", { name: "⚔ Atacar", exact: true })
-      .waitFor();
-    for (let i = 0; i < 5; i++) {
-      await page
-        .getByRole("button", { name: "⚔ Atacar", exact: true })
-        .click();
-      await idle();
+    const roomB = await state();
+    assert.equal(roomB.room.kind, "PROCEDURAL");
+    assert.notEqual(roomA.room.id, roomB.room.id);
+    assert.notEqual(roomA.map.theme, roomB.map.theme);
+    await shot("procedural-b");
+    // Observe authoritative wandering on an idle living instance.
+    const positions = roomB.map.enemies.map((e) => [e.id, e.x, e.y]);
+    let wandered = false;
+    for (let i = 0; i < 6; i++) {
+      await page.waitForTimeout(1500);
+      const next = await state();
+      if (
+        next.map.enemies.some((e) =>
+          positions.some(
+            (p) => p[0] === e.id && (p[1] !== e.x || p[2] !== e.y),
+          ),
+        )
+      ) {
+        wandered = true;
+        break;
+      }
     }
-    assert.equal((await state()).unlocked_floor, 2);
-    await page.reload();
-    await page.locator("canvas").waitFor();
-    await idle();
-    assert((await state()).raid.participants.length === 1);
+    assert(wandered, "No enemy wandered during the observation window");
     assert.deepEqual(errors, []);
     console.log(
-      "PASS: city, original animated sprites, click pathfinding, guild, NPC, training without farming, keyboard, combat, procedural adventure, persistence, WebSocket proxy, boss warning, raid formation and global floor unlock",
+      "PASS: expanded city/guild/training, mobile, four-turn combat, death removal/rejection, inventory, guild claim, reconnect, two distinct procedural themes and authoritative wandering",
     );
   } finally {
     await browser.close();

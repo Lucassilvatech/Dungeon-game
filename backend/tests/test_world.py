@@ -48,7 +48,7 @@ def test_city_guild_training(client):
     )
     assert client.post("/rooms/exits/99999", json={}, headers=h).status_code == 404
     navigate(client, h, "guild")
-    walk_tiles(client, h, (3, 3))
+    walk_tiles(client, h, tuple(state(client, h)["map"]["npc"]))
     assert client.post("/interact", json={}, headers=h).status_code == 200
     navigate(client, h, "training")
     before = state(client, h)
@@ -93,7 +93,9 @@ def test_procedural_persistence_and_replay(client, monkeypatch):
         )
     navigate(client, h, "city1")
     assert adventure(client, h).status_code == 200
-    assert state(client, h)["room"]["seed"] == s["room"]["seed"]
+    fresh = state(client, h)
+    assert fresh["room"]["id"] != s["room"]["id"]
+    assert fresh["map"]["theme"] != s["map"]["theme"]
 
 
 def test_secrets_no_spoilers_and_ownership(client, monkeypatch):
@@ -168,7 +170,7 @@ def test_secret_completion_and_repeat_reward(client, monkeypatch):
     )
     assert client.post("/dungeons/leave", json={}, headers=h).status_code == 200
     navigate(client, h, "guild")
-    walk_tiles(client, h, (3, 3))
+    walk_tiles(client, h, tuple(state(client, h)["map"]["npc"]))
     for b in (first, second):
         assert (
             client.post(f'/battles/{b["id"]}/claim', json={}, headers=h).status_code

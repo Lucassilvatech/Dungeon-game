@@ -54,12 +54,29 @@ def test_v1_upgrade_preserves_existing_data():
                     "INSERT INTO battles(id,character_id,monster,hp,turn,status,claimed) VALUES (91,91,'slime',6,2,'active',false)"
                 )
             )
+            db.execute(
+                text(
+                    "INSERT INTO item_definitions(id,name,kind,power) VALUES ('old_material','Madeira','material',0)"
+                )
+            )
+            db.execute(
+                text(
+                    "INSERT INTO items(id,owner,definition,quantity,location,equipped) VALUES (92,91,'old_material',90,'inventory',false),(93,91,'old_material',20,'inventory',false)"
+                )
+            )
         migrate("head")
         with dbengine.connect() as db:
             c = db.execute(
                 text("SELECT coins,xp,hp,x,y,room_id FROM characters WHERE id=91")
             ).one()
             assert tuple(c) == (321, 27, 21, 4, 5, "common_a")
+            assert list(
+                db.scalars(
+                    text(
+                        "SELECT quantity FROM items WHERE definition='old_material' ORDER BY id"
+                    )
+                )
+            ) == [99, 11]
             assert db.scalar(text("SELECT equipped FROM items WHERE id=91"))
             assert tuple(
                 db.execute(

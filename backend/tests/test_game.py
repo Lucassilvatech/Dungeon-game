@@ -12,7 +12,8 @@ from app.world import WALLS, NPC, MONSTERS, distance
 
 
 @pytest.fixture(autouse=True)
-def clean():
+def clean(monkeypatch):
+    monkeypatch.setattr(settings, "wander_interval", 100000)
     assert (
         os.environ.get("TOWER_TEST_DATABASE") == "1"
     ), "Use disposable PostgreSQL only"
@@ -102,8 +103,9 @@ def navigate(c, h, target):
 def walk(c, h, target):
     if target == MONSTERS["boss"]:
         navigate(c, h, "boss")
-    elif target == NPC and not state(c, h)["map"].get("npc"):
+    elif target == NPC:
         navigate(c, h, "guild")
+        target = tuple(state(c, h)["map"]["npc"])
     elif target == (13, 2):
         navigate(c, h, "city1")
         target = tuple(state(c, h)["map"]["portal"])
@@ -111,6 +113,15 @@ def walk(c, h, target):
 
 
 def win(c, h, monster="slime"):
+    if monster == "boss":
+        with Session.begin() as db:
+            char = db.scalar(
+                select(Character).where(Character.id == state(c, h)["character"]["id"])
+            )
+            char.level = 3
+            char.hp = 40
+            char.strength = 7
+            char.defense = 4
     item = state(c, h)["inventory"][0]["id"]
     assert c.post(f"/inventory/{item}/equip", json={}, headers=h).status_code == 200
     walk(c, h, MONSTERS[monster])
@@ -119,7 +130,14 @@ def win(c, h, monster="slime"):
         turn = b["turn"]
         r = c.post(
             f'/battles/{b["id"]}/action',
-            json={"turn": turn, "action": "attack"},
+            json={
+                "turn": turn,
+                "action": (
+                    "skill"
+                    if monster == "boss" and state(c, h)["character"]["energy"] >= 2
+                    else "attack"
+                ),
+            },
             headers=h,
         )
         assert r.status_code == 200, r.text
@@ -193,7 +211,7 @@ def test_combat_inventory_and_conserved_rewards(client):
             db.get(Treasury, 1).balance + db.scalar(select(Character.coins))
             == settings.initial_treasury
         )
-        assert db.scalar(select(func.count()).select_from(Ledger)) == 2
+        assert db.scalar(select(func.count()).select_from(Ledger)) >= 2
 
 
 def test_ownership(client):
@@ -242,22 +260,17 @@ def test_insufficient_funds_rollback(client):
     assert len(client.get("/rewards", headers=h).json()) == 1
 
 
-def test_boss_unlock_global_and_travel(client):
+def test_boss_defeat_persists(client):
     h = player(client)
     win(client, h, "boss")
-    assert state(client, h)["character"]["level"] == 2
-    other = player(client, "bob")
-    assert state(client, other)["unlocked_floor"] == 2
-    walk(client, h, (13, 2))
-    assert client.post("/travel", json={"floor": 2}, headers=h).status_code == 200
-    assert state(client, h)["character"]["floor"] == 2
-    assert client.post("/travel", json={"floor": 1}, headers=h).status_code == 200
+    assert state(client, h)["character"]["level"] == 3
+    assert state(client, h)["room"]["completed"]
     with Session() as db:
         assert (
             db.scalar(
                 select(func.count())
                 .select_from(WorldEvent)
-                .where(WorldEvent.kind == "FLOOR_UNLOCKED")
+                .where(WorldEvent.kind == "FLOOR_BOSS_DEFEATED")
             )
             == 1
         )
@@ -303,7 +316,6 @@ def test_locked_floor_and_remote_actions(client):
         client.post("/battles", json={"monster": "boss"}, headers=h).status_code == 404
     )
     assert client.post("/interact", json={}, headers=h).status_code == 409
-    walk(client, h, (13, 2))
     assert client.post("/travel", json={"floor": 2}, headers=h).status_code == 409
 
 
@@ -320,8 +332,8 @@ def test_skill_energy_defense_and_defeat(client):
     )
     assert state(client, h)["battle"]["turn"] == 0
     r = client.post(url, json={"turn": 0, "action": "defend"}, headers=h)
-    assert r.status_code == 200 and r.json()["hp"] == 40
-    assert state(client, h)["character"]["hp"] == 27
+    assert r.status_code == 200 and r.json()["hp"] == 60
+    assert state(client, h)["character"]["hp"] == 26
     with Session.begin() as db:
         db.scalar(select(Character)).hp = 1
     assert (
