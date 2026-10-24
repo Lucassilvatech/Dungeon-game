@@ -6,9 +6,13 @@ export type Item = {
   quantity: number;
   equipped: boolean;
   location: string;
+  stackable: boolean;
+  max_stack_size: number;
+  description: string;
 };
 export type Battle = {
   id: number;
+  enemy_id: number;
   monster: string;
   hp: number;
   turn: number;
@@ -16,7 +20,21 @@ export type Battle = {
   claimed: boolean;
   reward_amount: number | null;
 };
+export type Enemy = {
+  id: number;
+  spawn_key: string;
+  species: string;
+  name: string;
+  x: number;
+  y: number;
+  hp: number;
+  max_hp: number;
+  level: number;
+  state: "ALIVE" | "IN_COMBAT" | "DYING" | "DEAD";
+  ai_state: string;
+};
 export type State = {
+  events: { id: number; kind: string; payload: Record<string, unknown> }[];
   room: Room;
   atlas: {
     connections: { source: string; target: string | null }[];
@@ -49,6 +67,18 @@ export type State = {
   battle: Battle | null;
   unlocked_floor: number;
   map: {
+    enemies: Enemy[];
+    seed?: number;
+    npc_name?: string;
+    decorations?: {
+      kind: string;
+      x: number;
+      y: number;
+      width?: number;
+      height?: number;
+      solid?: boolean;
+    }[];
+    npcs?: { id: string; name: string; x: number; y: number; walk: boolean }[];
     width: number;
     height: number;
     walls: number[][];

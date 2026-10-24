@@ -716,3 +716,60 @@ footer {
   color: #6d9f92;
   margin: 0 8px;
 }
+.item-icon {
+  position: relative;
+  min-width: 46px;
+  height: 48px;
+  text-align: center;
+}
+.stack-count {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  background: #172c31;
+  color: #f5d799;
+  border: 1px solid #807354;
+  border-radius: 4px;
+  padding: 1px 4px;
+  font-size: 10px;
+}
+.loot-flash {
+  position: absolute;
+  right: 20px;
+  bottom: 25px;
+  z-index: 25;
+  pointer-events: none;
+  background: #203a35ee;
+  border: 1px solid #bba16c;
+  color: #f1d8a4;
+  padding: 12px 18px;
+  border-radius: 6px;
+  animation: loot-in 0.3s ease-out;
+}
+.reward-summary {
+  border-left: 2px solid #c1a36e;
+  padding: 4px 18px;
+  margin: 15px 0;
+}
+.reward-summary p {
+  margin: 8px 0;
+}
+.reward-summary strong {
+  color: #dfc58f;
+}
+.encounters {
+  flex-wrap: wrap;
+}
+.encounters button {
+  font-size: 10px;
+}
+@keyframes loot-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

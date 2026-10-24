@@ -15,14 +15,37 @@ function App() {
     ),
     [busy, setBusy] = useState(false),
     [rewards, setRewards] = useState<Battle[]>([]),
+    [rewardSummary, setRewardSummary] = useState<{
+      count: number;
+      total: number;
+      groups: Record<string, number>;
+    }>({ count: 0, total: 0, groups: {} }),
+    [lootFlash, setLootFlash] = useState(""),
     [tab, setTab] = useState(""),
     [peers, setPeers] = useState<Peer[]>([]),
     [bossWarning, setBossWarning] = useState(false),
-    [fx, setFx] = useState<{ seq: number; status: string } | null>(null),
+    [fx, setFx] = useState<{
+      seq: number;
+      status: string;
+      enemy_id?: number;
+    } | null>(null),
     [invite, setInvite] = useState("");
   const gate = useRef(false),
     live = useRef<State | null>(null);
   const sequence = useRef(0);
+  const lastEvent = useRef(0);
+  useEffect(() => {
+    if (!state?.events.length) return;
+    const fresh = state.events.filter((e) => e.id > lastEvent.current);
+    const initialized = lastEvent.current !== 0;
+    lastEvent.current = Math.max(...state.events.map((e) => e.id));
+    const item = fresh.find((e) => e.kind === "ITEM_ADDED");
+    if (initialized && item) {
+      setLootFlash("+" + item.payload.quantity + " material na mochila");
+      const timer = setTimeout(() => setLootFlash(""), 2200);
+      return () => clearTimeout(timer);
+    }
+  }, [state?.events.at(-1)?.id]);
   function apply(s: State) {
     live.current = s;
     setState(s);
@@ -32,6 +55,7 @@ function App() {
       apply(await api("/state"));
       setNeedsCharacter(false);
       setRewards(await api("/rewards"));
+      setRewardSummary(await api("/guild/rewards"));
     } catch (e) {
       const message = (e as Error).message;
       if (message.includes("Crie seu")) setNeedsCharacter(true);
@@ -43,7 +67,7 @@ function App() {
     void refresh();
     const timer = setInterval(() => {
       if (!gate.current) void refresh();
-    }, 3000);
+    }, 1500);
     return () => clearInterval(timer);
   }, [token]);
   useEffect(() => {
@@ -83,10 +107,16 @@ function App() {
     setBusy(true);
     try {
       const r = (await fn()) as any;
-      if (r?.message) setNotice(r.message);
-      else if (r?.code) setNotice("Código Discord (5 minutos): " + r.code);
+      if (r?.message) {
+        setNotice(r.message);
+        if (r?.rewards) setTab("guild");
+      } else if (r?.code) setNotice("Código Discord (5 minutos): " + r.code);
       else if (r?.status) {
-        setFx({ seq: ++sequence.current, status: r.status });
+        setFx({
+          seq: ++sequence.current,
+          status: r.status,
+          enemy_id: r.enemy_id,
+        });
         setNotice(
           r.status === "won"
             ? "Vitória! Consulte suas recompensas na Guilda."
@@ -125,7 +155,11 @@ function App() {
       }
       if (t.kind === "npc") return api("/interact", {});
       if (t.kind === "monster") {
-        if (t.monster === "boss") {
+        if (
+          s.map.enemies.find(
+            (e) => String(e.id) === t.monster || e.spawn_key === t.monster,
+          )?.species === "boss"
+        ) {
           setBossWarning(true);
           return;
         }
@@ -166,7 +200,7 @@ function App() {
           </span>
         </a>
         <div className="server">
-          <i /> MUNDO PERSISTENTE <span>• IMPLEMENTAÇÃO 02</span>
+          <i /> MUNDO PERSISTENTE <span>• PRIMEIRO ANDAR</span>
         </div>
         {token && (
           <button
@@ -288,6 +322,11 @@ function App() {
               <small className="online">{peers.length + 1} NESTA SALA</small>
             </div>
             <div className="stage">
+              {lootFlash && (
+                <div className="loot-flash" role="status">
+                  ◆ {lootFlash}
+                </div>
+              )}
               <Map
                 state={state}
                 peers={peers}
@@ -374,12 +413,12 @@ function App() {
                 onClick={() => {
                   const npc = state.map.npc;
                   if (npc) target({ x: npc[0], y: npc[1], kind: "npc" });
-                  else setNotice("Esta sala não tem curandeira.");
+                  else setNotice("A recepcionista aguarda na Guilda.");
                 }}
               >
-                Conversar / curar
+                Falar com recepcionista
               </button>
-              {state.map.portal && (
+              {c.floor > 1 && state.map.portal && (
                 <button
                   disabled={busy || !!b}
                   onClick={() =>
@@ -400,6 +439,19 @@ function App() {
                   }
                 >
                   Portal de andar
+                </button>
+              )}
+              {state.room.safe && (
+                <button disabled={busy || !!b} onClick={() => action("/rest")}>
+                  Descansar
+                </button>
+              )}
+              {state.room.kind === "TRAINING" && (
+                <button
+                  disabled={busy || !!b}
+                  onClick={() => action("/training/reset")}
+                >
+                  Novo exercício
                 </button>
               )}
               {state.room.kind === "SECRET_DUNGEON" && (
@@ -436,7 +488,7 @@ function App() {
               {busy ? "◌ " : "✦ "}
               {notice}
             </p>
-            <span>ANDAR GLOBAL {state.unlocked_floor}/2</span>
+            <span>PRIMEIRO ANDAR · EM APERFEIÇOAMENTO</span>
           </div>
           {tab && (
             <section className="drawer panel">
@@ -474,16 +526,34 @@ function App() {
                   <h2>Inventário persistente</h2>
                   <div className="items">
                     {state.inventory.map((i) => (
-                      <div className="item" key={i.id}>
+                      <div
+                        className="item"
+                        key={i.id}
+                        title={
+                          i.name +
+                          " — " +
+                          i.description +
+                          " Quantidade: " +
+                          i.quantity +
+                          " / " +
+                          i.max_stack_size
+                        }
+                      >
                         <div className="item-icon">
                           {i.kind === "weapon" ? "⚔" : "◆"}
+                          {i.stackable && (
+                            <b className="stack-count">×{i.quantity}</b>
+                          )}
                         </div>
                         <span>
                           {i.name} ×{i.quantity}
                           <small>
                             {i.kind === "weapon"
                               ? "ARMA · FORÇA +3"
-                              : "MATERIAL"}
+                              : "EMPILHÁVEL · " +
+                                i.quantity +
+                                "/" +
+                                i.max_stack_size}
                           </small>
                         </span>
                         {i.kind === "weapon" && (
@@ -611,30 +681,35 @@ function App() {
               {tab === "guild" && (
                 <>
                   <p className="eyebrow">GUILDA DOS AVENTUREIROS</p>
-                  <h2>Quadro de recompensas</h2>
+                  <h2>Recepcionista da Guilda</h2>
                   <p>
-                    Dirija-se à recepção da Guilda ou à curandeira. As
-                    recompensas são pagas pelo Tesouro existente.
+                    Registros confirmados de monstros derrotados. O Tesouro paga
+                    somente na recepção, uma vez por baixa.
                   </p>
-                  {rewards.length ? (
-                    rewards.map((r) => (
-                      <button
-                        key={r.id}
-                        disabled={busy}
-                        onClick={() => action("/battles/" + r.id + "/claim")}
-                      >
-                        Receber recompensa #{r.id}
-                        {r.reward_amount !== null
-                          ? " · " + r.reward_amount + " moedas"
-                          : ""}
-                      </button>
-                    ))
-                  ) : (
+                  <div className="reward-summary">
+                    {Object.entries(rewardSummary.groups).map(
+                      ([name, count]) => (
+                        <p key={name}>
+                          {name} <strong>×{count}</strong>
+                        </p>
+                      ),
+                    )}
                     <p>
-                      Nenhuma recompensa pendente. Contratos reservados ainda
-                      estão em desenvolvimento.
+                      Total pendente:{" "}
+                      <strong>{rewardSummary.total} moedas</strong> ·{" "}
+                      {rewardSummary.count} registros
                     </p>
-                  )}
+                  </div>
+                  <button
+                    disabled={busy || !rewardSummary.count}
+                    onClick={() => action("/guild/claim")}
+                  >
+                    RESGATAR RECOMPENSAS
+                  </button>
+                  <p>
+                    Contratos ainda indisponíveis. Não há moedas criadas pela
+                    vitória: o pagamento utiliza o orçamento existente.
+                  </p>
                   <p>
                     O pátio de treinamento é acessível pela porta da Guilda.
                     Praticar não concede recompensas.
@@ -698,23 +773,30 @@ function App() {
             </section>
           )}
           <section className="encounters">
-            {Object.entries(state.map.monsters).map(([id, p]) => (
-              <button
-                className="secondary"
-                disabled={busy || !!b}
-                key={id}
-                onClick={() =>
-                  target({ x: p[0], y: p[1], kind: "monster", monster: id })
-                }
-              >
-                {id === "boss"
-                  ? "⚔ Chefe do andar"
-                  : id === "dummy"
-                    ? "⚔ Treinar no boneco"
-                    : "⚔ Enfrentar " +
-                      (state.map.enemy_names?.[id] || id).toLowerCase()}
-              </button>
-            ))}
+            {state.map.enemies
+              .filter((e) => e.state === "ALIVE")
+              .map((e) => (
+                <button
+                  className="secondary"
+                  disabled={busy || !!b}
+                  key={e.id}
+                  data-enemy-id={e.id}
+                  onClick={() =>
+                    target({
+                      x: e.x,
+                      y: e.y,
+                      kind: "monster",
+                      monster: String(e.id),
+                    })
+                  }
+                >
+                  {e.species === "boss"
+                    ? "⚔ Chefe do andar"
+                    : e.species === "dummy"
+                      ? "⚔ Treinar no boneco"
+                      : "⚔ " + e.name + " · Nv." + e.level}
+                </button>
+              ))}
           </section>
           {state.room.exits.length > 0 && (
             <section className="paths">
@@ -786,7 +868,8 @@ function App() {
         </p>
       )}
       <footer>
-        ARTE ORIGINAL · UM MUNDO EM DESCOBERTA <span>DUNGEON GAME / 02</span>
+        ARTE ORIGINAL · UM MUNDO EM DESCOBERTA{" "}
+        <span>DUNGEON GAME / ANDAR 1</span>
       </footer>
     </main>
   );
