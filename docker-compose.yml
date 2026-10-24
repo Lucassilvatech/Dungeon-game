@@ -1,0 +1,45 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: tower
+      POSTGRES_USER: tower
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Copy .env.example to .env first}
+    volumes: [tower_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U tower -d tower]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://tower:${POSTGRES_PASSWORD}@db:5432/tower
+      INITIAL_TREASURY: ${INITIAL_TREASURY:-100000}
+      MONSTER_REWARD: ${MONSTER_REWARD:-10}
+      BOSS_REWARD: ${BOSS_REWARD:-100}
+      DISCORD_SERVICE_KEY: ${DISCORD_SERVICE_KEY:-}
+    depends_on:
+      db: {condition: service_healthy}
+    ports: ["127.0.0.1:8000:8000"]
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  frontend:
+    build: ./frontend
+    ports: ["127.0.0.1:8080:80"]
+    depends_on:
+      backend: {condition: service_healthy}
+  discord:
+    profiles: [discord]
+    build: ./discord-bot
+    environment:
+      API_URL: http://backend:8000
+      DISCORD_TOKEN: ${DISCORD_TOKEN:-}
+      DISCORD_SERVICE_KEY: ${DISCORD_SERVICE_KEY:-}
+    depends_on:
+      backend: {condition: service_healthy}
+volumes:
+  tower_data:
