@@ -11,6 +11,8 @@ def seed():
         if db.bind.dialect.name == 'postgresql':
             from sqlalchemy import text
             db.execute(text('SELECT pg_advisory_xact_lock(7312026)'))
+        from .rooms import seed_world
+        seed_world(db)
         for key,name,kind,power in [('sword','Espada de aprendiz','weapon',3),('crystal','Cristal da clareira','material',0)]:
             if not db.get(ItemDefinition,key):
                 db.add(ItemDefinition(id=key,name=name,kind=kind,power=power))

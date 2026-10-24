@@ -27,7 +27,7 @@ class Move(BaseModel):
     dx: int = Field(ge=-1,le=1)
     dy: int = Field(ge=-1,le=1)
 class Start(BaseModel):
-    monster: Literal["slime","boss"]
+    monster: Literal["slime","boss","dummy","warden"]
 class Action(BaseModel):
     turn: int = Field(ge=0)
     action: Literal["attack","skill","defend"]
@@ -54,6 +54,8 @@ def login(body:Credentials,db=Depends(get_db)):
 def create(body:CharacterInput,a=Depends(current_account),db=Depends(get_db)):
     c=Character(account_id=a.id,name=body.name);db.add(c);db.flush()
     db.add(Item(owner=c.id,definition="sword",quantity=1));db.flush()
+    from .rooms import discover, current
+    discover(db,c,current(db,c))
     return game.snapshot(db,c)
 
 @app.get("/state")
@@ -123,3 +125,42 @@ def discord_state(discord_id:str,db=Depends(get_db)):
     a=db.scalar(select(Account).where(Account.discord_id==discord_id))
     if not a: raise HTTPException(404,"Use /vincular primeiro")
     return game.snapshot(db,game.character(db,a))
+
+from uuid import UUID
+from . import exploration
+
+class AdventureInput(BaseModel):
+    request_id: UUID
+class InviteInput(BaseModel):
+    invite: str = Field(min_length=8,max_length=32)
+
+@app.post('/rooms/exits/{exit_id}')
+def exit_room(exit_id:int,a=Depends(current_account),db=Depends(get_db)):
+    c=game.character(db,a);exploration.exit_room(db,c,exit_id);return game.snapshot(db,c)
+
+@app.post('/adventure')
+def adventure(body:AdventureInput,a=Depends(current_account),db=Depends(get_db)):
+    c=game.character(db,a);return exploration.adventure(db,c,str(body.request_id))
+
+@app.post('/dungeons/{room_id}/enter')
+def dungeon(room_id:str,a=Depends(current_account),db=Depends(get_db)):
+    c=game.character(db,a);exploration.secret_travel(db,c,room_id);return game.snapshot(db,c)
+
+@app.post('/dungeons/leave')
+def leave_dungeon(a=Depends(current_account),db=Depends(get_db)):
+    c=game.character(db,a);exploration.leave_secret(db,c);return game.snapshot(db,c)
+
+@app.post('/raids')
+def raid_create(a=Depends(current_account),db=Depends(get_db)):
+    return exploration.create_raid(db,game.character(db,a))
+
+@app.post('/raids/join')
+def raid_join(body:InviteInput,a=Depends(current_account),db=Depends(get_db)):
+    return exploration.join_raid(db,game.character(db,a),body.invite)
+
+@app.post('/raids/leave')
+def raid_leave(a=Depends(current_account),db=Depends(get_db)):
+    return exploration.leave_raid(db,game.character(db,a))
+
+from .presence import room_socket
+app.websocket('/ws/rooms')(room_socket)

@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import String, Integer, ForeignKey, DateTime, Boolean, CheckConstraint, JSON
+from sqlalchemy import UniqueConstraint, String, Integer, ForeignKey, DateTime, Boolean, CheckConstraint, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 from .database import Base
 
@@ -38,6 +38,7 @@ class Character(Base):
     y: Mapped[int] = mapped_column(default=2)
     floor: Mapped[int] = mapped_column(default=1)
     coins: Mapped[int] = mapped_column(default=0)
+    room_id: Mapped[str] = mapped_column(ForeignKey("rooms.id"), default="city1", server_default="city1")
 
 class ItemDefinition(Base):
     __tablename__ = "item_definitions"
@@ -64,6 +65,8 @@ class Battle(Base):
     hp: Mapped[int] = mapped_column()
     turn: Mapped[int] = mapped_column(default=0)
     status: Mapped[str] = mapped_column(String(20), default="active")
+    room_id: Mapped[str | None] = mapped_column(ForeignKey("rooms.id"))
+    reward_amount: Mapped[int | None] = mapped_column()
     claimed: Mapped[bool] = mapped_column(Boolean, default=False)
 
 class Treasury(Base):
@@ -88,3 +91,49 @@ class WorldEvent(Base):
     kind: Mapped[str] = mapped_column(String(40))
     payload: Mapped[dict] = mapped_column(JSON)
     processed: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class Floor(Base):
+    __tablename__ = "floors"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(80))
+
+class Room(Base):
+    __tablename__ = "rooms"
+    id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    floor_id: Mapped[int] = mapped_column(ForeignKey("floors.id"))
+    name: Mapped[str] = mapped_column(String(80))
+    kind: Mapped[str] = mapped_column(String(30))
+    seed: Mapped[int] = mapped_column(default=0)
+    owner_id: Mapped[int | None] = mapped_column(ForeignKey("characters.id", use_alter=True, name="fk_room_owner"))
+    data: Mapped[dict] = mapped_column(JSON)
+
+class RoomConnection(Base):
+    __tablename__ = "room_connections"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    source: Mapped[str] = mapped_column(ForeignKey("rooms.id"))
+    target: Mapped[str] = mapped_column(ForeignKey("rooms.id"))
+    x: Mapped[int] = mapped_column()
+    y: Mapped[int] = mapped_column()
+    __table_args__ = (UniqueConstraint("source", "target"),)
+
+class RoomState(Base):
+    __tablename__ = "room_states"
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id"), primary_key=True)
+    room_id: Mapped[str] = mapped_column(ForeignKey("rooms.id"), primary_key=True)
+    completed: Mapped[bool] = mapped_column(default=False)
+    visits: Mapped[int] = mapped_column(default=0)
+    codex: Mapped[dict] = mapped_column(JSON, default=dict)
+
+class Raid(Base):
+    __tablename__ = "raids"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    leader_id: Mapped[int] = mapped_column(ForeignKey("characters.id"))
+    invite: Mapped[str] = mapped_column(String(32), unique=True)
+    status: Mapped[str] = mapped_column(String(20), default="forming")
+
+class RaidMember(Base):
+    __tablename__ = "raid_members"
+    raid_id: Mapped[int] = mapped_column(ForeignKey("raids.id"), primary_key=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id"), primary_key=True)
+
