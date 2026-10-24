@@ -1,6 +1,6 @@
 # Masmorras secretas — contém spoilers de desenvolvimento
 
-A demonstração tem a Cripta da Maré Antiga (id interno secret), no primeiro andar, recomendada para nível 8. HP 65 e ataque 14 são configuração própria, sem fórmula baseada no andar. É possível configurar nível 999 sem alterar floor_id. Novas masmorras devem ser definidas no conteúdo/seed por migração aditiva.
+A demonstração tem a Cripta da Maré Antiga (id interno secret), no primeiro andar, recomendada para nível 8. HP 90 e ataque 14 são configuração própria, sem fórmula baseada no andar. É possível configurar nível 999 sem alterar floor_id. Novas masmorras devem ser definidas no conteúdo/seed por migração aditiva.
 
 `SECRET_CHANCE` (0–1, padrão .25) controla descoberta em Aventura. A descoberta fica em RoomState por personagem e gera evento único. Antes dela, `/state` só apresenta contagem found/total; não retorna nome, codex, nível, inimigo ou prêmio. Tentar entrar por ID sem descoberta responde 404. O atlas de outro jogador permanece independente.
 
@@ -11,3 +11,5 @@ Derrota encerra a tentativa e envia à cidade com vida/energia restauradas: não
 Parâmetros provisórios: primeira recompensa 250 moedas, repetição 1; primeira vitória dá 100 XP e um cristal; repetições dão zero XP e nenhum cristal. `SECRET_FIRST_REWARD` e `SECRET_REPEAT_REWARD` são não negativos e configuráveis. Sem orçamento, o direito permanece pendente, como na versão 1. Não há emissão de moedas na vitória.
 
 A instância é pessoal, não uma masmorra compartilhada com combate de raid. Esse é o próximo passo, junto com várias salas internas e bestiário mais detalhado. A sala demonstrativa tem apenas seu chefe. Tests cobrem spoilers, acesso indevido, persistência, derrota, primeira conclusão, repetição e conservação monetária.
+
+Na versão 0.3, inimigos mortos permanecem DEAD na geração atual. Nova entrada explícita a partir de fora inicia outra geração de tentativa, com IDs novos; atualizar a interface não reinicia o encontro. A conclusão permanente e a redução de recompensa são preservadas.

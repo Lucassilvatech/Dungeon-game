@@ -1,15 +1,14 @@
-# Roadmap após implementação 2
+# Roadmap: primeiro andar antes de expandir a Torre
 
-Entregue nesta etapa: migração aditiva, salas/cidade/Guilda/treino, trajetos e transições, sprites originais e animações, câmera e HUD compactos, Aventura procedural determinística, segredo sem spoilers, derrota sem perdas, conclusão única e recompensa reduzida, chefe separado, lobby de raid e presença WebSocket. Os critérios de backend estão cobertos por testes; a conexão Discord externa segue pendente de credenciais.
+Entregue em 0.3: inimigos persistentes sem respawn indevido, golpe final idempotente, morte/fade/remoção visual, wandering autoritativo de baixa frequência, fórmula de dano, materiais empilháveis com limite, recompensa em lote pela recepcionista, ausência de curadora nas salas, salas amplas e novos temas/layouts por seed. Treino e persistência foram preservados.
 
-1. **Combate cooperativo real**: reservar encontro para raid, validar presença/eligibilidade, ordem de turnos coletiva, reconectar e recompensar participantes uma única vez. Não reutilizar combates pessoais como se fossem compartilhados.
-2. **Presença distribuída**: broker, expiração de presença e testes entre workers antes de aumentar processos FastAPI.
-3. **Conteúdo**: novas masmorras com múltiplas subsalas, tabelas e bestiário mais rico; coleta real e layouts procedurais renováveis com limites e auditoria; rotas de NPCs.
-4. **Validação Discord**: convidar bot real e consultar dados do mesmo personagem; depois expor Aventura/viagem/raids pelo backend já existente, sem duplicar regras.
-5. **Segurança**: TLS, rate limit, revogação/recuperação de sessões, logs estruturados, backups e monitoramento; teste de carga.
-6. **Mercado**: custódia, compra atômica com imposto, expiração e renovação; duas compras simultâneas devem produzir só uma venda.
-7. **Guilda econômica**: contratos com orçamento reservado, filiais, NPCs com estoques e orçamentos reais.
-8. **Profissões e mentoria**: progressão, consumo de materiais, moedas vinculadas e ranking auditável.
-9. **Banco Central**: indicadores e regras de emissão aprovadas; sem empréstimos/juros.
+Próximos passos pequenos:
 
-O segundo andar segue demonstrativo. Não há economia NPC avançada, raids em combate, MMO distribuído ou todas as profissões nesta etapa.
+1. Validar balanceamento do primeiro andar com jogadores: tempo por combate, retorno à Guilda, risco por espécie e uso de energia; alterar parâmetros a partir de resultados.
+2. Refinar arte original, sinalização de caminhos, áudio opcional e interação da Guilda. Melhorar seleção/navegação em dispositivos móveis.
+3. Implementar encontros com grupos de inimigos: participantes/seleção de alvo/ordem de turnos, preservando a recompensa única por instância. Não declarar o lobby de raid como combate coletivo.
+4. Coleta real com consumo/estoques e auditoria; contratos pequenos com orçamento reservado.
+5. Broker de presença antes de múltiplos workers, limites de requisições, revogação de sessões, TLS e telemetria; otimizar bundle Phaser.
+6. Validar bot em Discord externo com credenciais próprias; adicionar ações pelo mesmo backend quando tiverem fluxo estável no navegador.
+
+Andares superiores, raids avançadas, mercado completo, Banco Central automático, mentoria, muitas profissões e endgame continuam fora do escopo atual. O conteúdo legado não foi apagado; não deve orientar novas implementações até o primeiro andar estar consolidado.

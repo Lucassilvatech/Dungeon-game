@@ -21,3 +21,7 @@ Oferta inicial definitiva, impostos, taxas, preços de serviços, limites de emi
 ## Implementação 2
 
 Treinamento não concede XP, loot nem moedas. Masmorra secreta congela o direito de recompensa por combate: primeira conclusão 250 moedas/100 XP/cristal; repetições 1 moeda/zero XP/zero cristais, parâmetros monetários configuráveis. A contabilidade continua transferência do Tesouro, nunca emissão durante vitória. Uma tentativa derrotada em segredo não penaliza saldo, itens ou XP. Ajustes definitivos de balanceamento permanecem abertos.
+
+## Primeiro andar 0.3
+
+Pagamento centralizado na recepcionista, não na antiga curadora das salas. O resgate em lote é transacional e auditado por ledger; falta de orçamento não consome registros. Loot material usa stacks e morte por instância é única. Inimigos não reaparecem por recarregar/reconectar. Novas expedições são o mecanismo explícito de conteúdo repetível; treino não concede moedas, XP ou itens. Nenhuma política monetária ou emissão adicional foi implementada.

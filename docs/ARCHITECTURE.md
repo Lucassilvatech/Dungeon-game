@@ -19,3 +19,11 @@ A presença é um registro de conexões em memória num único worker. Lê posi�
 A câmera acompanha sprites interpolados nas cidades e enquadra salas pequenas por inteiro. Texturas geradas em `sprites.ts` têm 20 frames (idle, walk, attack, hurt, death × quatro poses). O fundo é desenhado apenas ao trocar de sala; apenas sprites e efeitos limitados atualizam a 30 FPS. Interiores e outros andares não permanecem renderizados. Nenhum asset de terceiros é necessário.
 
 Novos domínios econômicos permanecem futuros. O lobby de raid não altera os combates individuais existentes. Eventos de domínio e projeções são confirmados na transação da ação, sem prometer entrega a sistemas externos. Ver WORLD_SYSTEM, ROOM_SYSTEM e SECRET_DUNGEONS.
+
+## Aperfeiçoamento do primeiro andar (0.3)
+
+Regras atuais detalhadas em FIRST_FLOOR.md. `layouts.py` produz os novos mapas; `enemies.py` mantém identidade/vida e wandering com posição no PostgreSQL; `balance.py` separa fórmula e definições; `inventory.py` centraliza concessão idempotente e stacks. Battle referencia a instância, com índice único parcial para impedir duas vitórias sobre ela. A API de recompensas consulta registros e paga só na recepção. A migração 11ac6a18a976 contém conteúdo/generação congelados para atualizar salas existentes sem importar regras mutáveis.
+
+`environment.ts` desenha pisos, paredes, móveis e objetos originais; `Map.tsx` mantém atores por ID, remove mortos após animação e interpola wandering recebido. `sprites.ts` agora inclui frames válidos de morte e o batedor. O sprite mede 16×24, escala 1.5, câmera zoom 1 e pixelArt/roundPixels, com bounds de salas grandes e acompanhamento suave. O fundo não é redesenhado a cada frame; partículas/luzes e NPCs sociais são limitados à sala atual.
+
+Os comportamentos legados de boss/desbloqueio permanecem para compatibilidade de dados, sem desenvolvimento de outro andar nesta etapa. A UI e o conteúdo novo se concentram no primeiro andar.

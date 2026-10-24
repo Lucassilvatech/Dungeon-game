@@ -596,3 +596,9 @@ Identidade própria de pixel art acolhedora, sem sprites, mapas, UI ou animaçõ
 O mundo passa a Torre → Andar → Salas → Interiores. Cidade segura e maior, Guilda com recepção/curandeira/quadro e treino sem farm, caminhos descobertos, salas comuns e combate, Aventura autoritativa, templates com seed, segredo permanente sem spoilers no backend, dificuldade independente do andar, derrota sem perda, primeira conclusão relevante e repetição insignificante. Chefe é descoberto em sala própria, sem combate automático, com aviso e tentativa solo opcional. Raid tem formação persistente; combate coletivo não está entregue.
 
 Posições e descoberta sobrevivem a reinícios. WebSocket apresenta outros jogadores conectados na mesma sala, mantendo validação de ações no backend comum ao navegador e Discord. A integração Discord conserva conta/personagem e apresenta o nome da sala/contagens sem expor segredos. Detalhes de implementação e limites estão em WORLD_SYSTEM, ROOM_SYSTEM e SECRET_DUNGEONS.
+
+# Prioridade vigente: qualidade do primeiro andar
+
+A partir da 0.3, expansão vertical fica suspensa como foco de desenvolvimento. Salas maiores, guilda acolhedora com balcão/recepcionista, NPCs sociais, objetos originais e câmera mais afastada orientam a apresentação. A referência visual fornecida é conceitual: nenhum sprite, móvel, mapa ou troféu específico foi copiado.
+
+Ciclo obrigatório por instância: ALIVE → IN_COMBAT → DYING → DEAD; morto não é alvo nem paga duas vezes. Wandering leve é decidido no servidor. Materiais empilham por definição/capacidade; equipamentos mantêm IDs. Moedas de monstros só são pagas pela recepcionista por registros pendentes. Procedural varia tema, geometria, dimensões e densidade por seed; reconexão conserva mortos. Veja FIRST_FLOOR.md para regras implementadas e fórmulas. Grupos de inimigos em combate simultâneo ainda estão pendentes.

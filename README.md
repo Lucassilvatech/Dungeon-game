@@ -1,31 +1,41 @@
-# Torre RPG
+# Dungeon Game — primeiro andar
 
-Protótipo de RPG persistente com FastAPI, PostgreSQL, React/TypeScript, Phaser e um cliente Discord. Arte original desenhada com formas pixeladas. Um backend controla todas as regras e os dois clientes consultam os mesmos personagens.
+RPG persistente com FastAPI, PostgreSQL, React/TypeScript, Phaser e cliente Discord. Esta versão aperfeiçoa exclusivamente o **primeiro andar**. Não expande andares superiores nem raids. Arte e sprites originais gerados pelo projeto, sem assets das referências comerciais.
 
-## Windows: executar
+## Windows: executar ou atualizar
 
-Instale Git e Docker Desktop com WSL2 e Docker Compose. No PowerShell:
+Com Git e Docker Desktop/WSL2 instalados, dentro do checkout:
 
 ```powershell
-git clone https://github.com/Lucassilvatech/Dungeon-game.git
-cd Dungeon-game
-Copy-Item .env.example .env
+git pull origin main
+if (!(Test-Path .env)) { Copy-Item .env.example .env }
 docker compose up --build -d
 ```
 
-Abra `http://localhost:8080`. API e documentação: `http://localhost:8000/docs`.
+Para uma instalação nova: clone `https://github.com/Lucassilvatech/Dungeon-game.git` e entre em `Dungeon-game` antes desses comandos.
 
-Novos personagens começam na **Vila do Alvorecer**, uma cidade segura. Personagens da versão 1 mantêm posição, XP, moedas, equipamento e combate; o antigo primeiro mapa passa a ser o Bosque das Lanternas. Não apague o volume para atualizar.
+Frontend: `http://localhost:8080`. API/documentação: `http://localhost:8000/docs`.
 
-1. Crie conta/personagem e equipe a espada na aba **Inventário**.
-2. Use WASD/setas ou clique no chão. Selecione portas, NPCs e inimigos no mapa ou os caminhos abaixo dele: o personagem caminha até o destino e o servidor valida cada passo.
-3. Entre na Guilda pela porta ao sul do prédio central. Converse com a curandeira e siga para o pátio de treinamento. O boneco não concede XP, itens ou moedas.
-4. Volte à cidade e siga pelo caminho leste. Explore Bosque → Trilha → Clareira → Santuário. Selecionar o chefe apresenta um aviso; o combate só começa após confirmar a tentativa solo.
-5. Use **Aventura** na cidade ou nas trilhas. O servidor escolhe uma sala procedural persistente ou a descoberta de uma entrada secreta. A chance padrão do segredo é 25%; não há garantia por tentativa.
-6. Depois da descoberta, a aba **Exploração** permite voltar à masmorra. Sua dificuldade é independente do andar. Derrota preserva pertences e descobertas; a primeira conclusão tem recompensa maior, e repetições não dão mais XP/loot relevante.
-7. Volte ao NPC da Guilda/curandeira e use a aba **Guilda** para reivindicar moedas do Tesouro. Derrotar o chefe de andar libera globalmente a cidade do segundo andar, acessível pelo portal da cidade.
+Não apague `.env` nem use `docker compose down -v` para atualizar. O startup aplica as migrações e faz seed idempotente; progresso e volume existente são preservados. A senha de exemplo é somente para desenvolvimento. A URL atual espera senha de banco sem caracteres reservados; use uma senha alfanumérica forte no deploy.
 
-Outros navegadores conectados na mesma sala aparecem via WebSocket. A aba **Mapa** mostra apenas salas e conexões descobertas. A aba **Raid** mantém convites e participantes; combate cooperativo ainda não está disponível.
+## Jogar no primeiro andar
+
+1. Crie conta/personagem; equipe a espada na aba **Inventário**.
+2. Use WASD/setas ou clique em chão, inimigo, NPC ou saída. As ações caminham visualmente até o destino, com passos validados no servidor.
+3. A cidade é segura. Entre na Guilda pela porta abaixo do prédio inicial. A **recepcionista**, atrás do balcão, recebe os registros de monstros; não há mais curadora espalhada nas salas. Use **Descansar** na cidade/Guilda para restaurar vida e energia.
+4. A Guilda leva ao pátio de treinamento. O boneco tem combate real, mas não dá XP, itens nem moedas. **Novo exercício** cria outra instância de treino de forma explícita.
+5. Siga os caminhos Cidade → Bosque → Trilha → Clareira. Agora há vários inimigos, com identidade, vida, movimento e morte persistentes. Um slime de nível 1 exige quatro ataques básicos de um iniciante com a espada. Defesas, habilidades e descanso importam.
+6. Inimigo derrotado executa morte/fade e desaparece. Não pode ser combatido novamente na mesma instância, nem ao recarregar. XP e loot são confirmados uma vez; moedas ficam como recompensa pendente.
+7. Volte à Guilda, aproxime-se da recepcionista e escolha **RESGATAR RECOMPENSAS**. A tela agrupa os registros por monstro e mostra o total. O Tesouro é debitado atomicamente e os registros são marcados como pagos.
+8. **Aventura** cria uma nova expedição procedural, com seed e tema próprios. Pode primeiro revelar um segredo existente. Expedições consecutivas usam temas diferentes; recarregar a mesma sala conserva as baixas. Uma nova aventura cria outros inimigos, não ressuscita os anteriores.
+
+Materiais se agrupam em stacks com limite por definição (cristais: 99). Equipamentos mantêm IDs individuais. O inventário mostra quantidade, capacidade e descrição no tooltip.
+
+## Conteúdo
+
+Cidade 52×36; Guilda 38×28; treinamento 32×24; salas comuns 34×26; combate 40×28. Expedições variam entre 32×24 e 44×30, com pedra/musgo, ruínas/vegetação, cristais/ossos ou entreposto de madeira. O chefe e o segredo existentes permanecem; a prioridade desta entrega é a qualidade do primeiro andar. Funcionalidade legada de andares superiores não foi expandida e não faz parte do novo fluxo.
+
+[Capturas](docs/screenshots) · [Regras desta versão](docs/FIRST_FLOOR.md) · [Arquitetura](docs/ARCHITECTURE.md) · [Desenvolvimento/testes](docs/DEVELOPMENT.md) · [Roadmap](docs/ROADMAP.md).
 
 ```powershell
 docker compose ps
@@ -33,35 +43,16 @@ docker compose logs backend
 docker compose down
 ```
 
-O volume `tower_data` conserva o banco; não use `down -v` se quiser manter personagens. A migração e o seed idempotente executam no startup do backend. O saldo inicial só é aplicado ao criar o Tesouro, nunca a cada reinício. A senha de exemplo é apenas para desenvolvimento; use uma senha alfanumérica forte no deploy (a URL atual não codifica caracteres reservados).
+`down` conserva o volume. Migração desta etapa: **11ac6a18a976**, que adiciona instâncias de inimigos, geração de encontros e stacks; consolida materiais sem perder quantidades e preserva equipamentos, saldos, contas e combates ativos. Faça backup dos dados importantes antes de atualizar.
 
-## Discord (opcional)
+## Discord e limites atuais
 
-No Discord Developer Portal, crie uma aplicação/bot e convide-o com scopes `bot` e `applications.commands`. Não precisa de intents privilegiados. Preencha `DISCORD_TOKEN` e uma chave aleatória `DISCORD_SERVICE_KEY` em `.env`; nunca publique esses valores. Recrie o backend após configurar a chave:
+O bot continua usando o mesmo backend e personagem. Configure `DISCORD_TOKEN` e uma chave aleatória `DISCORD_SERVICE_KEY` apenas em `.env`, nunca no Git. No Developer Portal convide o bot com scopes `bot` e `applications.commands`, sem intents privilegiados. Execute:
 
 ```powershell
 docker compose --profile discord up --build -d
 ```
 
-No navegador, gere um código e use `/vincular codigo:...` no bot em até 5 minutos. Depois `/personagem`, `/status`, `/inventario` e `/mapa` consultam dados reais. Códigos são de uso único. Não há criação paralela de personagens pelo Discord. Os demais comandos ainda não estão disponíveis. Sincronização global de comandos pode demorar no Discord.
+Na aba Personagem, gere código de cinco minutos e use `/vincular` no bot; `/personagem`, `/status`, `/inventario` e `/mapa` consultam dados reais. A conexão externa depende das credenciais e não foi validada nesta entrega.
 
-## Capturas verificadas
-
-[Cidade](docs/screenshots/city.png) · [Guilda](docs/screenshots/guild.png) · [Treinamento](docs/screenshots/training.png) · [Mobile](docs/screenshots/mobile.png). Capturadas do jogo em execução no Chromium.
-
-## Atualizar uma instalação existente
-
-```powershell
-git pull origin main
-docker compose up --build -d
-```
-
-As migrações Alembic `f2a7deb6dbfd` (salas/descobertas/raids) e `d348cc807194` (integridade de proprietário procedural) atualizam o banco sem recriá-lo. Faça backup antes de atualizar dados importantes. Preserve `.env` e o volume existente; nunca use `down -v` para atualizar.
-
-## Estado e limites
-
-Implementados: base da versão 1, cidade, Guilda e treinamento, salas conectadas, pathfinding visual, sprites/animações originais, câmera suave, aventuras, três templates procedurais por seed, segredo persistente com bestiário e primeira conclusão, chefe em sala própria, formação de raids e presença visual via WebSocket. O segundo andar tem cidade demonstrativa.
-
-Parciais: raid é um lobby persistente de até quatro participantes, **sem combate coletivo**; presença funciona num único processo FastAPI, sem broker para múltiplos workers; animações são provisórias geradas em runtime e substituíveis por spritesheets. Monstros continuam sendo encontros pessoais, não inimigos globais compartilhados. Coleta de recursos, contratos reservados, mercado, profissões e mentoria não estão implementados.
-
-Veja [desenvolvimento](docs/DEVELOPMENT.md), [arquitetura](docs/ARCHITECTURE.md), [salas](docs/ROOM_SYSTEM.md), [segredos](docs/SECRET_DUNGEONS.md) e [roadmap](docs/ROADMAP.md). Antes de exposição pública: TLS, limites de requisições, recuperação/revogação de sessões e observabilidade. A conexão com o Discord externo continua dependendo das credenciais; seus dados e vínculo são verificados por testes HTTP.
+Combate ainda é individual por alvo. A lista de instâncias prepara encontros com grupos, mas combate contra vários alvos simultâneos e raids coletivas não estão implementados. Presença visual usa um único worker; exige broker antes de escalar. Coleta, contratos, mercado e economia avançada permanecem futuros. Antes de exposição pública, completar TLS, rate limiting e gestão de sessões. O bundle Phaser ainda merece otimização.
