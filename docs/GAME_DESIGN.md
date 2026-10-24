@@ -588,3 +588,11 @@ Credenciais e tokens devem ficar em variáveis de ambiente.
 Nunca enviar segredos ao GitHub.
 
 ==================================================
+
+# Direção da implementação 2
+
+Identidade própria de pixel art acolhedora, sem sprites, mapas, UI ou animações das referências comerciais. O mapa é a área principal; HUD compacto e abas Personagem, Inventário, Mapa, Exploração, Guilda e Raid. Sprites substituíveis têm idle/walk/attack/hurt/death; partículas, tochas, portais e câmera suave permanecem leves. NPCs têm idle; rotas autônomas de NPCs ficam para depois.
+
+O mundo passa a Torre → Andar → Salas → Interiores. Cidade segura e maior, Guilda com recepção/curandeira/quadro e treino sem farm, caminhos descobertos, salas comuns e combate, Aventura autoritativa, templates com seed, segredo permanente sem spoilers no backend, dificuldade independente do andar, derrota sem perda, primeira conclusão relevante e repetição insignificante. Chefe é descoberto em sala própria, sem combate automático, com aviso e tentativa solo opcional. Raid tem formação persistente; combate coletivo não está entregue.
+
+Posições e descoberta sobrevivem a reinícios. WebSocket apresenta outros jogadores conectados na mesma sala, mantendo validação de ações no backend comum ao navegador e Discord. A integração Discord conserva conta/personagem e apresenta o nome da sala/contagens sem expor segredos. Detalhes de implementação e limites estão em WORLD_SYSTEM, ROOM_SYSTEM e SECRET_DUNGEONS.

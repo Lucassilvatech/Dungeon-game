@@ -17,3 +17,7 @@ Modelo proposto, ainda não migrado: `listing(item_instance, seller, net_price, 
 ## Questões abertas
 
 Oferta inicial definitiva, impostos, taxas, preços de serviços, limites de emissão, distribuição orçamentária, frequência de recompensas, prevenção de farming, indicadores de inflação e política de emergência. Não há política monetária automática avançada nesta versão.
+
+## Implementação 2
+
+Treinamento não concede XP, loot nem moedas. Masmorra secreta congela o direito de recompensa por combate: primeira conclusão 250 moedas/100 XP/cristal; repetições 1 moeda/zero XP/zero cristais, parâmetros monetários configuráveis. A contabilidade continua transferência do Tesouro, nunca emissão durante vitória. Uma tentativa derrotada em segredo não penaliza saldo, itens ou XP. Ajustes definitivos de balanceamento permanecem abertos.

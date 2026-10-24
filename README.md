@@ -13,7 +13,19 @@ Copy-Item .env.example .env
 docker compose up --build -d
 ```
 
-Abra `http://localhost:8080`. API e documentação: `http://localhost:8000/docs`. Crie uma conta, um personagem e equipe a espada na mochila. Use WASD/setas ou os botões. Aproxime-se dos alvos: curandeira/Guilda amarela em (3,3), slime em (5,6), chefe em (12,8), portal em (13,2). A curandeira restaura vida e energia. Vença, volte à Guilda e receba as recompensas pendentes. O chefe libera o segundo andar para todas as contas. Atualizar a página conserva personagem, itens e combate.
+Abra `http://localhost:8080`. API e documentação: `http://localhost:8000/docs`.
+
+Novos personagens começam na **Vila do Alvorecer**, uma cidade segura. Personagens da versão 1 mantêm posição, XP, moedas, equipamento e combate; o antigo primeiro mapa passa a ser o Bosque das Lanternas. Não apague o volume para atualizar.
+
+1. Crie conta/personagem e equipe a espada na aba **Inventário**.
+2. Use WASD/setas ou clique no chão. Selecione portas, NPCs e inimigos no mapa ou os caminhos abaixo dele: o personagem caminha até o destino e o servidor valida cada passo.
+3. Entre na Guilda pela porta ao sul do prédio central. Converse com a curandeira e siga para o pátio de treinamento. O boneco não concede XP, itens ou moedas.
+4. Volte à cidade e siga pelo caminho leste. Explore Bosque → Trilha → Clareira → Santuário. Selecionar o chefe apresenta um aviso; o combate só começa após confirmar a tentativa solo.
+5. Use **Aventura** na cidade ou nas trilhas. O servidor escolhe uma sala procedural persistente ou a descoberta de uma entrada secreta. A chance padrão do segredo é 25%; não há garantia por tentativa.
+6. Depois da descoberta, a aba **Exploração** permite voltar à masmorra. Sua dificuldade é independente do andar. Derrota preserva pertences e descobertas; a primeira conclusão tem recompensa maior, e repetições não dão mais XP/loot relevante.
+7. Volte ao NPC da Guilda/curandeira e use a aba **Guilda** para reivindicar moedas do Tesouro. Derrotar o chefe de andar libera globalmente a cidade do segundo andar, acessível pelo portal da cidade.
+
+Outros navegadores conectados na mesma sala aparecem via WebSocket. A aba **Mapa** mostra apenas salas e conexões descobertas. A aba **Raid** mantém convites e participantes; combate cooperativo ainda não está disponível.
 
 ```powershell
 docker compose ps
@@ -33,8 +45,23 @@ docker compose --profile discord up --build -d
 
 No navegador, gere um código e use `/vincular codigo:...` no bot em até 5 minutos. Depois `/personagem`, `/status`, `/inventario` e `/mapa` consultam dados reais. Códigos são de uso único. Não há criação paralela de personagens pelo Discord. Os demais comandos ainda não estão disponíveis. Sincronização global de comandos pode demorar no Discord.
 
+## Capturas verificadas
+
+[Cidade](docs/screenshots/city.png) · [Guilda](docs/screenshots/guild.png) · [Treinamento](docs/screenshots/training.png) · [Mobile](docs/screenshots/mobile.png). Capturadas do jogo em execução no Chromium.
+
+## Atualizar uma instalação existente
+
+```powershell
+git pull origin main
+docker compose up --build -d
+```
+
+As migrações Alembic `f2a7deb6dbfd` (salas/descobertas/raids) e `d348cc807194` (integridade de proprietário procedural) atualizam o banco sem recriá-lo. Faça backup antes de atualizar dados importantes. Preserve `.env` e o volume existente; nunca use `down -v` para atualizar.
+
 ## Estado e limites
 
-Implementados: contas e sessões, personagem único por conta, colisões no servidor, NPC, combate por turnos com retomada, XP/nível, inventário e espada, recompensa contábil com orçamento, desbloqueio global persistente e vínculo Discord. Sem mercado, grupos, profissões, mentoria ou combate cooperativo nesta etapa. Monstros representam encontros pessoais repetíveis; os outros jogadores ainda não são desenhados no mapa. O estado global compartilhado é o desbloqueio dos andares e o Tesouro. O segundo andar é uma área demonstrativa.
+Implementados: base da versão 1, cidade, Guilda e treinamento, salas conectadas, pathfinding visual, sprites/animações originais, câmera suave, aventuras, três templates procedurais por seed, segredo persistente com bestiário e primeira conclusão, chefe em sala própria, formação de raids e presença visual via WebSocket. O segundo andar tem cidade demonstrativa.
 
-Veja [desenvolvimento](docs/DEVELOPMENT.md), [arquitetura](docs/ARCHITECTURE.md), [economia](docs/ECONOMY.md), [design](docs/GAME_DESIGN.md) e [roadmap](docs/ROADMAP.md). Este protótipo precisa de endurecimento de segurança antes de exposição pública: TLS, limites de requisições, recuperação de senha, expiração/limpeza de sessões e observabilidade.
+Parciais: raid é um lobby persistente de até quatro participantes, **sem combate coletivo**; presença funciona num único processo FastAPI, sem broker para múltiplos workers; animações são provisórias geradas em runtime e substituíveis por spritesheets. Monstros continuam sendo encontros pessoais, não inimigos globais compartilhados. Coleta de recursos, contratos reservados, mercado, profissões e mentoria não estão implementados.
+
+Veja [desenvolvimento](docs/DEVELOPMENT.md), [arquitetura](docs/ARCHITECTURE.md), [salas](docs/ROOM_SYSTEM.md), [segredos](docs/SECRET_DUNGEONS.md) e [roadmap](docs/ROADMAP.md). Antes de exposição pública: TLS, limites de requisições, recuperação/revogação de sessões e observabilidade. A conexão com o Discord externo continua dependendo das credenciais; seus dados e vínculo são verificados por testes HTTP.

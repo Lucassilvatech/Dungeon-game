@@ -46,3 +46,17 @@ npm run test:e2e
 `BASE_URL` muda o destino (padrão porta 8080); `CHROMIUM_PATH` permite usar Chromium já instalado; `SMOKE_SCREENSHOT` define onde salvar a captura (padrão: `tower-smoke.png` na pasta temporária do sistema). O teste cria uma conta de teste real e não apaga seu registro. Ele cobre criação, mapa Phaser, equipamento, teclado, combate, loot e persistência ao recarregar.
 
 Validação inicial na nuvem: PostgreSQL real, testes de concorrência, build TypeScript/Vite, build Docker com CA e fluxo Chromium sobre Nginx/Compose. O bot foi importado e seus cinco comandos foram registrados localmente; a API de vínculo/consulta foi testada. Conexão e slash commands no Discord externo continuam pendentes de credenciais. Arte procedural provisória, sem assets externos. O bundle Phaser é grande; otimização de carregamento fica para a próxima etapa.
+
+## Verificação da implementação 2
+
+A suite PostgreSQL agora inclui salas, conexões, safe zones, treino sem farm, geração por seed, idempotência de Aventura, segredos sem spoilers, acesso por proprietário, derrota sem perda, primeira conclusão/repetição, raid persistente, autenticação/escopo WebSocket e migração de v1 com personagem, inventário e combate ativo. O teste de migração cria e remove um banco temporário `tower_upgrade_*`; o usuário do servidor de testes precisa de CREATEDB.
+
+Os testes originais mantêm suas verificações de combate/economia; seus helpers agora percorrem conexões reais para chegar ao boss/NPC em salas diferentes. A resposta a um monstro que não existe na sala é 404; cidades rejeitam combate com 409.
+
+O smoke browser percorre cidade → Guilda → treino → bosque, equipa a espada, testa cura e ausência de XP no treino, usa teclado, vence um slime, faz Aventura, recarrega e autentica um WebSocket pelo Nginx. A coleta visual de sprites é feita no navegador sem downloads de assets. O teste cria uma conta própria e não remove progresso alheio.
+
+No PowerShell, para uma captura em lugar específico: `$env:SMOKE_SCREENSHOT = "$PWD\phase2-city.png"`; execute `npm run test:e2e` dentro de frontend após `npm ci` e `npx playwright install chromium`. Use um ambiente de desenvolvimento para esses testes, pois eles criam personagens de teste reais.
+
+Para verificar persistência operacional, pare e suba a stack com `docker compose down` e `docker compose up -d` sem `-v`, e compare personagem, inventário, salas descobertas e raid. Reinício limpa conexões presenciais, não as posições no banco. Os clientes reconectam automaticamente.
+
+Resultados verificados nesta entrega: **20 testes PostgreSQL passaram**, `alembic check` sem divergências, build TypeScript/Vite e imagens Docker concluídos, fluxo Chromium completo até aviso do chefe, formação de raid e desbloqueio global passou. Um ciclo real `compose down`/`up` com o volume preservado manteve personagens, itens, descobertas/codex, raids/participantes e Tesouro idênticos. Há um aviso de depreciação da biblioteca TestClient; o bundle Phaser ainda exige otimização de tamanho. Nenhuma conexão externa Discord foi declarada validada.
