@@ -21,7 +21,12 @@ from .rooms import (
     event,
 )
 from .models import Room, RoomState
-from .world import WALLS, WIDTH, HEIGHT, NPC, MONSTERS, PORTAL, distance, map_data
+from .world import distance
+from .enemies import instances, target, payload, EnemyState
+from .balance import damage, ENEMIES, NAMES
+from .inventory import add_item
+from .models import EnemyInstance
+from .clock import utc_now
 
 
 def fail(message, code=409):
@@ -62,14 +67,27 @@ def inventory(db, c):
             quantity=i.quantity,
             equipped=i.equipped,
             location=i.location,
+            stackable=d.stackable,
+            max_stack_size=d.max_stack_size,
+            description=d.description,
         )
         for i, d in rows
     ]
 
 
-def snapshot(db, c):
+def snapshot(db, c, wander=False):
     b = active(db, c)
+    enemies = instances(db, c, wander=wander)
     room, data = room_payload(db, c)
+    data["enemies"] = [payload(e) for e in enemies]
+    data["monsters"] = {
+        e.spawn_key: [e.x, e.y] for e in enemies if e.state != EnemyState.DEAD
+    }
+    data["enemy_names"] = {
+        e.spawn_key: NAMES.get(e.species, e.species)
+        for e in enemies
+        if e.state != EnemyState.DEAD
+    }
     from .exploration import raid_state
 
     db.flush()
@@ -101,13 +119,33 @@ def snapshot(db, c):
         "room": room,
         "atlas": atlas(db, c),
         "raid": raid_state(db, c),
+        "events": [
+            dict(id=e.id, kind=e.kind, payload=e.payload)
+            for e in reversed(
+                db.scalars(
+                    select(WorldEvent)
+                    .where(WorldEvent.payload["character"].as_integer() == c.id)
+                    .order_by(WorldEvent.id.desc())
+                    .limit(32)
+                ).all()
+            )
+        ],
     }
 
 
 def battle_data(b):
     return {
         k: getattr(b, k)
-        for k in ("id", "monster", "hp", "turn", "status", "claimed", "reward_amount")
+        for k in (
+            "id",
+            "enemy_id",
+            "monster",
+            "hp",
+            "turn",
+            "status",
+            "claimed",
+            "reward_amount",
+        )
     }
 
 
@@ -118,7 +156,7 @@ def move(db, c, dx, dy):
     target = (c.x + dx, c.y + dy)
     data = current(db, c).data
     blocked = {tuple(p) for p in data["walls"]} | {
-        tuple(p) for p in data["monsters"].values()
+        (e.x, e.y) for e in instances(db, c) if e.state != EnemyState.DEAD
     }
     if data.get("npc"):
         blocked.add(tuple(data["npc"]))
@@ -132,14 +170,20 @@ def move(db, c, dx, dy):
 
 def interact(db, c):
     idle(db, c)
-    npc = current(db, c).data.get("npc")
-    if not npc or distance((c.x, c.y), npc) > 1:
-        fail("Aproxime-se da curandeira")
+    receptionist(db, c)
+    return {
+        "message": "Recepcionista da Guilda: seus registros estão prontos para conferência.",
+        "rewards": reward_summary(db, c),
+    }
+
+
+def rest(db, c):
+    idle(db, c)
+    if current(db, c).kind not in (RoomType.CITY, RoomType.GUILD):
+        fail("Descanse na cidade ou na Guilda")
     c.hp = 30 + (c.level - 1) * 5
     c.energy = 10
-    return {
-        "message": "Bem-vindo à Torre! Sua vida e energia foram restauradas. Derrote monstros e reivindique as recompensas da Guilda."
-    }
+    return {"message": "Você descansou em segurança. Vida e energia restauradas."}
 
 
 def travel(db, c, floor):
@@ -160,20 +204,35 @@ def travel(db, c, floor):
 def start_battle(db, c, monster):
     idle(db, c)
     room = current(db, c)
-    monsters = room.data["monsters"]
     if room.kind in (RoomType.CITY, RoomType.GUILD):
         fail("Cidade e Guilda são zonas seguras")
-    if monster not in monsters:
+    e = target(db, c, monster)
+    if not e:
         fail("Monstro inexistente", 404)
-    if distance((c.x, c.y), monsters[monster]) > 1:
+    if e.state != EnemyState.ALIVE:
+        fail("Inimigo morto ou indisponível")
+    if distance((c.x, c.y), (e.x, e.y)) > 1:
         fail("Aproxime-se do monstro")
-    hp = room.data.get("enemy_hp", 40 if monster == "boss" else 12)
-    b = Battle(character_id=c.id, monster=monster, hp=hp, room_id=room.id)
-    rs = discover(db, c, room)
-    rs.codex = {**rs.codex, monster: {"name": monster, "seen": True, "defeated": False}}
-    event(db, DomainEvent.COMBAT_STARTED, c, monster=monster)
+    e.state = EnemyState.IN_COMBAT
+    e.ai_state = "COMBAT"
+    b = Battle(
+        character_id=c.id, monster=e.species, hp=e.hp, room_id=room.id, enemy_id=e.id
+    )
     db.add(b)
     db.flush()
+    rs = discover(db, c, room)
+    rs.codex = {
+        **rs.codex,
+        e.species: {
+            "name": NAMES.get(e.species, e.species),
+            "seen": True,
+            "defeated": rs.codex.get(e.species, {}).get("defeated", False),
+        },
+    }
+    event(db, "ENEMY_COMBAT_STARTED", c, enemy_id=e.id, battle=b.id)
+    event(
+        db, DomainEvent.COMBAT_STARTED, c, monster=e.species, enemy_id=e.id, battle=b.id
+    )
     return battle_data(b)
 
 
@@ -183,32 +242,67 @@ def action(db, c, battle_id, turn, action):
         fail("Combate inexistente", 404)
     if b.status != "active" or b.turn != turn:
         fail("Turno já processado ou combate encerrado")
+    if not b.enemy_id:
+        instances(db, c)
+        db.flush()
+        db.refresh(b)
+    e = db.scalar(
+        select(EnemyInstance).where(EnemyInstance.id == b.enemy_id).with_for_update()
+    )
+    if not e or e.character_id != c.id or e.state != EnemyState.IN_COMBAT:
+        fail("Inimigo indisponível")
     if action not in ("attack", "skill", "defend"):
         fail("Ação inválida", 422)
     if action == "skill" and c.energy < 2:
         fail("Energia insuficiente")
-    sword = db.scalar(
-        select(Item).where(
-            Item.owner == c.id, Item.equipped == True, Item.location == "inventory"
+    power = (
+        db.scalar(
+            select(ItemDefinition.power)
+            .join(Item, Item.definition == ItemDefinition.id)
+            .where(
+                Item.owner == c.id, Item.equipped == True, Item.location == "inventory"
+            )
         )
+        or 0
     )
-    damage = c.strength + (3 if sword else 0)
     if action == "skill":
         c.energy -= 2
-        damage += 5
-    if action != "defend":
-        b.hp = max(0, b.hp - damage)
+    dealt = (
+        0
+        if action == "defend"
+        else damage(c.strength + power, e.defense, c.level, skill=action == "skill")
+    )
+    e.hp = max(0, e.hp - dealt)
+    b.hp = e.hp
     b.turn += 1
-    room = db.get(Room, b.room_id) if b.room_id else current(db, c)
-    training = b.monster == "dummy"
+    event(db, "ENEMY_DAMAGED", c, enemy_id=e.id, damage=dealt, hp=e.hp, battle=b.id)
+    room = db.get(Room, b.room_id)
+    training = e.species == "dummy"
     secret = room.kind == RoomType.SECRET_DUNGEON
-    if b.hp == 0:
+    if e.hp == 0:
+        # The entire DYING -> DEAD transition and all effects commit atomically.
+        e.state = EnemyState.DYING
+        e.death_at = utc_now()
+        e.ai_state = "DEAD"
         b.status = "won"
+        event(
+            db,
+            "ENEMY_DIED",
+            c,
+            key=f"death:{e.id}",
+            enemy_id=e.id,
+            species=e.species,
+            battle=b.id,
+        )
         rs = discover(db, c, room)
         first = not rs.completed
         rs.codex = {
             **rs.codex,
-            b.monster: {"name": b.monster, "seen": True, "defeated": True},
+            e.species: {
+                "name": NAMES.get(e.species, e.species),
+                "seen": True,
+                "defeated": True,
+            },
         }
         if training:
             b.claimed = True
@@ -227,19 +321,40 @@ def action(db, c, battle_id, turn, action):
                     key=f"secret-done:{c.id}:{room.id}",
                 )
         else:
-            c.xp += 30 if b.monster == "slime" else 100
-        event(db, DomainEvent.COMBAT_FINISHED, c, battle=b.id, result="won")
+            b.reward_amount = (
+                settings.boss_reward if e.species == "boss" else settings.monster_reward
+            )
+            c.xp += ENEMIES.get(e.species, ENEMIES["slime"])[4]
         while c.xp >= c.level * 50:
             c.xp -= c.level * 50
             c.level += 1
             c.strength += 1
             c.hp = 30 + (c.level - 1) * 5
         if not training and (not secret or first):
-            db.add(Item(owner=c.id, definition="crystal", quantity=1))
-        if b.monster == "boss":
+            event(
+                db,
+                "ITEM_DROPPED",
+                c,
+                key=f"drop:{e.id}",
+                enemy_id=e.id,
+                definition="crystal",
+                quantity=1,
+            )
+            add_item(db, c, "crystal", 1, f"enemy:{e.id}")
+        if not training:
+            event(
+                db,
+                "GUILD_REWARD_REGISTERED",
+                c,
+                key=f"register:{e.id}",
+                enemy_id=e.id,
+                battle=b.id,
+                amount=b.reward_amount,
+            )
+        if e.species == "boss":
             rs.completed = True
             event(db, DomainEvent.FLOOR_BOSS_DEFEATED, c, key=f"boss-defeated:{c.id}")
-            # Lock a singleton before testing the unique event, serializing global unlock.
+            # Retain the pre-existing compatibility event; no new upper-floor content.
             db.scalar(select(Treasury).where(Treasury.id == 1).with_for_update())
             if not db.scalar(select(WorldEvent).where(WorldEvent.key == "floor:2")):
                 db.add(
@@ -250,55 +365,123 @@ def action(db, c, battle_id, turn, action):
                         processed=True,
                     )
                 )
+        e.state = EnemyState.DEAD
+        event(db, "ENEMY_REMOVED", c, key=f"remove:{e.id}", enemy_id=e.id)
+        event(
+            db, DomainEvent.COMBAT_FINISHED, c, battle=b.id, result="won", enemy_id=e.id
+        )
     else:
-        incoming = max(
-            0 if training else 1,
-            (
-                0
-                if training
-                else room.data.get("enemy_attack", 8 if b.monster == "boss" else 5)
-            )
-            - c.defense
-            - (3 if action == "defend" else 0),
+        incoming = (
+            0
+            if training
+            else damage(e.attack, c.defense, e.level, guard=action == "defend")
         )
         c.hp = max(0, c.hp - incoming)
         if c.hp == 0:
             b.status = "lost"
-            event(db, DomainEvent.COMBAT_FINISHED, c, battle=b.id, result="lost")
+            e.state = EnemyState.ALIVE
+            e.hp = e.max_hp
+            e.ai_state = "IDLE"
+            event(
+                db,
+                DomainEvent.COMBAT_FINISHED,
+                c,
+                battle=b.id,
+                result="lost",
+                enemy_id=e.id,
+            )
             enter(db, c, db.get(Room, "city1"))
             c.hp = 30 + (c.level - 1) * 5
             c.energy = 10
     db.flush()
-    return battle_data(b)
+    return {**battle_data(b), "damage": dealt}
 
 
-def claim(db, c, battle_id):
-    npc = current(db, c).data.get("npc")
-    if not npc or distance((c.x, c.y), npc) > 1:
-        fail("Aproxime-se da Guilda (curandeira)")
-    b = db.get(Battle, battle_id)
-    if not b or b.character_id != c.id or b.status != "won" or b.claimed:
-        fail("Recompensa indisponível")
-    treasury = db.scalar(select(Treasury).where(Treasury.id == 1).with_for_update())
-    amount = (
+def receptionist(db, c):
+    room = current(db, c)
+    npc = room.data.get("npc")
+    if room.id != "guild" or not npc or distance((c.x, c.y), npc) > 1:
+        fail("Aproxime-se da recepcionista na Guilda")
+
+
+def pending(db, c):
+    return db.scalars(
+        select(Battle)
+        .where(
+            Battle.character_id == c.id, Battle.status == "won", Battle.claimed == False
+        )
+        .order_by(Battle.id)
+        .with_for_update()
+    ).all()
+
+
+def reward_value(b):
+    return (
         b.reward_amount
         if b.reward_amount is not None
         else (settings.boss_reward if b.monster == "boss" else settings.monster_reward)
     )
-    if amount < 0 or treasury.balance < amount:
+
+
+def reward_summary(db, c):
+    rows = pending(db, c)
+    groups = {}
+    for b in rows:
+        name = NAMES.get(b.monster, b.monster)
+        groups[name] = groups.get(name, 0) + 1
+    return {
+        "count": len(rows),
+        "total": sum(reward_value(b) for b in rows),
+        "groups": groups,
+    }
+
+
+def pay(db, c, rows):
+    if not rows:
+        fail("Nenhuma recompensa pendente")
+    total = sum(reward_value(b) for b in rows)
+    treasury = db.scalar(select(Treasury).where(Treasury.id == 1).with_for_update())
+    if total < 0 or treasury.balance < total:
         fail("Tesouro sem orçamento; solicite depois")
-    treasury.balance -= amount
-    c.coins += amount
-    b.claimed = True
-    db.add(
-        Ledger(
-            reference=f"battle:{b.id}",
-            source="treasury",
-            destination=f"character:{c.id}",
-            amount=amount,
+    treasury.balance -= total
+    c.coins += total
+    for b in rows:
+        b.claimed = True
+        db.add(
+            Ledger(
+                reference=f"battle:{b.id}",
+                source="treasury",
+                destination=f"character:{c.id}",
+                amount=reward_value(b),
+            )
         )
-    )
-    return {"paid": amount}
+        event(
+            db,
+            "GUILD_REWARD_CLAIMED",
+            c,
+            key=f"claim:{b.id}",
+            battle=b.id,
+            enemy_id=b.enemy_id,
+            amount=reward_value(b),
+        )
+    return {
+        "paid": total,
+        "message": f"Recepcionista: {total} moedas pagas por {len(rows)} registros.",
+    }
+
+
+def claim(db, c, battle_id):
+    receptionist(db, c)
+    b = db.get(Battle, battle_id)
+    if not b or b.character_id != c.id or b.status != "won" or b.claimed:
+        fail("Recompensa indisponível")
+    return pay(db, c, [b])
+
+
+def claim_all(db, c):
+    idle(db, c)
+    receptionist(db, c)
+    return pay(db, c, pending(db, c))
 
 
 def equip(db, c, item_id):

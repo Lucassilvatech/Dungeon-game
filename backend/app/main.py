@@ -44,7 +44,7 @@ class Move(BaseModel):
 
 
 class Start(BaseModel):
-    monster: str = Field(min_length=1, max_length=40, pattern=r"^[a-z_]+$")
+    monster: str = Field(min_length=1, max_length=40, pattern=r"^[a-z0-9_]+$")
 
 
 class Action(BaseModel):
@@ -95,7 +95,7 @@ def create(body: CharacterInput, a=Depends(current_account), db=Depends(get_db))
 
 @app.get("/state")
 def state(a=Depends(current_account), db=Depends(get_db)):
-    return game.snapshot(db, game.character(db, a))
+    return game.snapshot(db, game.character(db, a), wander=True)
 
 
 @app.post("/move")
@@ -266,3 +266,30 @@ def raid_leave(a=Depends(current_account), db=Depends(get_db)):
 from .presence import room_socket
 
 app.websocket("/ws/rooms")(room_socket)
+
+
+@app.post("/rest")
+def rest(a=Depends(current_account), db=Depends(get_db)):
+    return game.rest(db, game.character(db, a))
+
+
+@app.get("/guild/rewards")
+def guild_rewards(a=Depends(current_account), db=Depends(get_db)):
+    return game.reward_summary(db, game.character(db, a))
+
+
+@app.post("/guild/claim")
+def guild_claim(a=Depends(current_account), db=Depends(get_db)):
+    return game.claim_all(db, game.character(db, a))
+
+
+@app.post("/training/reset")
+def reset_training(a=Depends(current_account), db=Depends(get_db)):
+    c = game.character(db, a)
+    game.idle(db, c)
+    from .rooms import current, discover, RoomType
+
+    if current(db, c).kind != RoomType.TRAINING:
+        game.fail("Vá ao pátio de treinamento")
+    discover(db, c, current(db, c)).generation += 1
+    return {"message": "Novo exercício de treinamento, sem recompensas."}
