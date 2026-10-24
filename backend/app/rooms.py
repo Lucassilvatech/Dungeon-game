@@ -71,10 +71,10 @@ def template(seed):
     return generate("PROCEDURAL", seed)
 
 
-def basic(kind,seed=0):
+def basic(kind, seed=0):
     from .layouts import generate
 
-    return generate(str(kind),seed)
+    return generate(str(kind), seed)
 
 
 STATIC_ROOMS = [

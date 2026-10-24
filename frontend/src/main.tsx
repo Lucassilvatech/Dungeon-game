@@ -400,24 +400,31 @@ function App() {
               </div>
               <button
                 className="adventure"
-                disabled={busy || !!b}
+                disabled={
+                  busy ||
+                  !!b ||
+                  !["CITY", "COMMON", "COMBAT", "PROCEDURAL"].includes(
+                    state.room.kind,
+                  )
+                }
                 onClick={() =>
                   action("/adventure", { request_id: crypto.randomUUID() })
                 }
               >
                 ✧ AVENTURA
               </button>
-              <button
-                className="secondary"
-                disabled={busy || !!b}
-                onClick={() => {
-                  const npc = state.map.npc;
-                  if (npc) target({ x: npc[0], y: npc[1], kind: "npc" });
-                  else setNotice("A recepcionista aguarda na Guilda.");
-                }}
-              >
-                Falar com recepcionista
-              </button>
+              {state.room.kind === "GUILD" && (
+                <button
+                  className="secondary"
+                  disabled={busy || !!b}
+                  onClick={() => {
+                    const npc = state.map.npc;
+                    if (npc) target({ x: npc[0], y: npc[1], kind: "npc" });
+                  }}
+                >
+                  Falar com recepcionista
+                </button>
+              )}
               {c.floor > 1 && state.map.portal && (
                 <button
                   disabled={busy || !!b}
