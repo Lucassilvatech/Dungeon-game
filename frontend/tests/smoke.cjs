@@ -207,8 +207,69 @@ const path = require("node:path"),
     const roomA = await state();
     assert.equal(roomA.room.kind, "PROCEDURAL");
     await shot("procedural-a");
-    await page.getByRole("button", { name: "✧ AVENTURA", exact: true }).click();
+    assert.equal(roomA.expedition.status, "ACTIVE");
+    assert(
+      await page
+        .getByRole("button", { name: "✧ AVENTURA", exact: true })
+        .isDisabled(),
+    );
+    assert(await page.locator(".paths button").first().isDisabled());
+    const activeId = roomA.expedition.id;
+    const rejectedAdventure = await page.evaluate(async () => {
+      const r = await fetch("/api/adventure", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + sessionStorage.getItem("token"),
+        },
+        body: JSON.stringify({ request_id: crypto.randomUUID() }),
+      });
+      return r.status;
+    });
+    assert.equal(rejectedAdventure, 409);
+    await page.reload();
+    await page.locator("canvas").waitFor();
     await idle();
+    assert.equal((await state()).expedition.id, activeId);
+    const first = roomA.map.enemies.find((e) => e.spawn_key === "slime");
+    await fight(
+      page.locator(`.encounters button[data-enemy-id="${first.id}"]`),
+    );
+    const beforeFlee = await state();
+    assert(beforeFlee.expedition.alive_enemies > 0);
+    await page
+      .getByRole("button", { name: "FUGIR DA AVENTURA", exact: true })
+      .click();
+    await idle();
+    const modal = page.getByRole("dialog");
+    await modal.waitFor();
+    await modal
+      .getByText(beforeFlee.character.xp + " XP", { exact: true })
+      .waitFor();
+    await shot("flee-confirmation");
+    await page.getByRole("button", { name: "CANCELAR", exact: true }).click();
+    assert.equal((await state()).expedition.status, "ACTIVE");
+    await page
+      .getByRole("button", { name: "FUGIR DA AVENTURA", exact: true })
+      .click();
+    await idle();
+    await page
+      .getByRole("button", { name: "CONFIRMAR FUGA", exact: true })
+      .click();
+    await idle();
+    const fled = await state();
+    assert.equal(fled.room.id, "city1");
+    assert.equal(fled.character.xp, 0);
+    assert.equal(fled.character.level, beforeFlee.character.level);
+    assert.equal(fled.character.coins, beforeFlee.character.coins);
+    assert.deepEqual(fled.inventory, beforeFlee.inventory);
+    await shot("flee-result");
+    for (let i = 0; i < 2 && (await state()).room.kind !== "PROCEDURAL"; i++) {
+      await page
+        .getByRole("button", { name: "✧ AVENTURA", exact: true })
+        .click();
+      await idle();
+    }
     const roomB = await state();
     assert.equal(roomB.room.kind, "PROCEDURAL");
     assert.notEqual(roomA.room.id, roomB.room.id);
@@ -234,7 +295,7 @@ const path = require("node:path"),
     assert(wandered, "No enemy wandered during the observation window");
     assert.deepEqual(errors, []);
     console.log(
-      "PASS: expanded city/guild/training, mobile, four-turn combat, death removal/rejection, inventory, guild claim, reconnect, two distinct procedural themes and authoritative wandering",
+      "PASS: expanded city/guild/training, mobile, four-turn combat, death removal/rejection, inventory, guild claim, reconnect, committed expedition, API/exit blocking, flee preview/cancel/penalty, two procedural themes and authoritative wandering",
     );
   } finally {
     await browser.close();

@@ -92,3 +92,119 @@ def test_v1_upgrade_preserves_existing_data():
         with admin.connect() as c:
             c.execute(text(f"DROP DATABASE {name} WITH (FORCE)"))
         admin.dispose()
+
+
+@pytest.mark.skipif(
+    os.getenv("TOWER_TEST_DATABASE") != "1", reason="requires disposable test server"
+)
+def test_existing_procedural_rooms_are_migrated_without_penalties():
+    import sqlalchemy as sa
+    from app.layouts import generate
+
+    name = "tower_upgrade_" + uuid4().hex[:10]
+    admin = create_engine(engine.url, isolation_level="AUTOCOMMIT")
+    with admin.connect() as c:
+        c.execute(text(f"CREATE DATABASE {name}"))
+    url = engine.url.set(database=name)
+    dbengine = create_engine(url)
+    env = {**os.environ, "DATABASE_URL": url.render_as_string(hide_password=False)}
+    exe = str(Path(__import__("sys").executable).parent / "alembic")
+
+    def migrate(rev):
+        subprocess.run(
+            [exe, "upgrade", rev], env=env, check=True, capture_output=True, text=True
+        )
+
+    try:
+        migrate("11ac6a18a976")
+        with dbengine.begin() as db:
+            db.execute(
+                text(
+                    "INSERT INTO accounts(id,username,password) VALUES(91,'explorer','unchanged')"
+                )
+            )
+            db.execute(
+                text(
+                    "INSERT INTO characters(id,account_id,name,level,xp,hp,energy,strength,defense,x,y,floor,coins,room_id) VALUES(91,91,'Explorer',4,27,21,7,9,3,4,5,1,321,'city1')"
+                )
+            )
+            rooms = sa.table(
+                "rooms",
+                sa.column("id", sa.String),
+                sa.column("floor_id", sa.Integer),
+                sa.column("name", sa.String),
+                sa.column("kind", sa.String),
+                sa.column("owner_id", sa.Integer),
+                sa.column("seed", sa.Integer),
+                sa.column("data", sa.JSON),
+            )
+            for room in ("current-expedition", "past-expedition"):
+                db.execute(
+                    rooms.insert().values(
+                        id=room,
+                        floor_id=1,
+                        name=room,
+                        kind="PROCEDURAL",
+                        owner_id=91,
+                        seed=42,
+                        data=generate("PROCEDURAL", 42),
+                    )
+                )
+            db.execute(
+                text("UPDATE characters SET room_id='current-expedition' WHERE id=91")
+            )
+            db.execute(
+                text(
+                    "INSERT INTO enemy_instances(id,character_id,room_id,generation,spawn_key,species,state,hp,max_hp,level,attack,defense,x,y,home_x,home_y,ai_state,moved_at,death_at) VALUES (91,91,'current-expedition',0,'slime','slime','DEAD',0,24,1,6,2,5,6,5,6,'DEAD',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)"
+                )
+            )
+            db.execute(
+                text(
+                    "INSERT INTO battles(id,character_id,monster,hp,turn,status,claimed,room_id,reward_amount,enemy_id) VALUES(91,91,'slime',0,4,'won',false,'current-expedition',101,91)"
+                )
+            )
+        migrate("head")
+        with dbengine.connect() as db:
+            assert tuple(
+                db.execute(
+                    text(
+                        "SELECT coins,xp,level,x,y,room_id FROM characters WHERE id=91"
+                    )
+                ).one()
+            ) == (321, 27, 4, 4, 5, "current-expedition")
+            assert (
+                db.scalar(
+                    text(
+                        "SELECT status FROM expeditions WHERE room_id='current-expedition'"
+                    )
+                )
+                == "ACTIVE"
+            )
+            assert (
+                db.scalar(
+                    text(
+                        "SELECT status FROM expeditions WHERE room_id='past-expedition'"
+                    )
+                )
+                == "FAILED"
+            )
+            assert (
+                db.scalar(text("SELECT reward_amount FROM battles WHERE id=91")) == 101
+            )
+            assert (
+                db.scalar(text("SELECT state FROM enemy_instances WHERE id=91"))
+                == "DEAD"
+            )
+            assert (
+                db.scalar(
+                    text(
+                        "SELECT seed FROM expeditions WHERE room_id='current-expedition'"
+                    )
+                )
+                == 42
+            )
+    finally:
+        dbengine.dispose()
+        with admin.connect() as c:
+            c.execute(text(f"DROP DATABASE {name} WITH (FORCE)"))
+        admin.dispose()

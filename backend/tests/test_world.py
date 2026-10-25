@@ -91,7 +91,20 @@ def test_procedural_persistence_and_replay(client, monkeypatch):
             )
             == 1
         )
-    navigate(client, h, "city1")
+    assert adventure(client, h).status_code == 409
+    exp = s["expedition"]["id"]
+    preview = client.get(f"/expeditions/{exp}/flee-preview", headers=h).json()
+    assert (
+        client.post(
+            f"/expeditions/{exp}/flee",
+            json={
+                "confirmed": True,
+                "confirmation_token": preview["confirmation_token"],
+            },
+            headers=h,
+        ).status_code
+        == 200
+    )
     assert adventure(client, h).status_code == 200
     fresh = state(client, h)
     assert fresh["room"]["id"] != s["room"]["id"]

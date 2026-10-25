@@ -118,10 +118,10 @@ def win(c, h, monster="slime"):
             char = db.scalar(
                 select(Character).where(Character.id == state(c, h)["character"]["id"])
             )
-            char.level = 3
-            char.hp = 40
-            char.strength = 7
-            char.defense = 4
+            char.level = 7
+            char.hp = 60
+            char.strength = 11
+            char.defense = 2
     item = state(c, h)["inventory"][0]["id"]
     assert c.post(f"/inventory/{item}/equip", json={}, headers=h).status_code == 200
     walk(c, h, MONSTERS[monster])
@@ -263,7 +263,7 @@ def test_insufficient_funds_rollback(client):
 def test_boss_defeat_persists(client):
     h = player(client)
     win(client, h, "boss")
-    assert state(client, h)["character"]["level"] == 3
+    assert state(client, h)["character"]["level"] == 7
     assert state(client, h)["room"]["completed"]
     with Session() as db:
         assert (
@@ -332,8 +332,8 @@ def test_skill_energy_defense_and_defeat(client):
     )
     assert state(client, h)["battle"]["turn"] == 0
     r = client.post(url, json={"turn": 0, "action": "defend"}, headers=h)
-    assert r.status_code == 200 and r.json()["hp"] == 60
-    assert state(client, h)["character"]["hp"] == 26
+    assert r.status_code == 200 and r.json()["hp"] == 84
+    assert state(client, h)["character"]["hp"] == 21
     with Session.begin() as db:
         db.scalar(select(Character)).hp = 1
     assert (
