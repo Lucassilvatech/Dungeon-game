@@ -29,7 +29,7 @@ A transação do golpe final bloqueia personagem/inimigo, confirma a vida zero, 
 
 O frontend anima apenas o alvo atingido: hurt, frame de morte, fade/recuo por cerca de 700 ms e destruição do sprite. Não anima todos os NPCs como mortos nem recria o inimigo quando o fade acaba. Reconectar encontra DEAD e não renderiza o morto como vivo. O tile deixa de bloquear passagem.
 
-Histórico anterior à migração é reconciliado na primeira leitura: vitória legada vira inimigo morto; combate ativo é vinculado sem perder HP/turno. Direitos monetários anteriores continuam resgatáveis. Uma derrota do jogador não concede recompensas e devolve o inimigo sobrevivente a ALIVE, permitindo nova tentativa. A derrota na masmorra secreta continua sem perdas de equipamento, moeda ou progresso.
+Histórico anterior à migração é reconciliado na primeira leitura: vitória legada vira inimigo morto; combate ativo é vinculado sem perder HP/turno. Direitos monetários anteriores continuam resgatáveis. Uma derrota não concede recompensas e devolve o inimigo sobrevivente a ALIVE. Nas salas comuns, a tentativa pode ser refeita. Em Aventura procedural, a regra 0.5 abaixo encerra a instância como FAILED e impede continuar o combate nela. A derrota na masmorra secreta continua sem perdas de equipamento, moeda ou progresso.
 
 ## Stacks e loot
 
@@ -60,11 +60,11 @@ Não foram expandidos andares superiores, combate de raid, economia avançada ou
 
 ## Expedição com compromisso — 0.4
 
-Expedition é um modelo persistente com personagem, sala única, seed, início/fim, estado e resultado da fuga. Estados: ACTIVE, COMPLETED, FLED e FAILED (este último para histórico abandonado anterior à migração). Um índice parcial permite no máximo uma ACTIVE por personagem. Os inimigos continuam em EnemyInstance, vinculados à sala e ao dono.
+Expedition é um modelo persistente com personagem, sala única, seed, início/fim, estado e resultado da fuga. Estados: ACTIVE, COMPLETED, FLED e FAILED (morte procedural; também usado para histórico abandonado anterior à migração, sem morte retroativa). Um índice parcial permite no máximo uma ACTIVE por personagem. Os inimigos continuam em EnemyInstance, vinculados à sala e ao dono.
 
 ACTIVE com qualquer instância diferente de DEAD bloqueia nova aventura, saída normal, portal e viagem direta à masmorra. Guardas usam RoomType.PROCEDURAL e ExpeditionStatus, não nomes de sala. Repetir a mesma chave de criação é um replay idempotente, sem criar outra instância. Os dados de localização retomam a expedição ativa após reconexão. Salas comuns, cidade, treino e masmorra secreta não recebem essa trava.
 
-O golpe final do último inimigo marca COMPLETED na mesma transação e registra EXPEDITION_COMPLETED uma vez. XP e recompensas continuam sendo concedidos normalmente; não existe XP pendente. A partir daí retorno e nova aventura estão liberados. Uma derrota numa procedural restaura o personagem na entrada da **mesma instância**, mantendo ACTIVE: morrer não pode servir para escapar da regra. Fora das procedurais, o resgate anterior à cidade continua, incluindo a ausência de perdas nas masmorras secretas.
+O golpe final do último inimigo marca COMPLETED na mesma transação e registra EXPEDITION_COMPLETED uma vez. XP e recompensas continuam sendo concedidos normalmente; não existe XP pendente. A partir daí retorno e nova aventura estão liberados. **Atualização 0.5:** a derrota procedural agora encerra FAILED e resgata à cidade com as penalidades de morte abaixo; substitui o antigo respawn na mesma instância da 0.4. Fora das procedurais, o resgate anterior à cidade continua, incluindo a ausência de perdas nas masmorras secretas.
 
 ### Fuga e arredondamento
 
@@ -108,3 +108,34 @@ O Guardião usa seu perfil base com tier 5: HP 84, ataque 13, defesa 5 e nível 
 A migração conserva combates em andamento e mortos; ajusta apenas inimigos ociosos vivos e acrescenta poucos spawns válidos nas regiões mais perigosas. Perfis de batalhas antigas já iniciadas ficam congelados por compatibilidade. O HUD e o atlas conhecido mostram perigo crescente, sem revelar salas secretas.
 
 O próximo passo continua sendo validar balanceamento/retorno à Guilda com jogadores, depois refinar navegação e desenvolver combate multi-alvo incremental. Múltiplos sprites não são apresentados como combate de grupo pronto.
+
+
+## Morte em Aventura — 0.5
+
+Somente uma batalha perdida em RoomType.PROCEDURAL privada, com Expedition ACTIVE do mesmo personagem, dispara PLAYER_DIED_IN_EXPEDITION. Cidade, treino, salas comuns, áreas seguras e masmorra secreta mantêm suas regras anteriores. O backend confirma a morte na transação do turno: bloqueia personagem/expedição, cria DeathEvent único por batalha e expedição, invalida todas as pendências globais não pagas, zera XP atual, cobra taxa, aplica eventual perda de níveis, transfere itens e encerra FAILED. O inimigo pode continuar registrado como vivo no histórico, mas a aventura terminou e não admite novo combate.
+
+Recompensas já resgatadas não mudam. As ainda pendentes são marcadas como pagas/inválidas com valor zero; o recibo registra valores anteriores por batalha. Nenhum Tesouro é debitado por esses direitos perdidos. XP já virou progresso corrente: zera somente esse XP, não desfaz níveis normais. Fuga permanece distinta: FLED, metade das pendências, XP zero, itens e saldo preservados.
+
+Taxa: `fee = MEDICAL_FEE_BASE` (padrão provisório 100). `saldo_depois = max(-10000, saldo_antes - fee)`. O débito efetivo é `saldo_antes - saldo_depois`; o restante fica auditado como waived. O ledger transfere somente o débito efetivo para a Guilda. Auditoria inclui personagem, expedição, death_event_id, taxa avaliada, valor cobrado/limitado, antes/depois, financiamento novo, timestamp UTC e motivo. MEDICAL_FEE e MEDICAL_DEBT são eventos persistentes.
+
+Ao atingir −10.000, inclusive exatamente ou já estando no limite: `novo_nivel = max(1, nivel - 10)`, uma vez por DeathEvent. Nos próximos óbitos no limite, repete. Nível 37→27; nível 6→1, com perda real 5. A perda real consome primeiro pontos disponíveis; o restante soma dívida de atributos, sem apagar escolhas. Exemplo: perde 10 níveis, tem 2 pontos livres → consome 2, cria dívida de 8; os próximos 8 níveis quitam essa dívida. No mínimo 1, nova morte não cria dívida fictícia de 10 pontos.
+
+O resgate envia à city1, restaura energia 10 e `max(1, floor(HP_max × RESPAWN_HP_PERCENT / 100))` de vida, padrão 100%. O resumo é um recibo durável e confirmável pelo proprietário; F5/login não o perde. Repetir turno rejeita sem efeitos; reprocessar o mesmo DeathEvent devolve recibo sem cobrar ou mover o personagem novamente. Falha em qualquer efeito reverte também o turno, HP, pendências, custódia e ledger.
+
+## Custódia e leilão exclusivo de espólios
+
+Itens físicos de `location=inventory` e definição `death_transferable=true` saem da mochila, ficam `owner=NULL`, `location=auction`, `equipped=false`. Nenhum item é apagado ou duplicado; quantidade e ID permanecem. Não há flags técnicas disfarçadas de item no catálogo atual; futuras definições estruturais podem marcar false. Outros locais de custódia não são confiscados.
+
+Uma Auction por item/stack e morte guarda antigo dono, quantidade original, preço inicial, maior lance/licitante, início/fim, destino e estado. Um índice parcial impede duas custódias abertas do mesmo item; seu histórico permite nova morte após compra legítima. O lance inicial arredonda para cima os 20% do valor total: `(base × quantidade + 4) // 5`, mínimo configurado. Sem valor positivo confiável, usa o mínimo. Catálogo inicial provisório: espada 100, cristal 10/unidade.
+
+Somente autenticação de conta com Character permite lance; a API não recebe um NPC/licitante escolhido pelo cliente. Exige valor inteiro positivo, acima do maior lance e pelo menos o inicial, com fundos disponíveis. Não há teto comercial. Ouro usa NUMERIC inteiro no servidor; preços/lances/saldos exatos têm representação textual na interface. Leilões usam 24h provisórias, configuráveis somente para novas criações.
+
+O maior lance é debitado para escrow, separado do saldo disponível e mostrado na UI. Seu aumento cobra a diferença. Um novo líder devolve o valor anterior pela função central de crédito; toda entrada compensa saldo negativo automaticamente. Reservas prévias permanecem se o licitante morrer e podem ser devolvidas para amortizar a dívida. Nunca se gasta duas vezes o mesmo saldo. Lances usam UUID de idempotência; repetir com outros parâmetros é rejeitado.
+
+O backend resolve vencidos em lotes até 100 a cada AUCTION_SWEEP_SECONDS, no startup e ao listar leilões; a rota autenticada de resolução também exige prazo vencido. Com vencedor: SETTLED, mesmo item/stack para a mochila, desequipado, cobrança já reservada enviada ao Tesouro ou sink gravado. Nunca paga ao antigo dono. Sem lance: UNSOLD em custódia arquivada, sem descarte, NPC ou relistagem automática. CLOSED/CANCELLED estão reservados no schema, sem fluxo de cancelamento nesta etapa.
+
+## Pontos manuais
+
+Os atributos existentes são strength (Força) e defense (Defesa). Novos níveis concedem 1 ponto, acumulável, depois de quitar attribute_point_debt. Não existe mais +1 de força automático; HP máximo e curva nível×50 continuam anteriores. Personagens legados preservam os valores atuais, com zero pontos retroativos, pois sua força já continha ganhos automáticos. A política evita um segundo bônus para os mesmos níveis.
+
+POST /character/attributes aceita lote não negativo, inteiro, somente desses atributos e UUID. Soma deve ser positiva e não superar os pontos livres; o resultado não pode estourar o armazenamento do atributo. O lock do personagem e chave do evento serializam gastos concorrentes/replay. Sem redução manual ou respec. Eventos ATTRIBUTE_POINT_GAINED e ATTRIBUTE_POINT_SPENT auditam ganhos, quitação de dívida e escolhas.

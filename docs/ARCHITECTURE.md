@@ -4,7 +4,7 @@ Monorepo com três processos independentes e PostgreSQL 17. `frontend/src/Map.ts
 
 `backend/app/main.py`: contratos HTTP e validação Pydantic. `security.py`: PBKDF2 com salt, sessões opacas com hash no banco e validade de sete dias. `game.py`: regras transacionais. `world.py`: mapa autoritativo. `models.py`: persistência SQLAlchemy; migrações Alembic congelam o schema. `seed.py`: catálogo e emissão inicial auditada, idempotente sob lock PostgreSQL.
 
-Cada requisição abre uma transação e realiza commit apenas se terminar sem exceção. Personagens são bloqueados com SELECT FOR UPDATE antes de mutações; isso serializa ações do mesmo jogador, criação de combate e reivindicação. O turno esperado deve coincidir com o persistido. Inventário valida proprietário e custódia. Constraints impedem personagem duplicado por conta, nomes duplicados, saldo negativo, referência contábil duplicada e evento global duplicado.
+Cada requisição abre uma transação e realiza commit apenas se terminar sem exceção. Personagens são bloqueados com SELECT FOR UPDATE antes de mutações; isso serializa ações do mesmo jogador, criação de combate e reivindicação. O turno esperado deve coincidir com o persistido. Inventário valida proprietário e custódia. Constraints impedem personagem duplicado por conta, nomes duplicados, saldo abaixo de −10.000, referência contábil duplicada e evento global duplicado.
 
 O Tesouro é bloqueado depois do personagem. A vitória no chefe escreve `FLOOR_UNLOCKED` com chave `floor:2` única. Seu consumidor inicial é a projeção persistente de acesso aos andares: evento e projeção são a mesma linha, confirmados na mesma transação (`processed=true`). Não existe worker externo nesta versão. Ao integrar consumidores econômicos futuros, criar outbox e confirmações por consumidor; não usar apenas o booleano para garantir entrega externa.
 
@@ -18,7 +18,7 @@ A presença é um registro de conexões em memória num único worker. Lê posi�
 
 A câmera acompanha sprites interpolados nas cidades e enquadra salas pequenas por inteiro. Texturas geradas em `sprites.ts` têm 20 frames (idle, walk, attack, hurt, death × quatro poses). O fundo é desenhado apenas ao trocar de sala; apenas sprites e efeitos limitados atualizam a 30 FPS. Interiores e outros andares não permanecem renderizados. Nenhum asset de terceiros é necessário.
 
-Novos domínios econômicos permanecem futuros. O lobby de raid não altera os combates individuais existentes. Eventos de domínio e projeções são confirmados na transação da ação, sem prometer entrega a sistemas externos. Ver WORLD_SYSTEM, ROOM_SYSTEM e SECRET_DUNGEONS.
+Economia avançada e mercado geral permanecem futuros; a 0.5 adiciona somente morte, dívida médica e leilão de espólios. O lobby de raid não altera os combates individuais existentes. Eventos de domínio e projeções são confirmados na transação da ação, sem prometer entrega a sistemas externos. Ver WORLD_SYSTEM, ROOM_SYSTEM e SECRET_DUNGEONS.
 
 ## Aperfeiçoamento do primeiro andar (0.3)
 
@@ -34,3 +34,20 @@ Os comportamentos legados de boss/desbloqueio permanecem para compatibilidade de
 `expeditions.py` centraliza ACTIVE/COMPLETED/FLED/FAILED, retomada, guardas de saída, prévia e fuga. As rotas de exploração/viagem chamam a guarda; combate sincroniza conclusão ao matar o último inimigo. Nenhuma lógica econômica foi duplicada: a fuga altera Battle.reward_amount e a Guilda continua pagando pelos mesmos registros e ledger. O resultado persiste os ajustes e o evento EXPEDITION_FLED. Fuga durante combate emite também COMBAT_FINISHED com resultado fled. Chaves de idempotência e locks/índice parcial protegem concorrência.
 
 `danger.py` contém o perfil de região e a escala; Room.danger_tier é a configuração autoritativa. `ExpeditionPanel.tsx` apresenta restante, conclusão e confirmação com valores do servidor. As restrições visuais espelham as guardas, mas chamadas diretas da API continuam validadas. A migração 904ca715f282 adota aventuras existentes sem penalidade retroativa e não apaga dados.
+
+
+## Morte, economia, atributos e leilões — 0.5
+
+`deaths.py` processa somente morte em expedição válida. `DeathEvent` tem unicidade por Battle e Expedition, recibo JSON imutável e confirmação separada; Expedition.result preserva o resultado mesmo após a confirmação. `economy.py` centraliza crédito assinado, reserva e taxa; Ledger registra movimento efetivo, WorldEvent registra perda de direito, dívida e nível. `attributes.py` centraliza ganho, alocação e consumo/dívida por perda de nível. Não foi criado atributo paralelo nem moeda extra.
+
+`Gold` em money.py usa Decimal/NUMERIC no PostgreSQL e int em Python, sem ponto flutuante ou teto comercial. Snapshot mantém coins numérico por compatibilidade e fornece coins_exact/reserved_gold em texto; UI monetária nova usa valores exatos e BigInt nos lances. AuctionBid vincula conta/personagem autenticado, leilão e UUID, sem identidade arbitrária enviada pelo cliente.
+
+Ordem de locks: comandos de leilão e sweeper tomam o advisory lock transacional 7312027 **antes** de bloquear personagens; isso serializa lances e resolução entre processos. Depois bloqueiam leilão/participantes necessários, item e Tesouro por último. Lotes de vencimentos bloqueiam todos os vencedores antes do primeiro débito no Tesouro, evitando conflito com pagamentos da Guilda a um vencedor posterior do mesmo lote. Rotas de listagem/resolução não tomam game.character antes desse mutex. Morte já segura o personagem, mas só cria novas listings e nunca toma o mutex de leilões existentes; não cancela reservas anteriores. O pagamento da Guilda segura personagem e depois Tesouro, sem mutex de leilão. Assim não há ciclo de espera entre resgate, morte, lance e resolução. Essa serialização conservadora é adequada ao laboratório do primeiro andar; medir antes de particionar locks para escala.
+
+Item em custódia tem owner nulo e equipped false, com constraint explícita. Auction conserva antigo dono e quantidade original, unicidade por morte/item e índice único parcial para custódia OPEN/CLOSED/UNSOLD. SETTLED conserva histórico e permite que o mesmo item seja confiscado noutra morte futura. Itens recebidos não são fundidos ao entregar: preserva-se o ID/stack arrematado. A função de loot continua preenchendo stacks válidos na mochila.
+
+O lifespan da API inicia sweeper assíncrono, que executa transações independentes em thread a cada 30s, inclusive no startup; falhas revertem e são tentadas novamente. Listar e a rota settle também resolvem vencidos. Não depende de relógio do navegador nem de conexão de jogador para finalizar. Testes PostgreSQL desativam só o agendamento automático via TOWER_TEST_DATABASE e verificam a mesma função transacional diretamente. Presença ainda exige um worker/broker futuro, independentemente da proteção de leilões entre processos.
+
+Migração aditiva 039105b3ae1a conserva todos os valores e IDs existentes, altera moedas/recompensas/ledger/Tesouro de INTEGER para NUMERIC, relaxa a carteira até −10.000, permite custódia sem dono e cria auditoria/leilões/atributos. Migração não concede pontos retroativos nem aplica mortes retroativas. Downgrade recusa dados que não cabem no modelo anterior, evitando apagar mortes, dívida, custódia ou pontos; atualização normal usa upgrade e volume preservado.
+
+UI `DeathEconomy.tsx`: resumo persistente com perdas reais, formulário de distribuição em lote, dívida visível e leilão paginado (100 por página). A API oferece GET /auctions, POST /auctions/{id}/bids, POST /auctions/{id}/settle, POST /character/attributes e POST /deaths/{id}/acknowledge. Discord segue compartilhando o estado do mesmo backend; não foram adicionados comandos de leilão/morte nem acesso a banco pelo bot.
