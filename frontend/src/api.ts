@@ -34,6 +34,13 @@ export type Enemy = {
   ai_state: string;
 };
 export type State = {
+  expedition: {
+    id: number;
+    room_id: string;
+    status: "ACTIVE" | "COMPLETED" | "FLED" | "FAILED";
+    alive_enemies: number;
+    can_leave: boolean;
+  } | null;
   events: { id: number; kind: string; payload: Record<string, unknown> }[];
   room: Room;
   atlas: {

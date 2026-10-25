@@ -2,6 +2,11 @@ import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { api, State, Battle } from "./api";
 import { Map } from "./Map";
+import {
+  ExpeditionPanel,
+  FleeModal,
+  type FleePreview,
+} from "./ExpeditionPanel";
 import { route } from "./pathfinding";
 import type { Peer, Target } from "./types";
 import "./style.css";
@@ -22,6 +27,7 @@ function App() {
     }>({ count: 0, total: 0, groups: {} }),
     [lootFlash, setLootFlash] = useState(""),
     [tab, setTab] = useState(""),
+    [fleePreview, setFleePreview] = useState<FleePreview | null>(null),
     [peers, setPeers] = useState<Peer[]>([]),
     [bossWarning, setBossWarning] = useState(false),
     [fx, setFx] = useState<{
@@ -142,6 +148,10 @@ function App() {
     void execute(async () => {
       const s = live.current;
       if (!s || s.battle) return;
+      if (t.kind === "exit" && s.expedition?.status === "ACTIVE")
+        throw Error(
+          "Você ainda está em uma expedição. Derrote os inimigos restantes ou fuja da aventura.",
+        );
       const path = route(s, t);
       if (!path) throw Error("Não há um caminho livre até esse destino.");
       setNotice("Caminhando…");
@@ -185,6 +195,30 @@ function App() {
       setBusy(false);
     }
   }
+  const openFlee = () =>
+    void execute(async () => {
+      const id = live.current?.expedition?.id;
+      if (id) setFleePreview(await api("/expeditions/" + id + "/flee-preview"));
+    });
+  const confirmFlee = () =>
+    void execute(async () => {
+      if (!fleePreview) return;
+      try {
+        const result = await api(
+          "/expeditions/" + fleePreview.expedition_id + "/flee",
+          {
+            confirmed: true,
+            confirmation_token: fleePreview.confirmation_token,
+          },
+        );
+        setFleePreview(null);
+        setPeers([]);
+        return result;
+      } catch (error) {
+        setFleePreview(null);
+        throw error;
+      }
+    });
   const c = state?.character,
     b = state?.battle;
   const action = (path: string, body: unknown = {}) =>
@@ -291,6 +325,16 @@ function App() {
               </p>
               <h1>{state.room.name}</h1>
             </div>
+            {state.room.danger_tier > 0 && (
+              <div className={"danger-tier danger-" + state.room.danger_tier}>
+                PERIGO {state.room.danger_tier}{" "}
+                <small>
+                  {state.room.danger_tier >= 3
+                    ? "REGIÃO HOSTIL"
+                    : "REGIÃO DE EXPLORAÇÃO"}
+                </small>
+              </div>
+            )}
             <div className="discovery">
               <span>✧ SEGREDOS</span>
               <strong>
@@ -299,6 +343,27 @@ function App() {
               </strong>
             </div>
           </div>
+          <ExpeditionPanel
+            state={state}
+            busy={busy}
+            onPreview={openFlee}
+            onAdventure={() =>
+              action("/adventure", { request_id: crypto.randomUUID() })
+            }
+            onReturn={() => {
+              const exit = state.room.exits[0];
+              if (exit)
+                target({ x: exit.x, y: exit.y, kind: "exit", id: exit.id });
+            }}
+          />
+          {fleePreview && (
+            <FleeModal
+              preview={fleePreview}
+              busy={busy}
+              onCancel={() => setFleePreview(null)}
+              onConfirm={confirmFlee}
+            />
+          )}
           <section className="game-shell">
             <div className="status-bar">
               <div className="portrait">♙</div>
@@ -403,6 +468,7 @@ function App() {
                 disabled={
                   busy ||
                   !!b ||
+                  state.expedition?.status === "ACTIVE" ||
                   !["CITY", "COMMON", "COMBAT", "PROCEDURAL"].includes(
                     state.room.kind,
                   )
@@ -811,7 +877,9 @@ function App() {
               {state.room.exits.map((e) => (
                 <button
                   className="secondary"
-                  disabled={busy || !!b}
+                  disabled={
+                    busy || !!b || state.expedition?.status === "ACTIVE"
+                  }
                   key={e.id}
                   onClick={() =>
                     target({ x: e.x, y: e.y, kind: "exit", id: e.id })

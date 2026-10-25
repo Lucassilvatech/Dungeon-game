@@ -11,6 +11,7 @@ export type Room = {
   kind: string;
   completed: boolean;
   safe: boolean;
+  danger_tier: number;
   codex: Record<string, { name: string; seen: boolean; defeated: boolean }>;
   exits: Exit[];
 };
