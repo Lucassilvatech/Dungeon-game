@@ -40,7 +40,13 @@ jobs:
             if (-not $before.AntivirusEnabled) { throw 'Defender is not enabled on this runner; no antivirus result can be claimed' }
             Update-MpSignature -ErrorAction Stop
             $state = Get-MpComputerStatus
+            # Public game binaries only. Strengthen protection on the disposable runner;
+            # never disable real-time protection or introduce exclusions.
+            Set-MpPreference -MAPSReporting Advanced -ErrorAction Stop
+            Set-MpPreference -SubmitSamplesConsent SendSafeSamples -ErrorAction Stop
+            Set-MpPreference -DisableBlockAtFirstSeen $false -ErrorAction Stop
             $preferences = Get-MpPreference
+            if ([int]$preferences.MAPSReporting -eq 0 -or $preferences.DisableBlockAtFirstSeen) { throw 'Cloud protection could not be enabled; cloud-dependent detection is not validated' }
             $report.cloud_settings = [ordered]@{
               MAPSReporting=[string]$preferences.MAPSReporting
               SubmitSamplesConsent=[string]$preferences.SubmitSamplesConsent
@@ -53,6 +59,9 @@ jobs:
             if ($null -eq $state.AntivirusSignatureLastUpdated -or ((Get-Date) - $state.AntivirusSignatureLastUpdated).TotalDays -gt 1) { throw 'Defender signatures are not current' }
             $scanner = Get-ChildItem "$env:ProgramData/Microsoft/Windows Defender/Platform/*/MpCmdRun.exe" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
             if ($null -eq $scanner) { $scanner = Get-Item "$env:ProgramFiles/Windows Defender/MpCmdRun.exe" -ErrorAction Stop }
+            & $scanner.FullName -ValidateMapsConnection 2>&1 | Tee-Object -FilePath (Join-Path $reportDir 'defender-cloud-connection.log')
+            $report.cloud_connection_exit_code = $LASTEXITCODE
+            if ($LASTEXITCODE -ne 0) { throw 'Defender cloud connection validation failed; do not claim a cloud-validated result' }
             $scanStart = Get-Date
             & $scanner.FullName -Scan -ScanType 3 -File $scanDir 2>&1 | Tee-Object -FilePath (Join-Path $reportDir 'defender-scan.log')
             $scanExit = $LASTEXITCODE
@@ -70,6 +79,13 @@ jobs:
             $report.error = $_.Exception.Message
             Write-Host "Security check did not pass: $($report.error)"
           } finally {
+            # Include real-time detections even if a file was quarantined before custom scan.
+            try {
+              $observed = @(Get-MpThreatDetection | Where-Object { $_.InitialDetectionTime -ge ([datetime]$report.started_at).AddSeconds(-5) })
+              $report.findings = @($observed | Select-Object ThreatID,ActionSuccess,InitialDetectionTime,Resources)
+              $report.threat_names = @(Get-MpThreat | Select-Object ThreatID,ThreatName,IsActive)
+              if ($observed.Count -gt 0) { $report.status='DETECTION'; $result=1 }
+            } catch { $report.detection_query_error=$_.Exception.Message }
             $report.finished_at = (Get-Date).ToUniversalTime().ToString('o')
             $report | ConvertTo-Json -Depth 10 | Set-Content -Encoding utf8 (Join-Path $reportDir 'report.json')
             @(

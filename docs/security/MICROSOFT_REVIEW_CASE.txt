@@ -22,7 +22,7 @@ O executável não tem assinatura Authenticode.
 Análise independente:
 https://github.com/Lucassilvatech/Dungeon-game/actions/runs/40236131027
 Mesmo ZIP/EXE, hashes conferidos, Defender ativo com assinaturas atualizadas, scan concluído com retorno zero e sem detecções nesse ambiente.
-Não é uma confirmação de falso positivo: a detecção local permanece pendente de análise do fornecedor.
+Limitação identificada: MAPSReporting=0 no primeiro contexto remoto. Esse resultado não valida detecção em nuvem/ML. O teste foi reforçado para verificar esse contexto. Não é confirmação de falso positivo: a detecção local permanece pendente de análise.
 
 Solicitação: revisar a classificação da amostra/hash/URL e informar se é falso positivo ou qual conteúdo motivou a detecção.
 Não há senhas, tokens de usuário ou chaves privadas de produção no arquivo publicado.
