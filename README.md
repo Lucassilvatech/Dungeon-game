@@ -1,5 +1,7 @@
 # Dungeon Game — primeiro andar · Godot e Central ADM
 
+> O build Windows de desenvolvimento recebeu relato de bloqueio “vírus detectado” e está em investigação. Não desative o antivírus ou crie exclusão. [Status e verificações](docs/security/WINDOWS_BUILD_TRIAGE.md).
+
 RPG persistente com FastAPI, PostgreSQL, cliente Godot 4 para Windows/Android, Central Administrativa web e cliente Discord. React/TypeScript/Phaser permanece como cliente legado durante a migração. Esta versão aperfeiçoa exclusivamente o **primeiro andar**. Não expande andares superiores nem raids. Arte e sprites originais gerados pelo projeto, sem assets das referências comerciais.
 
 ## Revisar esta evolução sem alterar a main

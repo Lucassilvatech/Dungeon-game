@@ -1,0 +1,73 @@
+{
+  "official_archive_sha512_verified": true,
+  "windows_exe_sha256": "c3475a6c1a12a6860559ebc8893104f2b98c05fc002a719b2404a07538eacbc9",
+  "windows_authenticode_certificate_present": false,
+  "template_authenticode_certificate_present": false,
+  "sections": [
+    {
+      "name": ".text",
+      "bytes": 75037696,
+      "identical_to_official_template": true
+    },
+    {
+      "name": ".data",
+      "bytes": 925184,
+      "identical_to_official_template": true
+    },
+    {
+      "name": ".rdata",
+      "bytes": 20188672,
+      "identical_to_official_template": true
+    },
+    {
+      "name": ".pdata",
+      "bytes": 1987072,
+      "identical_to_official_template": true
+    },
+    {
+      "name": ".xdata",
+      "bytes": 2025984,
+      "identical_to_official_template": true
+    },
+    {
+      "name": ".bss",
+      "bytes": 0,
+      "identical_to_official_template": true
+    },
+    {
+      "name": ".edata",
+      "bytes": 512,
+      "identical_to_official_template": true
+    },
+    {
+      "name": ".idata",
+      "bytes": 27648,
+      "identical_to_official_template": true
+    },
+    {
+      "name": ".tls",
+      "bytes": 512,
+      "identical_to_official_template": true
+    },
+    {
+      "name": ".rsrc",
+      "bytes": 8704,
+      "identical_to_official_template": false
+    },
+    {
+      "name": ".reloc",
+      "bytes": 448512,
+      "identical_to_official_template": true
+    },
+    {
+      "name": "pck",
+      "bytes": 32448,
+      "identical_to_official_template": false
+    }
+  ],
+  "zip_files": [
+    "DungeonGame.exe",
+    "LEIA-ME.txt"
+  ],
+  "zip_crc_and_embedded_exe_verified": true
+}

@@ -1,3 +1,5 @@
+> **Build Windows em investigação:** houve relato de “Falha: vírus detectado”. Não execute nem libere no antivírus enquanto a causa não for esclarecida. Hash correto significa integridade, não aprovação antivírus. Veja [relatório](../../../docs/security/WINDOWS_BUILD_TRIAGE.md) e o workflow de varredura Windows.
+
 # Dungeon Game 0.6 — builds de desenvolvimento
 
 Código-fonte: commit 424f97a, branch feature/godot-admin-migration.
