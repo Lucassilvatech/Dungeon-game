@@ -45,7 +45,7 @@ async def lifespan(app):
                 pass
 
 
-app = FastAPI(title="Tower RPG", version="0.5.0", lifespan=lifespan)
+app = FastAPI(title="Tower RPG", version="0.6.0", lifespan=lifespan)
 
 
 @app.exception_handler(IntegrityError)
@@ -417,3 +417,37 @@ def settle_auction(auction_id: int, a=Depends(current_account), db=Depends(get_d
     if not db.scalar(select(Character.id).where(Character.account_id == a.id)):
         game.fail("Crie seu personagem primeiro", 404)
     return settle(db, auction_id)
+
+
+class FastTravelInput(BaseModel):
+    destination: str = Field(min_length=1, max_length=80)
+
+
+@app.get("/fast-travel")
+def fast_destinations(a=Depends(current_account), db=Depends(get_db)):
+    from .fast_travel import destinations
+
+    return destinations(db, game.character(db, a))
+
+
+@app.post("/fast-travel")
+def fast_travel(body: FastTravelInput, a=Depends(current_account), db=Depends(get_db)):
+    from .fast_travel import travel
+
+    c = game.character(db, a)
+    travel(db, c, body.destination)
+    return game.snapshot(db, c)
+
+
+@app.get("/auctions/{auction_id}")
+def auction_details(auction_id: int, a=Depends(current_account), db=Depends(get_db)):
+    from .auctions import detail
+
+    if not db.scalar(select(Character.id).where(Character.account_id == a.id)):
+        game.fail("Crie seu personagem primeiro", 404)
+    return detail(db, auction_id)
+
+
+from .admin import router as admin_router
+
+app.include_router(admin_router)
