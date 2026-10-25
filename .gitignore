@@ -7,3 +7,9 @@ __pycache__/
 node_modules/
 dist/
 *.log
+.godot/
+*.apk
+*.aab
+*.exe
+*.pck
+exports/

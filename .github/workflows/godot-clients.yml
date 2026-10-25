@@ -1,0 +1,48 @@
+name: Godot clients
+on:
+  workflow_dispatch:
+  pull_request:
+    paths: ['godot-client/**', '.github/workflows/godot-clients.yml']
+permissions:
+  contents: read
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.6.3
+          use-dotnet: false
+          include-templates: true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Android tools
+        run: sdkmanager 'platform-tools' 'platforms;android-36' 'build-tools;36.0.0'
+      - name: Configure development signing and SDK
+        run: |
+          keytool -genkeypair -keystore /tmp/dungeon-debug.keystore -alias androiddebugkey -storepass android -keypass android -dname 'CN=Dungeon Development,O=Dungeon,C=BR' -keyalg RSA -keysize 2048 -validity 10000
+          python3 - <<'PY'
+          import os,pathlib,json
+          p=pathlib.Path.home()/'.config/godot/editor_settings-4.6.tres'
+          p.parent.mkdir(parents=True,exist_ok=True)
+          values={'export/android/android_sdk_path':os.environ['ANDROID_HOME'],'export/android/java_sdk_path':os.environ['JAVA_HOME'],'export/android/debug_keystore':'/tmp/dungeon-debug.keystore','export/android/debug_keystore_user':'androiddebugkey','export/android/debug_keystore_pass':'android'}
+          p.write_text('[gd_resource type="EditorSettings" format=3]\n[resource]\n'+'\n'.join(k+' = '+json.dumps(v) for k,v in values.items()))
+          PY
+      - name: Import and export clients
+        env:
+          GODOT_ANDROID_KEYSTORE_DEBUG_PATH: /tmp/dungeon-debug.keystore
+          GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
+          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
+        run: |
+          mkdir -p exports
+          godot --headless --path godot-client --editor --quit
+          godot --headless --path godot-client --export-debug Windows ../exports/DungeonGame.exe
+          godot --headless --path godot-client --export-debug Android ../exports/DungeonGame.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dungeon-clients-development
+          path: exports/
