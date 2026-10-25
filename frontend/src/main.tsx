@@ -26,6 +26,9 @@ function App() {
       total: number;
       groups: Record<string, number>;
     }>({ count: 0, total: 0, groups: {} }),
+    [fastDestinations, setFastDestinations] = useState<
+      { id: string; name: string; danger_tier: number }[]
+    >([]),
     [lootFlash, setLootFlash] = useState(""),
     [tab, setTab] = useState(""),
     [fleePreview, setFleePreview] = useState<FleePreview | null>(null),
@@ -63,6 +66,7 @@ function App() {
       setNeedsCharacter(false);
       setRewards(await api("/rewards"));
       setRewardSummary(await api("/guild/rewards"));
+      setFastDestinations(await api("/fast-travel"));
     } catch (e) {
       const message = (e as Error).message;
       if (message.includes("Crie seu")) setNeedsCharacter(true);
@@ -117,6 +121,7 @@ function App() {
       if (r?.message) {
         setNotice(r.message);
         if (r?.rewards) setTab("guild");
+        if (r?.open_auctions) setTab("auction");
       } else if (r?.code) setNotice("Código Discord (5 minutos): " + r.code);
       else if (r?.status) {
         setFx({
@@ -650,6 +655,7 @@ function App() {
                         </div>
                         <span>
                           {i.name} ×{i.quantity}
+                          {i.protected ? " · protegido" : ""}
                           <small>
                             {i.kind === "weapon"
                               ? "ARMA · FORÇA +3"
@@ -673,6 +679,28 @@ function App() {
                     ))}
                   </div>
                 </>
+              )}
+              {tab === "map" && (
+                <div className="fast-travel">
+                  <h3>Viagem rápida · locais visitados</h3>
+                  <p>
+                    Combate e expedições ativas impedem viagem. Instâncias
+                    temporárias não são destinos.
+                  </p>
+                  {fastDestinations.map((d) => (
+                    <button
+                      key={d.id}
+                      disabled={
+                        busy || !!b || state.expedition?.status === "ACTIVE"
+                      }
+                      onClick={() =>
+                        action("/fast-travel", { destination: d.id })
+                      }
+                    >
+                      {d.name} · Perigo {d.danger_tier}
+                    </button>
+                  ))}
+                </div>
               )}
               {tab === "map" && (
                 <>

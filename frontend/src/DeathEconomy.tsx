@@ -186,6 +186,15 @@ type Auction = {
   name: string;
   quantity: number;
   description: string;
+  accepts_bids: boolean;
+  protected: boolean;
+  kind: string;
+  attributes: { power: number };
+  origin: string;
+  death_event_id: number;
+  next_bid: string;
+  minimum_increment: string;
+  proceeds_destination: string;
   opening_price: string;
   highest_bid: string;
   highest_bidder_id: number | null;
@@ -203,6 +212,19 @@ export function AuctionHouse({
 }) {
   const [auctions, setAuctions] = useState<Auction[]>([]);
   const [offset, setOffset] = useState(0);
+  const [details, setDetails] = useState<
+    Record<
+      number,
+      {
+        bids: {
+          id: number;
+          bidder_id: number;
+          amount: string;
+          created_at: string;
+        }[];
+      }
+    >
+  >({});
   const [error, setError] = useState("");
   const [bids, setBids] = useState<Record<number, string>>({});
   useEffect(() => {
@@ -256,14 +278,53 @@ export function AuctionHouse({
               : BigInt(a.opening_price);
           const amount = bids[a.id] ?? minimum.toString();
           const valid = /^[0-9]+$/.test(amount) && BigInt(amount) >= minimum;
-          const open =
-            a.status === "OPEN" && Date.parse(a.ends_at) > Date.now();
+          const open = a.accepts_bids;
           return (
             <article className="auction-card" key={a.id}>
               <h3>
                 {a.name} ×{a.quantity} <small>#{a.id}</small>
               </h3>
               <p>{a.description}</p>
+              <p>
+                Tipo: {a.kind} · Poder: {a.attributes?.power} · Origem: morte #
+                {a.death_event_id}
+              </p>
+              <p>
+                Próximo lance: {a.next_bid} · Incremento mínimo:{" "}
+                {a.minimum_increment} · Destino: {a.proceeds_destination}
+              </p>
+              <p>Entrega: mesmo item/stack, desequipado, ao vencedor.</p>
+              {a.protected && (
+                <p className="debt">
+                  Item protegido: negociação suspensa para recuperação
+                  administrativa individual.
+                </p>
+              )}
+              <button
+                className="secondary"
+                disabled={busy}
+                onClick={() => {
+                  void api("/auctions/" + a.id)
+                    .then((d) => setDetails({ ...details, [a.id]: d }))
+                    .catch((e) => setError(e.message));
+                }}
+              >
+                Detalhes e histórico
+              </button>
+              {details[a.id] && (
+                <ul>
+                  {details[a.id].bids.length ? (
+                    details[a.id].bids.map((b) => (
+                      <li key={b.id}>
+                        Jogador #{b.bidder_id}: {b.amount} moedas ·{" "}
+                        {new Date(b.created_at).toLocaleString()}
+                      </li>
+                    ))
+                  ) : (
+                    <li>Nenhum lance registrado.</li>
+                  )}
+                </ul>
+              )}
               <p>
                 Inicial: {a.opening_price} · Maior lance: {a.highest_bid}
                 {a.highest_bidder_id === state.character.id

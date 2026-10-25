@@ -10,6 +10,8 @@ export type Item = {
   stackable: boolean;
   max_stack_size: number;
   description: string;
+  definition: string;
+  protected: boolean;
 };
 export type Battle = {
   id: number;

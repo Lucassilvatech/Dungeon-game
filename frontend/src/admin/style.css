@@ -1,0 +1,233 @@
+:root {
+  font:
+    15px/1.55 system-ui,
+    sans-serif;
+  color: #e0e7df;
+  background: #101b21;
+  color-scheme: dark;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+button {
+  background: #d7b97b;
+  color: #172126;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 650;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+button.secondary {
+  background: transparent;
+  border-color: #6a797b;
+  color: #d9e4de;
+}
+input,
+textarea,
+select {
+  display: block;
+  width: 100%;
+  background: #15262d;
+  border: 1px solid #617678;
+  border-radius: 4px;
+  padding: 10px;
+  color: #f0f3e9;
+}
+label {
+  display: block;
+  margin: 12px 0;
+}
+label small {
+  color: #afbdba;
+}
+a {
+  color: #d7b97b;
+}
+h1,
+h2,
+h3 {
+  font-weight: 550;
+  color: #f1deaa;
+}
+h1 {
+  font-size: 23px;
+}
+h1 small {
+  display: block;
+  font-size: 15px;
+  color: #b3c4bd;
+}
+.admin-shell {
+  display: grid;
+  grid-template-columns: 235px minmax(0, 1fr);
+  min-height: 100vh;
+}
+aside {
+  background: #172930;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+aside nav {
+  display: grid;
+  gap: 6px;
+}
+aside nav button {
+  background: transparent;
+  color: #c9d7d0;
+  text-align: left;
+}
+aside nav button.selected {
+  background: #d7b97b;
+  color: #172126;
+}
+main {
+  padding: 28px;
+  min-width: 0;
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+}
+.notice {
+  padding: 10px 0;
+  color: #e7c28b;
+  white-space: pre-wrap;
+}
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+  gap: 12px;
+}
+.metrics article,
+.diagnostic,
+.operation {
+  padding: 18px;
+  border: 1px solid #40565d;
+  background: #192b32;
+  border-radius: 6px;
+}
+.metrics span {
+  display: block;
+  color: #aabfb8;
+}
+.metrics strong {
+  display: block;
+  font-size: 23px;
+  overflow-wrap: anywhere;
+}
+.error {
+  border-color: #d66c60 !important;
+}
+.table-scroll {
+  width: 100%;
+  overflow: auto;
+  margin: 16px 0;
+}
+table {
+  border-collapse: collapse;
+  min-width: 100%;
+  font-size: 14px;
+}
+th,
+td {
+  text-align: left;
+  border-bottom: 1px solid #3d5359;
+  padding: 11px;
+  vertical-align: top;
+  max-width: 360px;
+  overflow-wrap: anywhere;
+}
+th {
+  color: #dfc799;
+}
+pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #0e1e25;
+  padding: 14px;
+  max-height: 340px;
+  overflow: auto;
+}
+.operation {
+  max-width: 850px;
+  margin-top: 28px;
+}
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0;
+}
+.modal {
+  position: fixed;
+  inset: 0;
+  background: #071117cc;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  z-index: 10;
+}
+.modal > section {
+  background: #1a2f36;
+  border: 1px solid #b89d64;
+  border-radius: 8px;
+  padding: 26px;
+  max-width: 780px;
+  width: 100%;
+  max-height: 92vh;
+  overflow: auto;
+}
+.modal button {
+  margin-right: 12px;
+  margin-top: 10px;
+}
+.login {
+  max-width: 620px;
+  margin: 7vh auto;
+}
+.login form {
+  padding: 24px;
+  border: 1px solid #40565d;
+  border-radius: 6px;
+}
+.diagnostic {
+  margin: 12px 0;
+}
+@media (max-width: 800px) {
+  .admin-shell {
+    grid-template-columns: 1fr;
+  }
+  aside {
+    padding: 16px;
+  }
+  aside nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  main {
+    padding: 16px;
+  }
+  header {
+    flex-wrap: wrap;
+  }
+  .pagination {
+    flex-wrap: wrap;
+  }
+}
