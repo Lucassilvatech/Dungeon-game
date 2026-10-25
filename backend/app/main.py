@@ -19,7 +19,7 @@ from .security import (
 from .config import settings
 from . import game
 
-app = FastAPI(title="Tower RPG", version="0.3.0")
+app = FastAPI(title="Tower RPG", version="0.4.0")
 
 
 @app.exception_handler(IntegrityError)

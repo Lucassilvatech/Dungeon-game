@@ -654,7 +654,12 @@ function App() {
                         key={r.id}
                         className={r.id === state.room.id ? "current" : ""}
                       >
-                        <small>{r.kind}</small>
+                        <small>
+                          {r.kind}
+                          {r.danger_tier > 0
+                            ? " · PERIGO " + r.danger_tier
+                            : ""}
+                        </small>
                         <strong>{r.name}</strong>
                         <span>
                           {r.completed

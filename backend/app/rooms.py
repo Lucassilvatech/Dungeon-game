@@ -244,6 +244,7 @@ def atlas(db, c):
                 "id": room.id,
                 "name": room.name,
                 "kind": room.kind,
+                "danger_tier": room.danger_tier,
                 "completed": state.completed,
                 "codex": state.codex,
             }

@@ -199,6 +199,15 @@ def flee(db, c, expedition_id, confirmation_token):
     if battle:
         battle.status = "fled"
         battle.claimed = True
+        event(
+            db,
+            "COMBAT_FINISHED",
+            c,
+            record.room_id,
+            battle=battle.id,
+            result="fled",
+            enemy_id=battle.enemy_id,
+        )
         if battle.enemy_id:
             enemy = db.get(EnemyInstance, battle.enemy_id)
             enemy.state = "ALIVE"
