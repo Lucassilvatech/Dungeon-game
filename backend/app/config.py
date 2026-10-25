@@ -1,3 +1,4 @@
+from typing import Literal
 from pydantic_settings import BaseSettings
 from pydantic import Field
 
@@ -15,6 +16,12 @@ class Settings(BaseSettings):
     skill_bonus: int = Field(default=5, ge=0)
     guard_bonus: int = Field(default=4, ge=0)
     wander_interval: float = Field(default=4, ge=1)
+    medical_fee_base: int = Field(default=100, ge=0)
+    respawn_hp_percent: int = Field(default=100, ge=1, le=100)
+    min_auction_start_price: int = Field(default=1, ge=1)
+    auction_duration_hours: float = Field(default=24, gt=0)
+    auction_proceeds_destination: Literal["treasury", "sink"] = "treasury"
+    auction_sweep_seconds: float = Field(default=30, ge=1)
     discord_service_key: str = ""
     model_config = {"env_file": ".env", "extra": "ignore"}
 

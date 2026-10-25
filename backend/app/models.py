@@ -14,6 +14,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 from .database import Base
+from .money import Gold
 
 
 class Account(Base):
@@ -40,7 +41,16 @@ class LinkCode(Base):
 
 class Character(Base):
     __tablename__ = "characters"
-    __table_args__ = (CheckConstraint("coins >= 0 AND hp >= 0 AND energy >= 0"),)
+    __table_args__ = (
+        CheckConstraint(
+            "coins >= -10000 AND hp >= 0 AND energy >= 0",
+            name="character_health_balance",
+        ),
+        CheckConstraint(
+            "level >= 1 AND unspent_attribute_points >= 0 AND attribute_point_debt >= 0",
+            name="character_progression",
+        ),
+    )
     id: Mapped[int] = mapped_column(primary_key=True)
     account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"), unique=True)
     name: Mapped[str] = mapped_column(String(30), unique=True)
@@ -53,7 +63,9 @@ class Character(Base):
     x: Mapped[int] = mapped_column(default=2)
     y: Mapped[int] = mapped_column(default=2)
     floor: Mapped[int] = mapped_column(default=1)
-    coins: Mapped[int] = mapped_column(default=0)
+    coins: Mapped[int] = mapped_column(Gold(), default=0)
+    unspent_attribute_points: Mapped[int] = mapped_column(default=0, server_default="0")
+    attribute_point_debt: Mapped[int] = mapped_column(default=0, server_default="0")
     room_id: Mapped[str] = mapped_column(
         ForeignKey("rooms.id"), default="city1", server_default="city1"
     )
@@ -66,6 +78,10 @@ class ItemDefinition(Base):
     name: Mapped[str] = mapped_column(String(60))
     kind: Mapped[str] = mapped_column(String(20))
     power: Mapped[int] = mapped_column(default=0)
+    base_value: Mapped[int | None] = mapped_column(Gold())
+    death_transferable: Mapped[bool] = mapped_column(
+        default=True, server_default="true"
+    )
     stackable: Mapped[bool] = mapped_column(default=False, server_default="false")
     max_stack_size: Mapped[int] = mapped_column(default=1, server_default="1")
     description: Mapped[str] = mapped_column(String(200), default="", server_default="")
@@ -73,9 +89,15 @@ class ItemDefinition(Base):
 
 class Item(Base):
     __tablename__ = "items"
-    __table_args__ = (CheckConstraint("quantity > 0"),)
+    __table_args__ = (
+        CheckConstraint("quantity > 0"),
+        CheckConstraint(
+            "(location != 'auction' OR (owner IS NULL AND NOT equipped)) AND (owner IS NOT NULL OR location = 'auction')",
+            name="item_custody",
+        ),
+    )
     id: Mapped[int] = mapped_column(primary_key=True)
-    owner: Mapped[int] = mapped_column(ForeignKey("characters.id"))
+    owner: Mapped[int | None] = mapped_column(ForeignKey("characters.id"))
     definition: Mapped[str] = mapped_column(ForeignKey("item_definitions.id"))
     quantity: Mapped[int] = mapped_column(default=1)
     location: Mapped[str] = mapped_column(String(20), default="inventory")
@@ -100,7 +122,7 @@ class Battle(Base):
     turn: Mapped[int] = mapped_column(default=0)
     status: Mapped[str] = mapped_column(String(20), default="active")
     room_id: Mapped[str | None] = mapped_column(ForeignKey("rooms.id"))
-    reward_amount: Mapped[int | None] = mapped_column()
+    reward_amount: Mapped[int | None] = mapped_column(Gold())
     claimed: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
@@ -108,7 +130,7 @@ class Treasury(Base):
     __tablename__ = "treasury"
     __table_args__ = (CheckConstraint("balance >= 0"),)
     id: Mapped[int] = mapped_column(primary_key=True)
-    balance: Mapped[int] = mapped_column()
+    balance: Mapped[int] = mapped_column(Gold())
 
 
 class Ledger(Base):
@@ -117,7 +139,7 @@ class Ledger(Base):
     reference: Mapped[str] = mapped_column(String(80), unique=True)
     source: Mapped[str] = mapped_column(String(50))
     destination: Mapped[str] = mapped_column(String(50))
-    amount: Mapped[int] = mapped_column()
+    amount: Mapped[int] = mapped_column(Gold())
     created: Mapped[datetime] = mapped_column(default=utc_now)
 
 
@@ -235,3 +257,58 @@ class Expedition(Base):
     started_at: Mapped[datetime] = mapped_column(default=utc_now)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime)
     result: Mapped[dict | None] = mapped_column(JSON)
+
+
+class DeathEvent(Base):
+    __tablename__ = "death_events"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id"), index=True)
+    expedition_id: Mapped[int] = mapped_column(
+        ForeignKey("expeditions.id"), unique=True
+    )
+    battle_id: Mapped[int] = mapped_column(ForeignKey("battles.id"), unique=True)
+    created_at: Mapped[datetime] = mapped_column(default=utc_now)
+    receipt: Mapped[dict] = mapped_column(JSON)
+    acknowledged: Mapped[bool] = mapped_column(default=False, server_default="false")
+
+
+class Auction(Base):
+    __tablename__ = "auctions"
+    __table_args__ = (
+        CheckConstraint("status IN ('OPEN','CLOSED','CANCELLED','SETTLED','UNSOLD')"),
+        CheckConstraint("opening_price > 0 AND highest_bid >= 0"),
+        UniqueConstraint("death_event_id", "item_id"),
+        Index(
+            "uq_auction_custody",
+            "item_id",
+            unique=True,
+            postgresql_where=text("status IN ('OPEN','CLOSED','UNSOLD')"),
+        ),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    item_id: Mapped[int] = mapped_column(ForeignKey("items.id"))
+    quantity: Mapped[int] = mapped_column()
+    death_event_id: Mapped[int] = mapped_column(ForeignKey("death_events.id"))
+    former_owner_id: Mapped[int] = mapped_column(ForeignKey("characters.id"))
+    opening_price: Mapped[int] = mapped_column(Gold())
+    highest_bid: Mapped[int] = mapped_column(Gold(), default=0)
+    highest_bidder_id: Mapped[int | None] = mapped_column(ForeignKey("characters.id"))
+    started_at: Mapped[datetime] = mapped_column(default=utc_now)
+    ends_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    settled_at: Mapped[datetime | None] = mapped_column(DateTime)
+    status: Mapped[str] = mapped_column(String(20), default="OPEN")
+    proceeds_destination: Mapped[str] = mapped_column(String(20), default="treasury")
+
+
+class AuctionBid(Base):
+    __tablename__ = "auction_bids"
+    __table_args__ = (
+        UniqueConstraint("bidder_id", "request_id"),
+        CheckConstraint("amount > 0"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    auction_id: Mapped[int] = mapped_column(ForeignKey("auctions.id"), index=True)
+    bidder_id: Mapped[int] = mapped_column(ForeignKey("characters.id"))
+    request_id: Mapped[str] = mapped_column(String(36))
+    amount: Mapped[int] = mapped_column(Gold())
+    created_at: Mapped[datetime] = mapped_column(default=utc_now)

@@ -30,6 +30,7 @@ def seed():
                         name=name,
                         kind=kind,
                         power=power,
+                        base_value=100 if key == "sword" else 10,
                         stackable=kind == "material",
                         max_stack_size=99 if kind == "material" else 1,
                         description=(
