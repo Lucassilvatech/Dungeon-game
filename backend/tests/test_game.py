@@ -20,7 +20,7 @@ def clean(monkeypatch):
     with Session.begin() as db:
         db.execute(
             text(
-                "TRUNCATE accounts, sessions, link_codes, characters, items, item_definitions, battles, treasury, ledger, world_events RESTART IDENTITY CASCADE"
+                "TRUNCATE admin_login_attempts, central_bank, monster_definitions, game_settings, accounts, sessions, link_codes, characters, items, item_definitions, battles, treasury, ledger, world_events RESTART IDENTITY CASCADE"
             )
         )
     seed()

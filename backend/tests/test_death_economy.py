@@ -33,6 +33,20 @@ def fresh(client, name="alice"):
     h = {"Authorization": "Bearer " + r.json()["token"]}
     r = client.post("/character", headers=h, json={"name": name})
     assert r.status_code == 201, r.text
+    with Session.begin() as db:
+        if not db.get(ItemDefinition, "iron_sword"):
+            db.add(
+                ItemDefinition(
+                    id="iron_sword",
+                    name="Espada de Ferro",
+                    kind="weapon",
+                    power=3,
+                    base_value=100,
+                )
+            )
+            db.flush()
+        cid = r.json()["character"]["id"]
+        db.add(Item(owner=cid, definition="iron_sword", quantity=1))
     return h
 
 
@@ -211,11 +225,15 @@ def test_death_loses_all_pending_preserves_claimed_levels_and_custody_ids(
     s = die(client, h, monkeypatch, level=10, xp=150, coins=500)
     assert s["death"]["xp_lost"] == 150 and s["death"]["pending_lost"] == 850
     assert s["character"]["level"] == 10 and s["character"]["coins"] == 400
-    assert len(s["inventory"]) == 1 and s["inventory"][0]["name"] == "Marca técnica"
+    assert len(s["inventory"]) == 2 and any(
+        i["name"] == "Marca técnica" for i in s["inventory"]
+    )
     with Session() as db:
         lost = db.scalars(select(Item).where(Item.location == "auction")).all()
         assert sorted((i.id, i.quantity) for i in lost) == sorted(
-            (i["id"], i["quantity"]) for i in before if i["kind"] != "system"
+            (i["id"], i["quantity"])
+            for i in before
+            if i["kind"] != "system" and i["definition"] != "sword"
         )
         assert all(i.owner is None and not i.equipped for i in lost)
         assert db.scalar(select(func.count()).select_from(Auction)) == 2
@@ -309,7 +327,7 @@ def test_death_failure_rolls_back_fee_pending_items_battle_and_event(
     )
     assert now["expedition"]["status"] == "ACTIVE" and now["battle"]["turn"] == 0
     assert (
-        len(now["inventory"]) == 1
+        len(now["inventory"]) == 2
         and client.get("/guild/rewards", headers=h).json()["total"] == 850
     )
     with Session() as db:
@@ -350,7 +368,7 @@ def test_common_room_death_has_no_new_penalties(client, monkeypatch):
         and now["character"]["coins"] == 50
         and now["character"]["xp"] == 29
     )
-    assert len(now["inventory"]) == 1
+    assert len(now["inventory"]) == 2
 
 
 def test_auction_prices_stacks_fallback_and_player_only(client, monkeypatch):
@@ -365,7 +383,7 @@ def test_auction_prices_stacks_fallback_and_player_only(client, monkeypatch):
     die(client, h, monkeypatch)
     listings = client.get("/auctions", headers=h).json()
     assert {a["name"]: a["opening_price"] for a in listings} == {
-        "Espada de aprendiz": "20",
+        "Espada de Ferro": "20",
         "Cristal da clareira": "40",
         "Relíquia sem preço": "3",
     }

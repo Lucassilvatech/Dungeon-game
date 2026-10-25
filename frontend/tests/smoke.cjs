@@ -348,10 +348,15 @@ const path = require("node:path"),
     assert.equal(dead.character.xp, 0);
     assert.equal(dead.character.level, beforeDeath.character.level);
     assert.equal(dead.death.pending_lost_exact, String(pendingBeforeDeath));
-    assert.equal(dead.inventory.length, 0);
+    assert.equal(dead.inventory.length, 1);
+    assert.equal(dead.inventory[0].definition, "sword");
+    assert(dead.inventory[0].protected);
     assert.deepEqual(
       dead.death.items.map((i) => [i.item_id, i.quantity]).sort(),
-      beforeDeath.inventory.map((i) => [i.id, i.quantity]).sort(),
+      beforeDeath.inventory
+        .filter((i) => !i.protected)
+        .map((i) => [i.id, i.quantity])
+        .sort(),
     );
     await page
       .getByRole("dialog")
@@ -371,7 +376,9 @@ const path = require("node:path"),
     assert.equal((await state()).death, null);
     await page.getByRole("button", { name: "⚖ Leilão", exact: true }).click();
     await page.locator(".auction-card").first().waitFor();
-    assert(await page.locator(".auction-card button").first().isDisabled());
+    assert(
+      await page.locator(".auction-card form button").first().isDisabled(),
+    );
     await shot("death-auctions");
 
     // A second real player earns the funds through combat and the receptionist.

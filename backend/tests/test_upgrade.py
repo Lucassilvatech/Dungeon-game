@@ -308,3 +308,130 @@ def test_v04_upgrade_preserves_stats_inventory_balances_and_has_no_retroactive_p
         with admin.connect() as c:
             c.execute(text(f"DROP DATABASE {name} WITH (FORCE)"))
         admin.dispose()
+
+
+def test_v05_starter_custody_bids_and_money_are_preserved_for_individual_recovery():
+    name = "tower_upgrade_" + uuid4().hex[:10]
+    admin = create_engine(engine.url, isolation_level="AUTOCOMMIT")
+    with admin.connect() as c:
+        c.execute(text(f"CREATE DATABASE {name}"))
+    url = engine.url.set(database=name)
+    dbengine = create_engine(url)
+    env = {**os.environ, "DATABASE_URL": url.render_as_string(hide_password=False)}
+    exe = str(Path(__import__("sys").executable).parent / "alembic")
+
+    def migrate(rev):
+        subprocess.run(
+            [exe, "upgrade", rev], env=env, check=True, capture_output=True, text=True
+        )
+
+    try:
+        migrate("039105b3ae1a")
+        with dbengine.begin() as db:
+            db.execute(
+                text(
+                    "INSERT INTO accounts(id,username,password) VALUES(91,'legacy_owner','unchanged'),(92,'legacy_bidder','unchanged')"
+                )
+            )
+            db.execute(
+                text(
+                    "INSERT INTO characters(id,account_id,name,level,xp,hp,energy,strength,defense,x,y,floor,coins,room_id) VALUES(91,91,'Owner',9,150,30,10,13,2,2,2,1,-85,'city1'),(92,92,'Buyer',2,5,35,10,6,2,2,2,1,950,'city1')"
+                )
+            )
+            db.execute(
+                text(
+                    "INSERT INTO item_definitions(id,name,kind,power,stackable,max_stack_size,description,death_transferable,base_value) VALUES('sword','Espada de Aprendiz','weapon',3,false,1,'Original',true,100),('other_sword','Espada comum','weapon',4,false,1,'Transferível',true,200)"
+                )
+            )
+            db.execute(
+                text(
+                    "INSERT INTO items(id,owner,definition,quantity,location,equipped) VALUES(91,NULL,'sword',1,'auction',false)"
+                )
+            )
+            db.execute(
+                text(
+                    "INSERT INTO rooms(id,floor_id,name,kind,seed,owner_id,data) VALUES('oldproc',1,'Histórico','PROCEDURAL',42,91,'{}')"
+                )
+            )
+            db.execute(
+                text(
+                    "INSERT INTO expeditions(id,character_id,room_id,seed,status,started_at,finished_at,result) VALUES(91,91,'oldproc',42,'FAILED',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,json_build_object('legacy',true))"
+                )
+            )
+            db.execute(
+                text(
+                    "INSERT INTO battles(id,character_id,monster,hp,turn,status,claimed,room_id,reward_amount) VALUES(91,91,'slime',20,5,'lost',false,'oldproc',0)"
+                )
+            )
+            db.execute(
+                text(
+                    "INSERT INTO death_events(id,character_id,expedition_id,battle_id,created_at,receipt,acknowledged) VALUES(91,91,91,91,CURRENT_TIMESTAMP,json_build_object('legacy',true),true)"
+                )
+            )
+            db.execute(
+                text(
+                    "INSERT INTO auctions(id,item_id,quantity,death_event_id,former_owner_id,opening_price,highest_bid,highest_bidder_id,started_at,ends_at,status,proceeds_destination) VALUES(91,91,1,91,91,20,50,92,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP+interval '1 day','OPEN','treasury')"
+                )
+            )
+            db.execute(
+                text(
+                    "INSERT INTO auction_bids(id,auction_id,bidder_id,request_id,amount,created_at) VALUES(91,91,92,'legacy-bid-unchanged',50,CURRENT_TIMESTAMP)"
+                )
+            )
+            db.execute(
+                text(
+                    "INSERT INTO ledger(id,reference,source,destination,amount,created) VALUES(91,'legacy-escrow','character:92','auction:91',50,CURRENT_TIMESTAMP)"
+                )
+            )
+        migrate("head")
+        subprocess.run(
+            [exe, "check"], env=env, check=True, capture_output=True, text=True
+        )
+        with dbengine.connect() as db:
+            assert tuple(
+                db.execute(
+                    text(
+                        "SELECT owner,location,quantity,equipped FROM items WHERE id=91"
+                    )
+                ).one()
+            ) == (None, "auction", 1, False)
+            assert tuple(
+                db.execute(
+                    text(
+                        "SELECT status,highest_bid,highest_bidder_id FROM auctions WHERE id=91"
+                    )
+                ).one()
+            ) == ("OPEN", 50, 92)
+            assert list(
+                db.execute(text("SELECT id,coins,level,xp FROM characters ORDER BY id"))
+            ) == [(91, -85, 9, 150), (92, 950, 2, 5)]
+            assert (
+                db.scalar(
+                    text(
+                        "SELECT death_transferable FROM item_definitions WHERE id='sword'"
+                    )
+                )
+                is False
+            )
+            assert (
+                db.scalar(
+                    text(
+                        "SELECT death_transferable FROM item_definitions WHERE id='other_sword'"
+                    )
+                )
+                is True
+            )
+            assert db.scalar(text("SELECT COUNT(*) FROM ledger")) == 1
+            assert db.scalar(text("SELECT balance FROM central_bank WHERE id=1")) == 0
+        with pytest.raises(Exception):
+            with dbengine.begin() as db:
+                db.execute(
+                    text(
+                        "UPDATE item_definitions SET death_transferable=true WHERE id='sword'"
+                    )
+                )
+    finally:
+        dbengine.dispose()
+        with admin.connect() as c:
+            c.execute(text(f"DROP DATABASE {name} WITH (FORCE)"))
+        admin.dispose()
