@@ -40,6 +40,13 @@ jobs:
             if (-not $before.AntivirusEnabled) { throw 'Defender is not enabled on this runner; no antivirus result can be claimed' }
             Update-MpSignature -ErrorAction Stop
             $state = Get-MpComputerStatus
+            $preferences = Get-MpPreference
+            $report.cloud_settings = [ordered]@{
+              MAPSReporting=[string]$preferences.MAPSReporting
+              SubmitSamplesConsent=[string]$preferences.SubmitSamplesConsent
+              DisableBlockAtFirstSeen=$preferences.DisableBlockAtFirstSeen
+              DisableRealtimeMonitoring=$preferences.DisableRealtimeMonitoring
+            }
             $report.engine_version = $state.AMEngineVersion
             $report.signature_version = $state.AntivirusSignatureVersion
             $report.signature_updated_at = [string]$state.AntivirusSignatureLastUpdated
@@ -65,6 +72,18 @@ jobs:
           } finally {
             $report.finished_at = (Get-Date).ToUniversalTime().ToString('o')
             $report | ConvertTo-Json -Depth 10 | Set-Content -Encoding utf8 (Join-Path $reportDir 'report.json')
+            @(
+              '## Windows build security investigation'
+              "- Result: $($report.status)"
+              "- Commit: $($report.commit)"
+              "- Engine: $($report.engine_version)"
+              "- Signature version: $($report.signature_version)"
+              "- Signature updated: $($report.signature_updated_at)"
+              "- Cloud configuration: $($report.cloud_settings | ConvertTo-Json -Compress)"
+              "- EXE SHA256: $($report.exe_sha256)"
+              '- User report: Trojan:Script/Wacatac.B!ml. No detection in CI does not override a local detection.'
+            ) | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
+            Write-Host "::notice title=Defender investigation::Result=$($report.status); Engine=$($report.engine_version); Signatures=$($report.signature_version); CloudMAPS=$($report.cloud_settings.MAPSReporting)"
           }
           if ($result -ne 0) { exit 1 }
       - name: Preserve scanner result even if detection or scanner unavailable

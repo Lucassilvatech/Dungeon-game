@@ -1,0 +1,42 @@
+{
+  "run_id": 40236131027,
+  "url": "https://github.com/Lucassilvatech/Dungeon-game/actions/runs/40236131027/job/121297994096",
+  "steps": [
+    {
+      "name": "Set up job",
+      "conclusion": "success",
+      "started-at": "2026-10-25T21:34:36Z",
+      "completed-at": "2026-10-25T21:34:36Z"
+    },
+    {
+      "name": "Run actions/checkout@v4",
+      "conclusion": "success",
+      "started-at": "2026-10-25T21:34:36Z",
+      "completed-at": "2026-10-25T21:34:43Z"
+    },
+    {
+      "name": "Verify origin and scan with current Microsoft Defender",
+      "conclusion": "success",
+      "started-at": "2026-10-25T21:34:43Z",
+      "completed-at": "2026-10-25T21:35:07Z"
+    },
+    {
+      "name": "Preserve scanner result even if detection or scanner unavailable",
+      "conclusion": "success",
+      "started-at": "2026-10-25T21:35:07Z",
+      "completed-at": "2026-10-25T21:35:08Z"
+    },
+    {
+      "name": "Post Run actions/checkout@v4",
+      "conclusion": "success",
+      "started-at": "2026-10-25T21:35:08Z",
+      "completed-at": "2026-10-25T21:35:10Z"
+    },
+    {
+      "name": "Complete job",
+      "conclusion": "success",
+      "started-at": "2026-10-25T21:35:10Z",
+      "completed-at": "2026-10-25T21:35:10Z"
+    }
+  ]
+}

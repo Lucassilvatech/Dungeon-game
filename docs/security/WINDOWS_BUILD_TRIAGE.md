@@ -2,7 +2,7 @@
 
 **Não recomendar execução nem liberação no antivírus enquanto a investigação estiver pendente.**
 
-O usuário relatou “Falha: vírus detectado” ao baixar o build Windows. Ainda não recebemos o nome da ameaça ou o produto responsável; não é correto concluir que seja falso positivo ou simplesmente SmartScreen. Não foi gerado outro executável para tentar contornar o bloqueio.
+O usuário relatou “Falha: vírus detectado” ao baixar o build Windows. A captura recebida confirma **Microsoft Defender: Trojan:Script/Wacatac.B!ml**, severidade Grave e status Em quarentena, afetando o ZIP baixado e o cache/download parcial do Opera GX. O alerta aponta o link publicado no commit 18ec8e5. Não é somente aviso do SmartScreen e não é correto concluir automaticamente que seja falso positivo. Não foi gerado outro executável para tentar contornar o bloqueio. A captura original contém caminhos locais do usuário e não foi publicada.
 
 Arquivo reportado: DungeonGame-Windows.zip (SHA256 cbb4dafb3eafb37e12895d9d3b685003f0eaefe68d77fb1aa7ba5525550fe090), contendo DungeonGame.exe (SHA256 c3475a6c1a12a6860559ebc8893104f2b98c05fc002a719b2404a07538eacbc9).
 
@@ -21,3 +21,7 @@ O workflow windows-build-scan.yml verifica os hashes, extrai o mesmo ZIP e pede 
 Se o nome da ameaça estiver disponível em Histórico de proteção do Windows, registrar produto, nome, versão/horário da assinatura e hash afetado. Com esses dados, encaminhar o caso ao fornecedor para análise de possível falso positivo. Assinatura de distribuição exigirá certificado legítimo; certificado autoassinado não comprova segurança nem substitui a investigação.
 
 Durante a investigação, o cliente web existente pode ser utilizado com o backend, sem executar este EXE.
+
+## Resultado independente inicial
+
+O workflow [40236131027](https://github.com/Lucassilvatech/Dungeon-game/actions/runs/40236131027) passou no Windows runner: verificação dos hashes, Microsoft Defender ativo, atualização das assinaturas e scan do ZIP/EXE concluídos com retorno zero e sem detecções nesse ambiente. O status da execução e da etapa de varredura foi consultado publicamente. O relatório detalhado fica no artefato windows-defender-report; não foram inventadas versões de assinatura ausentes dessa consulta. Isso **não** invalida a detecção local Wacatac.B!ml nem confirma falso positivo. A configuração de proteção em nuvem também será capturada para investigar diferenças de contexto, sem modificar/desativar proteção.

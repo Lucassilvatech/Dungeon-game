@@ -1,0 +1,33 @@
+Pedido de análise de possível falso positivo — Dungeon Game 0.6
+
+Produto reportado: Microsoft Defender Antivirus, Windows.
+Detecção confirmada por captura: Trojan:Script/Wacatac.B!ml.
+Estado na captura: em quarentena, durante download pelo Opera GX.
+Não foi solicitado que o usuário desative a proteção ou restaure o arquivo.
+
+Amostra: DungeonGame-Windows.zip
+Tamanho: 33532346 bytes
+SHA256: cbb4dafb3eafb37e12895d9d3b685003f0eaefe68d77fb1aa7ba5525550fe090
+URL original:
+https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/18ec8e5b404929bb367e401e72aecd34dc6d335c/builds/development/0.6.0-424f97a/DungeonGame-Windows.zip
+
+Executável dentro do ZIP: DungeonGame.exe
+SHA256: c3475a6c1a12a6860559ebc8893104f2b98c05fc002a719b2404a07538eacbc9
+Código-fonte: https://github.com/Lucassilvatech/Dungeon-game/tree/424f97a70b1940d3119b87820d2cb08838c7362f/godot-client
+Motor/template: Godot 4.6.3 Standard oficial, Windows debug x86-64.
+SHA512 do arquivo de templates conferido com manifesto oficial.
+Seções de código/dados do motor idênticas ao template; recursos e pacote do jogo adicionados pelo exportador.
+O executável não tem assinatura Authenticode.
+
+Análise independente:
+https://github.com/Lucassilvatech/Dungeon-game/actions/runs/40236131027
+Mesmo ZIP/EXE, hashes conferidos, Defender ativo com assinaturas atualizadas, scan concluído com retorno zero e sem detecções nesse ambiente.
+Não é uma confirmação de falso positivo: a detecção local permanece pendente de análise do fornecedor.
+
+Solicitação: revisar a classificação da amostra/hash/URL e informar se é falso positivo ou qual conteúdo motivou a detecção.
+Não há senhas, tokens de usuário ou chaves privadas de produção no arquivo publicado.
+Não incluir na submissão caminhos locais/nome de usuário presentes na captura recebida.
+
+Canal oficial para o responsável enviar à Microsoft:
+https://www.microsoft.com/en-us/wdsi/filesubmission
+Este documento é um caso preparado; não afirma que a submissão ao fornecedor foi realizada.
