@@ -27,3 +27,10 @@ Regras atuais detalhadas em FIRST_FLOOR.md. `layouts.py` produz os novos mapas; 
 `environment.ts` desenha pisos, paredes, móveis e objetos originais; `Map.tsx` mantém atores por ID, remove mortos após animação e interpola wandering recebido. `sprites.ts` agora inclui frames válidos de morte e o batedor. O sprite mede 16×24, escala 1.5, câmera zoom 1 e pixelArt/roundPixels, com bounds de salas grandes e acompanhamento suave. O fundo não é redesenhado a cada frame; partículas/luzes e NPCs sociais são limitados à sala atual.
 
 Os comportamentos legados de boss/desbloqueio permanecem para compatibilidade de dados, sem desenvolvimento de outro andar nesta etapa. A UI e o conteúdo novo se concentram no primeiro andar.
+
+
+## Compromisso de expedição — 0.4
+
+`expeditions.py` centraliza ACTIVE/COMPLETED/FLED/FAILED, retomada, guardas de saída, prévia e fuga. As rotas de exploração/viagem chamam a guarda; combate sincroniza conclusão ao matar o último inimigo. Nenhuma lógica econômica foi duplicada: a fuga altera Battle.reward_amount e a Guilda continua pagando pelos mesmos registros e ledger. O resultado persiste os ajustes e o evento EXPEDITION_FLED. Fuga durante combate emite também COMBAT_FINISHED com resultado fled. Chaves de idempotência e locks/índice parcial protegem concorrência.
+
+`danger.py` contém o perfil de região e a escala; Room.danger_tier é a configuração autoritativa. `ExpeditionPanel.tsx` apresenta restante, conclusão e confirmação com valores do servidor. As restrições visuais espelham as guardas, mas chamadas diretas da API continuam validadas. A migração 904ca715f282 adota aventuras existentes sem penalidade retroativa e não apaga dados.

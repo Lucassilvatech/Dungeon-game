@@ -70,3 +70,14 @@ O smoke Chromium agora percorre cidade/Guilda/treino/sala comum, confirma combat
 Dimensões/densidades/temas ficam em layouts.py. Alterações em conteúdo persistido existente exigem migração; o seed não sobrescreve mapas nem renova Tesouro. `DAMAGE_MIN`, `DAMAGE_MAX`, `SKILL_BONUS`, `GUARD_BONUS` e `WANDER_INTERVAL` podem ser configurados no ambiente. Nenhum segredo deve ser commitado.
 
 Validação da 0.3: **34 testes passaram**, com um aviso de depreciação do TestClient; `alembic check` sem divergências. TypeScript/Vite e imagens Docker compilaram. O Chromium confirmou cidade/Guilda/treino, layout mobile, quatro turnos contra slime, desaparecimento/rejeição de morto, inventário, resgate e reconexão, dois temas procedurais e wandering. Após `compose down`/`up` sem apagar volumes, personagens, stacks/definições, inimigos mortos, combates, ledger, descobertas, raids e Tesouro permaneceram idênticos.
+
+
+## Expedições comprometidas — 0.4
+
+A suite usa os mesmos comandos e PostgreSQL descartável. Novas verificações: nova aventura/saída/atalhos bloqueados enquanto houver inimigos, conclusão/liberação, prévia/confirmacao/staleness, fuga global 300→150, arredondamento de ímpares no total, carteira/itens/nível intactos, ganho de nível preservado, F5/login/reconexão, fuga e criação concorrentes, rollback completo, resgate reduzido inclusive individual, combate interrompido e derrota sem fuga implícita, liberdade das salas comuns e tiers independentes do jogador. Outro teste cria banco da 0.3 com procedural ativa, migra e verifica XP/carteira/baixa/pendência preservados.
+
+O smoke Chromium mantém o trajeto cidade/Guilda/treino e agora verifica a expedição ativa, bloqueio da API/saída, F5, morte parcial, prévia com XP real, cancelar/confirmar fuga, retorno à cidade, preservação de itens/carteira/nível e nova expedição após FLED. O caminho de conclusão completa é coberto por integração no PostgreSQL. Screenshots de confirmação e resultado ficam em docs/screenshots.
+
+Nunca use os testes contra o volume do jogo. O reinício operacional pode usar compose down/up sem -v e comparar dados persistidos, incluindo Expedition, resultados de fuga e danger_tier. Andares superiores e combate coletivo continuam fora desta entrega.
+
+Validação final da 0.4: **58 testes passaram**, com um aviso de depreciação de TestClient. O teste direcionado de fuga durante combate também confirmou o evento COMBAT_FINISHED/fled após o ajuste de auditoria. `alembic check` não encontrou divergências; TypeScript/Vite e imagens Docker compilaram. O Chromium passou pelo fluxo real de bloqueio, F5, prévia/cancelamento/fuga e preservação de nível, carteira e itens. O ciclo operacional de down/up sem -v preservou Expedition/status/resultados, tiers, inventário, inimigos, combates, ledger e personagens. A conexão externa Discord permanece fora da validação por falta de credenciais.

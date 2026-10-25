@@ -25,3 +25,8 @@ Treinamento não concede XP, loot nem moedas. Masmorra secreta congela o direito
 ## Primeiro andar 0.3
 
 Pagamento centralizado na recepcionista, não na antiga curadora das salas. O resgate em lote é transacional e auditado por ledger; falta de orçamento não consome registros. Loot material usa stacks e morte por instância é única. Inimigos não reaparecem por recarregar/reconectar. Novas expedições são o mecanismo explícito de conteúdo repetível; treino não concede moedas, XP ou itens. Nenhuma política monetária ou emissão adicional foi implementada.
+
+
+## Penalidade de fuga — 0.4
+
+A fuga reduz direitos monetários ainda não resgatados, não moeda em circulação: restante=floor(total/2), perda=ceil(total/2). Todos os registros pendentes do personagem são considerados, sem filtrar pela expedição. A alocação do restante segue Battle.id; valores ajustados são a única fonte para resgate. Carteira e Tesouro permanecem intactos no ato da fuga. Ajustes antes/depois ficam no resultado da expedição; o ledger de transferências permanece exclusivo de pagamentos reais. XP atual é zerado sem reduzir nível ou itens. Nenhum banco/economia paralelo foi criado.
