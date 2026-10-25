@@ -1,0 +1,12 @@
+# Segurança e auditoria administrativa
+
+- Sessões ADM opacas e independentes das sessões do jogo; somente digest no banco, validade de 1h e logout com revogação. Token normal ou chave de serviço Discord não concede administração.
+- Papel/permissões verificados no FastAPI em todas as consultas e ações. Role bootstrap/revogação é comando local explícito, sem conta/senha padrão; revoga sessões ADM da conta e grava WorldEvent ADMIN_ROLE_CHANGED. Essas alterações de papel podem ser consultadas em Mundo/eventos, além da auditoria de operações no módulo próprio.
+- Login limitado por conta e origem em janela de 10 minutos (5 falhas), com contadores persistidos mesmo quando login é rejeitado. Resposta genérica não revela existência/papel. Na configuração Docker local o IP observado pode ser o do proxy; antes de uso público configurar proxy confiável/rate limiting de borda para distinguir origens sem aceitar X-Forwarded-For arbitrário.
+- Cabeçalho Authorization Bearer, sem cookies de autenticação administrativa. Chamadas usam JSON; não se depende de ocultar botões. O navegador armazena token na sessão da aba, separado do jogo; senhas nunca ficam no estado persistido.
+- Operações são allowlisted, com campos/valores validados, motivo, prévia imutável por UUID, confirmação explícita e prazo 5min. Estado alterado exige nova prévia. Gasto oficial e item protegido são validados no serviço, não pelo navegador.
+- Logs estruturados de operação confirmada incluem somente identificadores/ação/entidade. Senhas, tokens e hashes de senha não são retornados nas consultas ou auditoria. Antes/depois não contêm Account.password ou credenciais.
+- Não há endpoint de SQL arbitrário nem função de excluir ledger. Nenhum papel administrativo altera automaticamente a progressão ou carteira do próprio personagem. Recursos de teste são isolados.
+- Compose mantém bind 127.0.0.1; publicar acesso externo exige TLS e gestão de credenciais/backup. Sem conexão de produção ou dispositivo remoto presumidos.
+
+Auditoria das mutações é AdminOperation, correlacionada ao ledger/eventos por UUID. Diagnósticos de recuperação são somente leitura até confirmação. Auditoria preserva a diferença entre resgate de custódia e reposição autorizada, incluindo o comprador legítimo protegido de retirada silenciosa. As contas/papéis temporários do teste do navegador são revogados em finally; não fica um administrador de teste ativo.

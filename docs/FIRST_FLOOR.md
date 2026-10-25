@@ -124,7 +124,7 @@ O resgate envia à city1, restaura energia 10 e `max(1, floor(HP_max × RESPAWN_
 
 ## Custódia e leilão exclusivo de espólios
 
-Itens físicos de `location=inventory` e definição `death_transferable=true` saem da mochila, ficam `owner=NULL`, `location=auction`, `equipped=false`. Nenhum item é apagado ou duplicado; quantidade e ID permanecem. Não há flags técnicas disfarçadas de item no catálogo atual; futuras definições estruturais podem marcar false. Outros locais de custódia não são confiscados.
+Itens físicos de `location=inventory` e definição `death_transferable=true` (a Espada de Aprendiz `sword` é permanentemente excluída na 0.6) saem da mochila, ficam `owner=NULL`, `location=auction`, `equipped=false`. Nenhum item é apagado ou duplicado; quantidade e ID permanecem. Não há flags técnicas disfarçadas de item no catálogo atual; futuras definições estruturais podem marcar false. Outros locais de custódia não são confiscados.
 
 Uma Auction por item/stack e morte guarda antigo dono, quantidade original, preço inicial, maior lance/licitante, início/fim, destino e estado. Um índice parcial impede duas custódias abertas do mesmo item; seu histórico permite nova morte após compra legítima. O lance inicial arredonda para cima os 20% do valor total: `(base × quantidade + 4) // 5`, mínimo configurado. Sem valor positivo confiável, usa o mínimo. Catálogo inicial provisório: espada 100, cristal 10/unidade.
 
@@ -139,3 +139,14 @@ O backend resolve vencidos em lotes até 100 a cada AUCTION_SWEEP_SECONDS, no st
 Os atributos existentes são strength (Força) e defense (Defesa). Novos níveis concedem 1 ponto, acumulável, depois de quitar attribute_point_debt. Não existe mais +1 de força automático; HP máximo e curva nível×50 continuam anteriores. Personagens legados preservam os valores atuais, com zero pontos retroativos, pois sua força já continha ganhos automáticos. A política evita um segundo bônus para os mesmos níveis.
 
 POST /character/attributes aceita lote não negativo, inteiro, somente desses atributos e UUID. Soma deve ser positiva e não superar os pontos livres; o resultado não pode estourar o armazenamento do atributo. O lock do personagem e chave do evento serializam gastos concorrentes/replay. Sem redução manual ou respec. Eventos ATTRIBUTE_POINT_GAINED e ATTRIBUTE_POINT_SPENT auditam ganhos, quitação de dívida e escolhas.
+
+
+## Consolidação e cliente Godot — 0.6
+
+A regra de morte/fuga permanece, com exceção explícita: a Espada de Aprendiz inicial sobrevive à morte. Proteção é por ID de definição sword e não por nome/tipo de arma. Outras espadas continuam elegíveis; materiais/stacks e equipamentos físicos não protegidos vão ao leilão. Não há devolução automática de todo histórico: recuperação/reembolso/reposição exigem revisão administrativa individual (AUCTIONS.md).
+
+Exploração acrescenta viagem rápida a locais permanentes visitados, sem combate/ACTIVE, segredos ou procedurais como destinos. O Salão de Leilões fica ligado à Guilda e tem seu próprio leiloeiro; recompensas continuam exclusivamente com a recepcionista. A duração dos anúncios continua 24h configuráveis; detalhes/histórico/entrega/preços são dados reais do backend.
+
+Godot joga o mesmo primeiro andar por API: mapa/teclado/toque, combate, inventário, pontos, NPCs, expedição/fuga/morte, leilões e reconexão. Web legada e Discord preservados. Exportações de desenvolvimento Windows/Android foram geradas; hardware Windows/Android e experiência visual móvel ainda precisam de validação nativa antes de descontinuar Phaser.
+
+Administração não é um poder do personagem: operações financeiras/oficiais usam contexto separado, permissões, antes/depois, UUID e justificativa. Taxa/recompensa e perfil regional podem ser ajustados de modo auditado; saldo já recebido, direito já registrado, leilão existente e inimigo já instanciado não são recalculados retroativamente. Sem segundo andar, combate coletivo ou habilidades novas.

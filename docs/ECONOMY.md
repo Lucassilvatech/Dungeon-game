@@ -1,3 +1,5 @@
+> Nota de versão 0.6: o mercado geral descrito abaixo continua proposto. O Banco Central manual, créditos administrativos isolados e o leilão exclusivo de espólios já foram implementados; estado atual e contabilidade estão em [CENTRAL_BANK.md](CENTRAL_BANK.md), [ACCOUNTING.md](ACCOUNTING.md) e [AUCTIONS.md](AUCTIONS.md). Não confundir esse planejamento anterior de mercado com a implementação atual.
+
 # Economia
 
 ## Regras definidas

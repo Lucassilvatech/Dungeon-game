@@ -1,6 +1,6 @@
 # Arquitetura
 
-Monorepo com três processos independentes e PostgreSQL 17. `frontend/src/Map.tsx` renderiza mapa e captura entrada; React apresenta menus e chama `/api`. Vite faz proxy no desenvolvimento; Nginx faz proxy na imagem de produção. Nenhum cliente envia dano, moedas ou atributos calculados.
+Monorepo com backend FastAPI, PostgreSQL 17, clientes Godot/web/Discord e entrada web independente para a Central ADM. `frontend/src/Map.tsx` renderiza mapa e captura entrada; React apresenta menus e chama `/api`. Vite faz proxy no desenvolvimento; Nginx faz proxy na imagem de produção. Nenhum cliente envia dano, moedas ou atributos calculados.
 
 `backend/app/main.py`: contratos HTTP e validação Pydantic. `security.py`: PBKDF2 com salt, sessões opacas com hash no banco e validade de sete dias. `game.py`: regras transacionais. `world.py`: mapa autoritativo. `models.py`: persistência SQLAlchemy; migrações Alembic congelam o schema. `seed.py`: catálogo e emissão inicial auditada, idempotente sob lock PostgreSQL.
 
@@ -51,3 +51,18 @@ O lifespan da API inicia sweeper assíncrono, que executa transações independe
 Migração aditiva 039105b3ae1a conserva todos os valores e IDs existentes, altera moedas/recompensas/ledger/Tesouro de INTEGER para NUMERIC, relaxa a carteira até −10.000, permite custódia sem dono e cria auditoria/leilões/atributos. Migração não concede pontos retroativos nem aplica mortes retroativas. Downgrade recusa dados que não cabem no modelo anterior, evitando apagar mortes, dívida, custódia ou pontos; atualização normal usa upgrade e volume preservado.
 
 UI `DeathEconomy.tsx`: resumo persistente com perdas reais, formulário de distribuição em lote, dívida visível e leilão paginado (100 por página). A API oferece GET /auctions, POST /auctions/{id}/bids, POST /auctions/{id}/settle, POST /character/attributes e POST /deaths/{id}/acknowledge. Discord segue compartilhando o estado do mesmo backend; não foram adicionados comandos de leilão/morte nem acesso a banco pelo bot.
+
+
+## Migração incremental 0.6
+
+Godot é o novo cliente principal; React/Phaser permanece durante a validação de plataforma. `godot-client/scripts/api.gd` comunica por HTTP com sessão persistida; `main.gd` coordena menus/comandos e reconexão; `map_view.gd` renderiza pixel art original/câmera/entrada. Presença usa o WebSocket existente. Não há cálculo econômico/combate ou acesso SQL no cliente. Android tem controles maiores e presets; exportações Windows/Android são separadas do teste de execução em Linux.
+
+`fast_travel.py` consulta RoomState de locais permanentes visitados e preserva as guardas de expedição/combate. Nova sala auction_hall e conexão são criadas pelo seed idempotente, sem substituir mapas/saldos existentes. Interact diferencia recepcionista e leiloeiro pelo ID/serviço.
+
+`admin.py` declara rotas, `admin_security.py` sessões/permissões/rate limit, `admin_service.py` operações/locks/prévias/confirmação/auditoria e `admin_economy.py` contas oficiais/métricas. AdminRole não altera Account ou sua carteira. AdminSession é independente de AuthSession; AdminOperation é correlacionada ao ledger e eventos por UUID. AdminTestCredit é isolado de Character.coins. `admin_cli.py` concede/revoga papel em conta existente, com evento auditado e revogação de sessões.
+
+A Central web tem entrada `frontend/admin.html` e bundle `src/admin`, servido em /admin pelo Nginx; compartilha dependências de build, mas não a sessão do jogo. Respostas são vinculadas ao módulo/requisição, impedindo renderizar dados antigos de outro módulo. Sessão Bearer não usa cookies.
+
+CentralBank(id=1) nasce com zero e integra o ledger existente; transferências não emitem, mint/burn são explícitos. Contabilidade e ordem dos locks estão em ACCOUNTING.md. Configuração administrativa é GameSetting com valores allowlisted. MonsterDefinition é persistente e aplicado somente a novas instâncias; EnemyInstance.xp_reward congela também o XP, preservando mortos e batalhas em andamento.
+
+Migração b3057d8109ee é aditiva: protege somente definição sword, cria os modelos ADM/econômicos e congela XP dos inimigos históricos pelos perfis anteriores. Não recupera itens nem reembolsa lances automaticamente. A constraint impede desproteger a espada inicial. Leilões de item protegido são suspensos logicamente até procedimento individual; nenhum original entregue a comprador é retirado silenciosamente.
