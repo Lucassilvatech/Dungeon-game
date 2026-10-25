@@ -3,7 +3,7 @@ import secrets
 from datetime import datetime, timedelta
 from typing import Literal
 from fastapi import FastAPI, Depends, Header, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from fastapi.responses import JSONResponse
@@ -19,7 +19,33 @@ from .security import (
 from .config import settings
 from . import game
 
-app = FastAPI(title="Tower RPG", version="0.4.0")
+from contextlib import asynccontextmanager
+import asyncio
+import os
+
+
+@asynccontextmanager
+async def lifespan(app):
+    # Deterministic integration tests exercise settle_due directly on their disposable DB.
+    from .auctions import sweeper
+
+    task = (
+        None
+        if os.getenv("TOWER_TEST_DATABASE") == "1"
+        else asyncio.create_task(sweeper())
+    )
+    try:
+        yield
+    finally:
+        if task:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+
+
+app = FastAPI(title="Tower RPG", version="0.5.0", lifespan=lifespan)
 
 
 @app.exception_handler(IntegrityError)
@@ -317,3 +343,77 @@ def flee_expedition(
     from .expeditions import flee
 
     return flee(db, game.character(db, a), expedition_id, body.confirmation_token)
+
+
+class AttributeInput(BaseModel):
+    model_config = {"extra": "forbid"}
+    strength: int = Field(default=0, ge=0, le=2147483647, strict=True)
+    defense: int = Field(default=0, ge=0, le=2147483647, strict=True)
+    request_id: UUID
+
+
+@app.post("/character/attributes")
+def allocate_attributes(
+    body: AttributeInput, a=Depends(current_account), db=Depends(get_db)
+):
+    from .attributes import allocate
+
+    return allocate(
+        db, game.character(db, a), body.strength, body.defense, str(body.request_id)
+    )
+
+
+@app.post("/deaths/{death_id}/acknowledge")
+def acknowledge_death(death_id: int, a=Depends(current_account), db=Depends(get_db)):
+    from .deaths import acknowledge
+
+    return acknowledge(db, game.character(db, a), death_id)
+
+
+class BidInput(BaseModel):
+    model_config = {"extra": "forbid"}
+    amount: str | int
+    request_id: UUID
+
+    @field_validator("amount", mode="before")
+    @classmethod
+    def whole_gold(cls, value):
+        if type(value) is int and value > 0:
+            return value
+        if (
+            isinstance(value, str)
+            and value.isascii()
+            and value.isdigit()
+            and int(value) > 0
+        ):
+            return int(value)
+        raise ValueError("Informe um lance inteiro positivo")
+
+
+@app.get("/auctions")
+def auctions(offset: int = 0, a=Depends(current_account), db=Depends(get_db)):
+    from .auctions import listing
+
+    if offset < 0:
+        game.fail("Página inválida", 422)
+    if not db.scalar(select(Character.id).where(Character.account_id == a.id)):
+        game.fail("Crie seu personagem primeiro", 404)
+    return listing(db, offset)
+
+
+@app.post("/auctions/{auction_id}/bids")
+def auction_bid(
+    auction_id: int, body: BidInput, a=Depends(current_account), db=Depends(get_db)
+):
+    from .auctions import bid
+
+    return bid(db, a, auction_id, int(body.amount), str(body.request_id))
+
+
+@app.post("/auctions/{auction_id}/settle")
+def settle_auction(auction_id: int, a=Depends(current_account), db=Depends(get_db)):
+    from .auctions import settle
+
+    if not db.scalar(select(Character.id).where(Character.account_id == a.id)):
+        game.fail("Crie seu personagem primeiro", 404)
+    return settle(db, auction_id)

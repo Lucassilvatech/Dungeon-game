@@ -60,7 +60,7 @@ def inventory(db, c):
     rows = db.execute(
         select(Item, ItemDefinition)
         .join(ItemDefinition, Item.definition == ItemDefinition.id)
-        .where(Item.owner == c.id)
+        .where(Item.owner == c.id, Item.location == "inventory")
     ).all()
     return [
         dict(
@@ -82,6 +82,15 @@ def snapshot(db, c, wander=False):
     from .expeditions import state as expedition_state
 
     expedition = expedition_state(db, c)
+    from .deaths import latest
+    from .models import Auction
+    from sqlalchemy import func
+
+    reserved = db.scalar(
+        select(func.coalesce(func.sum(Auction.highest_bid), 0)).where(
+            Auction.highest_bidder_id == c.id, Auction.status == "OPEN"
+        )
+    )
     b = active(db, c)
     enemies = instances(db, c, wander=wander)
     room, data = room_payload(db, c)
@@ -107,6 +116,8 @@ def snapshot(db, c, wander=False):
                 "xp",
                 "hp",
                 "energy",
+                "unspent_attribute_points",
+                "attribute_point_debt",
                 "strength",
                 "defense",
                 "coins",
@@ -116,6 +127,9 @@ def snapshot(db, c, wander=False):
                 "room_id",
             )
         },
+        "death": latest(db, c),
+        "coins_exact": str(c.coins),
+        "reserved_gold": str(int(reserved)),
         "inventory": inventory(db, c),
         "expedition": expedition,
         "battle": battle_data(b) if b else None,
@@ -216,6 +230,16 @@ def start_battle(db, c, monster):
     room = current(db, c)
     if room.kind in (RoomType.CITY, RoomType.GUILD):
         fail("Cidade e Guilda são zonas seguras")
+    if room.kind == RoomType.PROCEDURAL:
+        from .models import Expedition
+
+        expedition = db.scalar(
+            select(Expedition).where(
+                Expedition.room_id == room.id, Expedition.character_id == c.id
+            )
+        )
+        if not expedition or expedition.status != "ACTIVE":
+            fail("Expedição encerrada")
     e = target(db, c, monster)
     if not e:
         fail("Monstro inexistente", 404)
@@ -335,11 +359,9 @@ def action(db, c, battle_id, turn, action):
                 settings.boss_reward if e.species == "boss" else settings.monster_reward
             )
             c.xp += ENEMIES.get(e.species, ENEMIES["slime"])[4]
-        while c.xp >= c.level * 50:
-            c.xp -= c.level * 50
-            c.level += 1
-            c.strength += 1
-            c.hp = 30 + (c.level - 1) * 5
+        from .attributes import gain_levels
+
+        gain_levels(db, c)
         if not training and (not secret or first):
             event(
                 db,
@@ -400,13 +422,13 @@ def action(db, c, battle_id, turn, action):
                 result="lost",
                 enemy_id=e.id,
             )
-            if room.kind == RoomType.PROCEDURAL:
-                c.x = 2
-                c.y = 2  # Defeat cannot bypass the commitment by respawning elsewhere.
-            else:
+            from .deaths import resolve
+
+            death = resolve(db, c, b)
+            if death is None:
                 enter(db, c, db.get(Room, "city1"))
-            c.hp = 30 + (c.level - 1) * 5
-            c.energy = 10
+                c.hp = 30 + (c.level - 1) * 5
+                c.energy = 10
     db.flush()
     from .expeditions import sync
 
@@ -461,17 +483,11 @@ def pay(db, c, rows):
     if total < 0 or treasury.balance < total:
         fail("Tesouro sem orçamento; solicite depois")
     treasury.balance -= total
-    c.coins += total
     for b in rows:
         b.claimed = True
-        db.add(
-            Ledger(
-                reference=f"battle:{b.id}",
-                source="treasury",
-                destination=f"character:{c.id}",
-                amount=reward_value(b),
-            )
-        )
+        from .economy import credit_player_gold
+
+        credit_player_gold(db, c, reward_value(b), "treasury", f"battle:{b.id}")
         event(
             db,
             "GUILD_REWARD_CLAIMED",
