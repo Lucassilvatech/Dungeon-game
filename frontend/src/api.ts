@@ -1,3 +1,4 @@
+import type { DeathReceipt } from "./DeathEconomy";
 import type { Room } from "./types";
 export type Item = {
   id: number;
@@ -34,6 +35,9 @@ export type Enemy = {
   ai_state: string;
 };
 export type State = {
+  death: DeathReceipt | null;
+  coins_exact: string;
+  reserved_gold: string;
   expedition: {
     id: number;
     room_id: string;
@@ -62,6 +66,8 @@ export type State = {
     xp: number;
     hp: number;
     energy: number;
+    unspent_attribute_points: number;
+    attribute_point_debt: number;
     strength: number;
     defense: number;
     coins: number;

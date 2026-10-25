@@ -9,6 +9,7 @@ import {
 } from "./ExpeditionPanel";
 import { route } from "./pathfinding";
 import type { Peer, Target } from "./types";
+import { DeathSummary, AttributePanel, AuctionHouse } from "./DeathEconomy";
 import "./style.css";
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 function App() {
@@ -127,7 +128,7 @@ function App() {
           r.status === "won"
             ? "Vitória! Consulte suas recompensas na Guilda."
             : r.status === "lost"
-              ? "Tentativa encerrada. Você voltou à cidade com seus pertences."
+              ? "Tentativa encerrada. Consulte o resumo do resgate."
               : "Turno concluído.",
         );
       }
@@ -141,13 +142,13 @@ function App() {
   }
   const move = (dx: number, dy: number) =>
     void execute(async () => {
-      if (live.current?.battle) return;
+      if (live.current?.battle || live.current?.death) return;
       apply(await api("/move", { dx, dy }));
     });
   const target = (t: Target) =>
     void execute(async () => {
       const s = live.current;
-      if (!s || s.battle) return;
+      if (!s || s.battle || s.death) return;
       if (t.kind === "exit" && s.expedition?.status === "ACTIVE")
         throw Error(
           "Você ainda está em uma expedição. Derrote os inimigos restantes ou fuja da aventura.",
@@ -343,6 +344,17 @@ function App() {
               </strong>
             </div>
           </div>
+          {state.death && (
+            <DeathSummary
+              death={state.death}
+              busy={busy}
+              onReturn={() =>
+                action(
+                  "/deaths/" + state.death!.death_event_id + "/acknowledge",
+                )
+              }
+            />
+          )}
           <ExpeditionPanel
             state={state}
             busy={busy}
@@ -383,7 +395,13 @@ function App() {
                 <span>✦ {c.energy}/10</span>
                 <progress value={c.energy} max={10} />
               </div>
-              <span className="coins">◈ {c.coins}</span>
+              <span
+                className={"coins" + (c.coins < 0 ? " debt" : "")}
+                title="Pagamentos futuros da Guilda serão usados automaticamente para quitar sua dívida."
+              >
+                ◈ {state.coins_exact}
+                {c.coins < 0 && <small>Dívida médica ativa</small>}
+              </span>
               <small className="online">{peers.length + 1} NESTA SALA</small>
             </div>
             <div className="stage">
@@ -544,6 +562,7 @@ function App() {
               ["map", "⌘ Mapa"],
               ["exploration", "✧ Exploração"],
               ["guild", "⚑ Guilda"],
+              ["auction", "⚖ Leilão"],
               ["raid", "♧ Raid"],
             ].map(([id, label]) => (
               <button
@@ -583,8 +602,19 @@ function App() {
                     /{c.level * 50}
                   </p>
                   <p>
-                    Vida {c.hp} · Energia {c.energy} · Saldo {c.coins} moedas
+                    Vida {c.hp} · Energia {c.energy} · Saldo {state.coins_exact}{" "}
+                    moedas
                   </p>
+                  {c.coins < 0 && (
+                    <p className="debt">
+                      Dívida médica ativa. Pagamentos futuros da Guilda serão
+                      usados automaticamente para quitar sua dívida. Ao atingir
+                      −10.000, cada morte em Aventura causa perda de até 10
+                      níveis (mínimo 1).
+                    </p>
+                  )}
+                  <p>Ouro reservado em leilões: {state.reserved_gold}</p>
+                  <AttributePanel state={state} busy={busy} action={action} />
                   <button
                     disabled={busy}
                     onClick={() => action("/discord/code")}
@@ -793,6 +823,9 @@ function App() {
                     Praticar não concede recompensas.
                   </p>
                 </>
+              )}
+              {tab === "auction" && (
+                <AuctionHouse state={state} busy={busy} action={action} />
               )}
               {tab === "raid" && (
                 <>
