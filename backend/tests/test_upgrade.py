@@ -208,3 +208,103 @@ def test_existing_procedural_rooms_are_migrated_without_penalties():
         with admin.connect() as c:
             c.execute(text(f"DROP DATABASE {name} WITH (FORCE)"))
         admin.dispose()
+
+
+def test_v04_upgrade_preserves_stats_inventory_balances_and_has_no_retroactive_points():
+    name = "tower_upgrade_" + uuid4().hex[:10]
+    admin = create_engine(engine.url, isolation_level="AUTOCOMMIT")
+    with admin.connect() as c:
+        c.execute(text(f"CREATE DATABASE {name}"))
+    url = engine.url.set(database=name)
+    env = {**os.environ, "DATABASE_URL": url.render_as_string(hide_password=False)}
+    exe = str(Path(__import__("sys").executable).parent / "alembic")
+    dbengine = create_engine(url)
+    try:
+        subprocess.run(
+            [exe, "upgrade", "904ca715f282"],
+            env=env,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        with dbengine.begin() as db:
+            db.execute(
+                text(
+                    "INSERT INTO accounts(id,username,password) VALUES(91,'veteran','unchanged-hash')"
+                )
+            )
+            db.execute(
+                text(
+                    "INSERT INTO characters(id,account_id,name,level,xp,hp,energy,strength,defense,x,y,floor,coins,room_id) VALUES(91,91,'Veterano',37,150,21,7,41,5,4,5,1,12345,'city1')"
+                )
+            )
+            db.execute(
+                text(
+                    "INSERT INTO item_definitions(id,name,kind,power,stackable,max_stack_size,description) VALUES('sword','Espada','weapon',3,false,1,'preservada'),('unknown','Material','material',0,true,99,'legado')"
+                )
+            )
+            db.execute(
+                text(
+                    "INSERT INTO items(id,owner,definition,quantity,location,equipped) VALUES(91,91,'sword',1,'inventory',true),(92,91,'unknown',25,'inventory',false)"
+                )
+            )
+            db.execute(
+                text(
+                    "INSERT INTO battles(id,character_id,monster,hp,turn,status,claimed,room_id,reward_amount) VALUES(91,91,'slime',0,4,'won',false,'common_a',850)"
+                )
+            )
+        subprocess.run(
+            [exe, "upgrade", "head"],
+            env=env,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        subprocess.run(
+            [exe, "check"], env=env, check=True, capture_output=True, text=True
+        )
+        with dbengine.connect() as db:
+            assert tuple(
+                db.execute(
+                    text(
+                        "SELECT level,xp,hp,strength,defense,coins,unspent_attribute_points,attribute_point_debt FROM characters WHERE id=91"
+                    )
+                ).one()
+            ) == (37, 150, 21, 41, 5, 12345, 0, 0)
+            assert list(
+                db.execute(
+                    text("SELECT id,quantity,equipped,location FROM items ORDER BY id")
+                )
+            ) == [(91, 1, True, "inventory"), (92, 25, False, "inventory")]
+            assert (
+                db.scalar(text("SELECT reward_amount FROM battles WHERE id=91")) == 850
+            )
+            assert db.scalar(text("SELECT COUNT(*) FROM death_events")) == 0
+            assert db.scalar(text("SELECT COUNT(*) FROM auctions")) == 0
+            assert (
+                db.scalar(
+                    text("SELECT base_value FROM item_definitions WHERE id='sword'")
+                )
+                == 100
+            )
+            assert (
+                db.scalar(
+                    text("SELECT base_value FROM item_definitions WHERE id='unknown'")
+                )
+                is None
+            )
+            assert db.scalar(
+                text(
+                    "SELECT EXISTS(SELECT 1 FROM pg_indexes WHERE indexname='uq_auction_custody')"
+                )
+            )
+        with dbengine.begin() as db:
+            db.execute(text("UPDATE characters SET coins=-10000 WHERE id=91"))
+        with pytest.raises(Exception):
+            with dbengine.begin() as db:
+                db.execute(text("UPDATE characters SET coins=-10001 WHERE id=91"))
+    finally:
+        dbengine.dispose()
+        with admin.connect() as c:
+            c.execute(text(f"DROP DATABASE {name} WITH (FORCE)"))
+        admin.dispose()

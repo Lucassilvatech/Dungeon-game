@@ -351,7 +351,7 @@ def test_flee_failure_rolls_back_every_effect(client, monkeypatch):
     assert client.get("/guild/rewards", headers=h).json()["total"] == 300
 
 
-def test_flee_closes_active_battle_and_defeat_cannot_bypass_commitment(
+def test_flee_closes_active_battle_and_death_ends_failed_expedition(
     client, monkeypatch
 ):
     h = player(client)
@@ -369,13 +369,11 @@ def test_flee_closes_active_battle_and_defeat_cannot_bypass_commitment(
         ).json()["status"]
         == "lost"
     )
-    assert state(client, h)["room"]["id"] == s["room"]["id"]
-    assert (
-        client.post(
-            "/adventure", json={"request_id": str(uuid4())}, headers=h
-        ).status_code
-        == 409
-    )
+    assert state(client, h)["room"]["id"] == "city1"
+    with Session() as db:
+        assert db.get(Expedition, s["expedition"]["id"]).status == "FAILED"
+    s = begin(client, h, monkeypatch)
+    e = s["map"]["enemies"][0]
     walk_tiles(client, h, (e["x"], e["y"]))
     b = client.post("/battles", json={"monster": str(e["id"])}, headers=h).json()
     assert flee(client, h, s["expedition"]["id"]).status_code == 200

@@ -293,9 +293,228 @@ const path = require("node:path"),
       }
     }
     assert(wandered, "No enemy wandered during the observation window");
+    // Manual allocation is available after the real level gain in the first expedition.
+    await page
+      .getByRole("button", { name: "♙ Personagem", exact: true })
+      .click();
+    const pointsBefore = (await state()).character.unspent_attribute_points;
+    assert(pointsBefore >= 1);
+    const defenseBefore = (await state()).character.defense;
+    await page.getByLabel("Pontos em Defesa", { exact: true }).fill("1");
+    await page
+      .getByRole("button", { name: "CONFIRMAR ATRIBUTOS", exact: true })
+      .click();
+    await idle();
+    assert.equal((await state()).character.defense, defenseBefore + 1);
+    assert.equal(
+      (await state()).character.unspent_attribute_points,
+      pointsBefore - 1,
+    );
+    await shot("attributes");
+    await page.getByRole("button", { name: "Fechar menu" }).click();
+    const beforeDeath = await state();
+    const pendingBeforeDeath = await page.evaluate(
+      async () =>
+        (
+          await (
+            await fetch("/api/guild/rewards", {
+              headers: {
+                Authorization: "Bearer " + sessionStorage.getItem("token"),
+              },
+            })
+          ).json()
+        ).total,
+    );
+    const victim = beforeDeath.map.enemies.find((e) => e.state === "ALIVE");
+    await page
+      .locator('.encounters button[data-enemy-id="' + victim.id + '"]')
+      .click();
+    await page
+      .getByRole("button", { name: "◇ Defender", exact: true })
+      .waitFor();
+    for (let i = 0; i < 100 && (await state()).battle; i++) {
+      await page
+        .getByRole("button", { name: "◇ Defender", exact: true })
+        .click();
+      await idle();
+    }
+    const dead = await state();
+    assert.equal(dead.room.id, "city1");
+    assert(dead.death);
+    assert.equal(
+      dead.character.coins,
+      beforeDeath.character.coins - dead.death.medical_fee,
+    );
+    assert.equal(dead.character.xp, 0);
+    assert.equal(dead.character.level, beforeDeath.character.level);
+    assert.equal(dead.death.pending_lost_exact, String(pendingBeforeDeath));
+    assert.equal(dead.inventory.length, 0);
+    assert.deepEqual(
+      dead.death.items.map((i) => [i.item_id, i.quantity]).sort(),
+      beforeDeath.inventory.map((i) => [i.id, i.quantity]).sort(),
+    );
+    await page
+      .getByRole("dialog")
+      .getByRole("heading", { name: "VOCÊ MORREU", exact: true })
+      .waitFor();
+    await shot("death-summary");
+    await page.reload();
+    await page.getByRole("dialog").waitFor();
+    assert.equal(
+      (await state()).death.death_event_id,
+      dead.death.death_event_id,
+    );
+    await page
+      .getByRole("button", { name: "RETORNAR À CIDADE", exact: true })
+      .click();
+    await idle();
+    assert.equal((await state()).death, null);
+    await page.getByRole("button", { name: "⚖ Leilão", exact: true }).click();
+    await page.locator(".auction-card").first().waitFor();
+    assert(await page.locator(".auction-card button").first().isDisabled());
+    await shot("death-auctions");
+
+    // A second real player earns the funds through combat and the receptionist.
+    const buyer = await browser.newPage({
+      viewport: { width: 1440, height: 1000 },
+    });
+    buyer.on("pageerror", (e) => errors.push(e.message));
+    await buyer.goto(process.env.BASE_URL || "http://127.0.0.1:8080");
+    async function buyerApi(path, body) {
+      const r = await buyer.evaluate(
+        async ({ path, body }) => {
+          const response = await fetch("/api" + path, {
+            method: body === undefined ? "GET" : "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Bearer " + sessionStorage.getItem("token"),
+            },
+            body: body === undefined ? undefined : JSON.stringify(body),
+          });
+          return { status: response.status, data: await response.json() };
+        },
+        { path, body },
+      );
+      assert(r.status < 300, JSON.stringify(r));
+      return r.data;
+    }
+    const buyerName = "bidder" + Date.now();
+    const credentials = await buyerApi("/auth/register", {
+      username: buyerName,
+      password: "quality-pass-123",
+    });
+    await buyer.evaluate(
+      (t) => sessionStorage.setItem("token", t),
+      credentials.token,
+    );
+    await buyerApi("/character", { name: buyerName });
+    let bs = await buyerApi("/state");
+    await buyerApi("/inventory/" + bs.inventory[0].id + "/equip", {});
+    async function buyerWalk(tx, ty) {
+      const s = await buyerApi("/state"),
+        m = s.map,
+        start = [s.character.x, s.character.y];
+      const blocked = new Set(
+        [
+          ...m.walls,
+          ...m.enemies.filter((e) => e.state !== "DEAD").map((e) => [e.x, e.y]),
+          ...(m.npc ? [m.npc] : []),
+        ].map((p) => p.join(",")),
+      );
+      const seen = new Set([start.join(",")]),
+        queue = [[start, []]];
+      for (let i = 0; i < queue.length; i++) {
+        const [[x, y], steps] = queue[i];
+        if (Math.abs(x - tx) + Math.abs(y - ty) <= 1) {
+          for (const [dx, dy] of steps) await buyerApi("/move", { dx, dy });
+          return;
+        }
+        for (const [dx, dy] of [
+          [1, 0],
+          [-1, 0],
+          [0, 1],
+          [0, -1],
+        ]) {
+          const nx = x + dx,
+            ny = y + dy,
+            key = [nx, ny].join(",");
+          if (
+            nx <= 0 ||
+            ny <= 0 ||
+            nx >= m.width - 1 ||
+            ny >= m.height - 1 ||
+            seen.has(key) ||
+            blocked.has(key)
+          )
+            continue;
+          seen.add(key);
+          queue.push([
+            [nx, ny],
+            [...steps, [dx, dy]],
+          ]);
+        }
+      }
+      throw Error("Buyer path unavailable");
+    }
+    async function buyerExit(x, y) {
+      const s = await buyerApi("/state"),
+        exit = s.room.exits.find((e) => e.x === x && e.y === y);
+      assert(exit);
+      await buyerWalk(x, y);
+      await buyerApi("/rooms/exits/" + exit.id, {});
+    }
+    await buyerExit(50, 18);
+    bs = await buyerApi("/state");
+    const prey = bs.map.enemies.find((e) => e.spawn_key === "slime");
+    await buyerWalk(prey.x, prey.y);
+    let battle = await buyerApi("/battles", { monster: String(prey.id) });
+    while (battle.status === "active")
+      battle = await buyerApi("/battles/" + battle.id + "/action", {
+        turn: battle.turn,
+        action: "attack",
+      });
+    assert.equal(battle.status, "won");
+    await buyerExit(2, 9);
+    await buyerExit(9, 7);
+    bs = await buyerApi("/state");
+    await buyerWalk(...bs.map.npc);
+    assert.equal((await buyerApi("/guild/claim", {})).paid, 10);
+    const auctions = await buyerApi("/auctions");
+    const affordable = auctions.find(
+      (a) =>
+        dead.death.items.some((i) => i.auction_id === a.id) &&
+        BigInt(a.opening_price) <= 10n,
+    );
+    assert(affordable);
+    await buyer.reload();
+    await buyer.getByRole("button", { name: "⚖ Leilão", exact: true }).click();
+    const input = buyer.getByLabel("Lance no leilão " + affordable.id, {
+      exact: true,
+    });
+    await input.waitFor();
+    await input.fill(affordable.opening_price);
+    await input
+      .locator("xpath=ancestor::form")
+      .getByRole("button", { name: "CONFIRMAR LANCE", exact: true })
+      .click();
+    await buyer.waitForFunction(
+      () =>
+        document.querySelector("main")?.getAttribute("aria-busy") === "false",
+    );
+    bs = await buyerApi("/state");
+    assert.equal(bs.reserved_gold, affordable.opening_price);
+    assert.equal(
+      bs.coins_exact,
+      String(10n - BigInt(affordable.opening_price)),
+    );
+    await buyer.screenshot({
+      path: path.join(os.tmpdir(), "first-floor-auction-bid.png"),
+      fullPage: true,
+    });
+    await buyer.close();
     assert.deepEqual(errors, []);
     console.log(
-      "PASS: expanded city/guild/training, mobile, four-turn combat, death removal/rejection, inventory, guild claim, reconnect, committed expedition, API/exit blocking, flee preview/cancel/penalty, two procedural themes and authoritative wandering",
+      "PASS: expanded city/guild/training, mobile, four-turn combat, death removal/rejection, inventory, guild claim, reconnect, committed expedition, API/exit blocking, flee preview/cancel/penalty, two procedural themes, wandering, manual attributes, persistent death summary, medical debt, auction custody and funded player bidding",
     );
   } finally {
     await browser.close();
