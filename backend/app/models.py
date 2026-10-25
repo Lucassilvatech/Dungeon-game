@@ -138,6 +138,7 @@ class Floor(Base):
 
 class Room(Base):
     __tablename__ = "rooms"
+    danger_tier: Mapped[int] = mapped_column(default=0, server_default="0")
     id: Mapped[str] = mapped_column(String(80), primary_key=True)
     floor_id: Mapped[int] = mapped_column(ForeignKey("floors.id"))
     name: Mapped[str] = mapped_column(String(80))
@@ -213,3 +214,24 @@ class EnemyInstance(Base):
     ai_state: Mapped[str] = mapped_column(String(20), default="IDLE")
     moved_at: Mapped[datetime] = mapped_column(default=utc_now)
     death_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+
+class Expedition(Base):
+    __tablename__ = "expeditions"
+    __table_args__ = (
+        CheckConstraint("status IN ('ACTIVE','COMPLETED','FLED','FAILED')"),
+        Index(
+            "uq_active_expedition",
+            "character_id",
+            unique=True,
+            postgresql_where=text("status = 'ACTIVE'"),
+        ),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id"), index=True)
+    room_id: Mapped[str] = mapped_column(ForeignKey("rooms.id"), unique=True)
+    seed: Mapped[int] = mapped_column()
+    status: Mapped[str] = mapped_column(String(20), default="ACTIVE")
+    started_at: Mapped[datetime] = mapped_column(default=utc_now)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime)
+    result: Mapped[dict | None] = mapped_column(JSON)

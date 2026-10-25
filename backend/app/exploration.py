@@ -19,6 +19,9 @@ from . import game
 
 
 def exit_room(db, c, exit_id):
+    from .expeditions import guard_departure
+
+    guard_departure(db, c)
     game.idle(db, c)
     edge = db.get(RoomConnection, exit_id)
     if not edge or edge.source != c.room_id:
@@ -32,6 +35,13 @@ def exit_room(db, c, exit_id):
 
 
 def adventure(db, c, request_id):
+    key = f"adventure:{c.id}:{request_id}"
+    old = db.scalar(select(WorldEvent).where(WorldEvent.key == key))
+    if old:
+        return {"message": "Esta aventura já foi processada."}
+    from .expeditions import guard_departure
+
+    guard_departure(db, c)
     game.idle(db, c)
     if current(db, c).kind not in (
         RoomType.COMMON,
@@ -117,12 +127,19 @@ def adventure(db, c, request_id):
     )
     event(db, DomainEvent.ADVENTURE_STARTED, c, key=key, result=room.id)
     enter(db, c, room)
+    from .expeditions import register, sync
+
+    register(db, c, room)
+    sync(db, c)
     return {
         "message": "Nova expedição criada. Seed e baixas são preservadas nesta instância."
     }
 
 
 def secret_travel(db, c, room_id):
+    from .expeditions import guard_departure
+
+    guard_departure(db, c)
     game.idle(db, c)
     room = db.get(Room, room_id)
     if (

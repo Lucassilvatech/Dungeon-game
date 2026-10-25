@@ -39,6 +39,9 @@ def character(db, account):
     )
     if not c:
         fail("Crie seu personagem primeiro", 404)
+    from .expeditions import resume
+
+    resume(db, c)
     return c
 
 
@@ -76,6 +79,9 @@ def inventory(db, c):
 
 
 def snapshot(db, c, wander=False):
+    from .expeditions import state as expedition_state
+
+    expedition = expedition_state(db, c)
     b = active(db, c)
     enemies = instances(db, c, wander=wander)
     room, data = room_payload(db, c)
@@ -111,6 +117,7 @@ def snapshot(db, c, wander=False):
             )
         },
         "inventory": inventory(db, c),
+        "expedition": expedition,
         "battle": battle_data(b) if b else None,
         "unlocked_floor": (
             2 if db.scalar(select(WorldEvent).where(WorldEvent.key == "floor:2")) else 1
@@ -187,6 +194,9 @@ def rest(db, c):
 
 
 def travel(db, c, floor):
+    from .expeditions import guard_departure
+
+    guard_departure(db, c)
     idle(db, c)
     portal = current(db, c).data.get("portal")
     if not portal or distance((c.x, c.y), portal) > 1:
@@ -390,10 +400,17 @@ def action(db, c, battle_id, turn, action):
                 result="lost",
                 enemy_id=e.id,
             )
-            enter(db, c, db.get(Room, "city1"))
+            if room.kind == RoomType.PROCEDURAL:
+                c.x = 2
+                c.y = 2  # Defeat cannot bypass the commitment by respawning elsewhere.
+            else:
+                enter(db, c, db.get(Room, "city1"))
             c.hp = 30 + (c.level - 1) * 5
             c.energy = 10
     db.flush()
+    from .expeditions import sync
+
+    sync(db, c)
     return {**battle_data(b), "damage": dealt}
 
 

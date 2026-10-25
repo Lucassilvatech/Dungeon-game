@@ -293,3 +293,27 @@ def reset_training(a=Depends(current_account), db=Depends(get_db)):
         game.fail("Vá ao pátio de treinamento")
     discover(db, c, current(db, c)).generation += 1
     return {"message": "Novo exercício de treinamento, sem recompensas."}
+
+
+class FleeConfirmation(BaseModel):
+    confirmed: Literal[True]
+    confirmation_token: str = Field(min_length=64, max_length=64)
+
+
+@app.get("/expeditions/{expedition_id}/flee-preview")
+def flee_preview(expedition_id: int, a=Depends(current_account), db=Depends(get_db)):
+    from .expeditions import preview
+
+    return preview(db, game.character(db, a), expedition_id)
+
+
+@app.post("/expeditions/{expedition_id}/flee")
+def flee_expedition(
+    expedition_id: int,
+    body: FleeConfirmation,
+    a=Depends(current_account),
+    db=Depends(get_db),
+):
+    from .expeditions import flee
+
+    return flee(db, game.character(db, a), expedition_id, body.confirmation_token)
