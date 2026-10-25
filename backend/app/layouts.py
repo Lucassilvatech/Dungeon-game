@@ -43,7 +43,7 @@ def reachable(data):
     return seen
 
 
-def generate(kind, seed=0, theme_index=None):
+def generate(kind, seed=0, theme_index=None, danger_tier=0):
     rng = random.Random(seed)
     procedural = kind == "PROCEDURAL"
     if procedural:
@@ -184,7 +184,9 @@ def generate(kind, seed=0, theme_index=None):
         elif kind == "TRAINING":
             spawns = {"dummy": ((10, 6), "dummy")}
         else:
-            n = ENEMY_DENSITY.get(kind, 5) + (rng.randrange(3) if procedural else 0)
+            n = ENEMY_DENSITY.get(kind, 5) + (
+                rng.randrange(3) if procedural else max(0, danger_tier - 1)
+            )
             spawns = {"slime": ((5, 6), "slime")}
             # Place roaming monsters far enough apart, with a reachable adjacent tile.
             candidates = [
@@ -204,7 +206,11 @@ def generate(kind, seed=0, theme_index=None):
             d["monsters"][key] = list(p)
             d["spawns"][key] = {"species": species, "x": p[0], "y": p[1]}
         if kind == "BOSS":
-            d.update(recommended_level=3, difficulty="EXTREMA", recommended_group=4)
+            d.update(
+                recommended_level=7 if danger_tier >= 5 else 3,
+                difficulty="EXTREMA",
+                recommended_group=4,
+            )
     d["resources"] = [
         list(p)
         for p in sorted(reach)

@@ -6,6 +6,7 @@ import secrets
 from sqlalchemy import select
 from .models import Floor, Room, RoomConnection, RoomState, WorldEvent
 from .world import map_data
+from .danger import TIERS
 
 
 class RoomType(StrEnum):
@@ -71,10 +72,10 @@ def template(seed):
     return generate("PROCEDURAL", seed)
 
 
-def basic(kind, seed=0):
+def basic(kind, seed=0, danger_tier=0):
     from .layouts import generate
 
-    return generate(str(kind), seed)
+    return generate(str(kind), seed, danger_tier=danger_tier)
 
 
 STATIC_ROOMS = [
@@ -109,11 +110,21 @@ def seed_world(db):
                 Room(
                     id=id,
                     floor_id=floor,
+                    danger_tier=TIERS.get(id, 0),
                     name=name,
                     kind=str(kind),
                     seed=0,
                     data=(
-                        basic(kind)
+                        basic(
+                            kind,
+                            {
+                                "common_a": 1,
+                                "common_b": 2,
+                                "combat": 3,
+                                "secret": 2,
+                            }.get(id, 0),
+                            danger_tier=TIERS.get(id, 0),
+                        )
                         if floor == 1
                         else {
                             **map_data(2),
@@ -213,6 +224,7 @@ def room_payload(db, c):
         "name": room.name,
         "kind": room.kind,
         "seed": room.seed,
+        "danger_tier": room.danger_tier,
         "safe": room.kind in (RoomType.CITY, RoomType.GUILD),
         "completed": rs.completed,
         "codex": rs.codex,

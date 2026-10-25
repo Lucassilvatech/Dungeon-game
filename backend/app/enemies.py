@@ -39,7 +39,11 @@ def instances(db, c, wander=False):
         if key in known:
             continue
         species = spawn["species"]
-        hp, attack, defense, level, xp = ENEMIES.get(species, ENEMIES["slime"])
+        from .danger import scale_stats
+
+        hp, attack, defense, level, xp = scale_stats(
+            ENEMIES.get(species, ENEMIES["slime"]), room.danger_tier, room.kind
+        )
         if species == "warden":
             hp = room.data.get("enemy_hp", hp)
             attack = room.data.get("enemy_attack", attack)
