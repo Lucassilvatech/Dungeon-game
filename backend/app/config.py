@@ -27,3 +27,10 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+def runtime_setting(db, name):
+    from .models import GameSetting
+
+    row = db.get(GameSetting, name)
+    return row.value["value"] if row else getattr(settings, name)

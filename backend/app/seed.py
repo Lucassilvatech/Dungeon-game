@@ -16,6 +16,19 @@ def seed():
             from sqlalchemy import text
 
             db.execute(text("SELECT pg_advisory_xact_lock(7312026)"))
+        from .models import CentralBank, MonsterDefinition
+        from .balance import ENEMIES
+
+        if not db.get(CentralBank, 1):
+            db.add(CentralBank(id=1, balance=0))
+        for species, stats in ENEMIES.items():
+            if not db.get(MonsterDefinition, species):
+                db.add(
+                    MonsterDefinition(
+                        id=species,
+                        **dict(zip(("hp", "attack", "defense", "level", "xp"), stats))
+                    )
+                )
         from .rooms import seed_world
 
         seed_world(db)
@@ -30,6 +43,7 @@ def seed():
                         name=name,
                         kind=kind,
                         power=power,
+                        death_transferable=key != "sword",
                         base_value=100 if key == "sword" else 10,
                         stackable=kind == "material",
                         max_stack_size=99 if kind == "material" else 1,

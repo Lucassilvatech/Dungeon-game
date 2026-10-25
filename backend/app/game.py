@@ -9,7 +9,7 @@ from .models import (
     Ledger,
     WorldEvent,
 )
-from .config import settings
+from .config import settings, runtime_setting
 from .rooms import (
     RoomType,
     DomainEvent,
@@ -66,6 +66,8 @@ def inventory(db, c):
         dict(
             id=i.id,
             name=d.name,
+            definition=d.id,
+            protected=not d.death_transferable or d.id == "sword",
             kind=d.kind,
             quantity=i.quantity,
             equipped=i.equipped,
@@ -88,7 +90,7 @@ def snapshot(db, c, wander=False):
 
     reserved = db.scalar(
         select(func.coalesce(func.sum(Auction.highest_bid), 0)).where(
-            Auction.highest_bidder_id == c.id, Auction.status == "OPEN"
+            Auction.highest_bidder_id == c.id, Auction.status.in_(["OPEN", "CLOSED"])
         )
     )
     b = active(db, c)
@@ -191,6 +193,14 @@ def move(db, c, dx, dy):
 
 def interact(db, c):
     idle(db, c)
+    if current(db, c).id == "auction_hall":
+        npc = current(db, c).data.get("npc")
+        if not npc or distance((c.x, c.y), npc) > 1:
+            fail("Aproxime-se do leiloeiro")
+        return {
+            "message": "Leiloeiro: consulte espólios, detalhes e histórico de lances.",
+            "open_auctions": True,
+        }
     receptionist(db, c)
     return {
         "message": "Recepcionista da Guilda: seus registros estão prontos para conferência.",
@@ -356,9 +366,11 @@ def action(db, c, battle_id, turn, action):
                 )
         else:
             b.reward_amount = (
-                settings.boss_reward if e.species == "boss" else settings.monster_reward
+                runtime_setting(db, "boss_reward")
+                if e.species == "boss"
+                else runtime_setting(db, "monster_reward")
             )
-            c.xp += ENEMIES.get(e.species, ENEMIES["slime"])[4]
+            c.xp += e.xp_reward
         from .attributes import gain_levels
 
         gain_levels(db, c)

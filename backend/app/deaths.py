@@ -4,7 +4,7 @@ from sqlalchemy import select
 from .models import DeathEvent, Expedition, Room, Battle
 from .clock import utc_now
 from .rooms import RoomType, event, enter
-from .config import settings
+from .config import settings, runtime_setting
 from .economy import medical_fee, DEBT_LIMIT
 from .attributes import penalize_levels
 from .auctions import create_from_death
@@ -57,7 +57,9 @@ def resolve(db, c, battle):
     )
     xp_lost = c.xp
     c.xp = 0
-    fee = medical_fee(db, c, settings.medical_fee_base, death.id, expedition.id)
+    fee = medical_fee(
+        db, c, runtime_setting(db, "medical_fee_base"), death.id, expedition.id
+    )
     penalty = dict(
         level_before=c.level,
         level_after=c.level,

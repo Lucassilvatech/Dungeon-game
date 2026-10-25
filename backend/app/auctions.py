@@ -6,7 +6,7 @@ from datetime import timedelta
 from sqlalchemy import select, text
 from .models import Auction, AuctionBid, Item, ItemDefinition, Character, Treasury
 from .clock import utc_now
-from .config import settings
+from .config import settings, runtime_setting
 from .rooms import event
 from .economy import credit_player_gold, reserve_gold, ledger
 
@@ -25,6 +25,7 @@ def create_from_death(db, c, death):
             Item.owner == c.id,
             Item.location == "inventory",
             ItemDefinition.death_transferable == True,
+            ItemDefinition.id != "sword",
         )
         .order_by(Item.id)
         .with_for_update(of=Item)
@@ -33,7 +34,7 @@ def create_from_death(db, c, death):
     now = utc_now()
     for item, definition in rows:
         total = (definition.base_value or 0) * item.quantity
-        opening = max(settings.min_auction_start_price, (total + 4) // 5)
+        opening = max(runtime_setting(db, "min_auction_start_price"), (total + 4) // 5)
         item.owner = None
         item.equipped = False
         item.location = "auction"
@@ -44,8 +45,9 @@ def create_from_death(db, c, death):
             former_owner_id=c.id,
             opening_price=opening,
             started_at=now,
-            ends_at=now + timedelta(hours=settings.auction_duration_hours),
-            proceeds_destination=settings.auction_proceeds_destination,
+            ends_at=now
+            + timedelta(hours=runtime_setting(db, "auction_duration_hours")),
+            proceeds_destination=runtime_setting(db, "auction_proceeds_destination"),
         )
         db.add(auction)
         db.flush()
@@ -81,6 +83,18 @@ def payload(db, a):
         name=definition.name,
         quantity=a.quantity,
         description=definition.description,
+        kind=definition.kind,
+        attributes={"power": definition.power},
+        protected=not definition.death_transferable or definition.id == "sword",
+        accepts_bids=a.status == "OPEN"
+        and definition.death_transferable
+        and definition.id != "sword"
+        and a.ends_at > utc_now(),
+        minimum_increment="1",
+        next_bid=str(max(a.opening_price, a.highest_bid + 1)),
+        origin="expedition_death",
+        death_event_id=a.death_event_id,
+        delivery="Same item/stack, unequipped, on settlement",
         former_owner_id=a.former_owner_id,
         opening_price=str(a.opening_price),
         highest_bid=str(a.highest_bid),
@@ -98,6 +112,7 @@ def settle_locked(db, a):
 
     if a.status != "OPEN":
         return payload(db, a)
+    transferable(db, a)
     if a.ends_at > utc_now():
         fail("Leilão ainda está aberto")
     if a.highest_bidder_id is None:
@@ -153,7 +168,14 @@ def settle_due(db):
     mutex(db)
     rows = db.scalars(
         select(Auction)
-        .where(Auction.status == "OPEN", Auction.ends_at <= utc_now())
+        .join(Item, Item.id == Auction.item_id)
+        .join(ItemDefinition, ItemDefinition.id == Item.definition)
+        .where(
+            Auction.status == "OPEN",
+            Auction.ends_at <= utc_now(),
+            ItemDefinition.death_transferable == True,
+            ItemDefinition.id != "sword",
+        )
         .order_by(Auction.id)
         .limit(100)
         .with_for_update()
@@ -203,6 +225,7 @@ def bid(db, account, auction_id, amount, request_id):
     a = db.scalar(select(Auction).where(Auction.id == auction_id).with_for_update())
     if not a:
         game.fail("Leilão inexistente", 404)
+    transferable(db, a)
     if a.status != "OPEN" or a.ends_at <= utc_now():
         game.fail("Leilão encerrado")
     if amount < a.opening_price or amount <= a.highest_bid:
@@ -266,3 +289,38 @@ async def sweeper():
                 "Auction sweep failed; transaction rolled back; retrying"
             )
         await asyncio.sleep(settings.auction_sweep_seconds)
+
+
+def transferable(db, a):
+    from .game import fail
+
+    item = db.get(Item, a.item_id)
+    definition = db.get(ItemDefinition, item.definition)
+    if definition.id == "sword" or not definition.death_transferable:
+        fail(
+            "Item protegido: negociação suspensa; requer recuperação administrativa individual"
+        )
+
+
+def detail(db, auction_id):
+    from .game import fail
+
+    a = db.get(Auction, auction_id)
+    if not a:
+        fail("Leilão inexistente", 404)
+    return {
+        **payload(db, a),
+        "bids": [
+            dict(
+                id=b.id,
+                bidder_id=b.bidder_id,
+                amount=str(b.amount),
+                created_at=b.created_at.isoformat() + "Z",
+            )
+            for b in db.scalars(
+                select(AuctionBid)
+                .where(AuctionBid.auction_id == a.id)
+                .order_by(AuctionBid.id.desc())
+            )
+        ],
+    }

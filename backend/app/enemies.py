@@ -41,9 +41,18 @@ def instances(db, c, wander=False):
         species = spawn["species"]
         from .danger import scale_stats
 
-        hp, attack, defense, level, xp = scale_stats(
-            ENEMIES.get(species, ENEMIES["slime"]), room.danger_tier, room.kind
+        from .models import MonsterDefinition
+
+        definition = db.get(MonsterDefinition, species)
+        stats = (
+            tuple(
+                getattr(definition, k)
+                for k in ("hp", "attack", "defense", "level", "xp")
+            )
+            if definition
+            else ENEMIES.get(species, ENEMIES["slime"])
         )
+        hp, attack, defense, level, xp = scale_stats(stats, room.danger_tier, room.kind)
         if species == "warden":
             hp = room.data.get("enemy_hp", hp)
             attack = room.data.get("enemy_attack", attack)
@@ -77,6 +86,7 @@ def instances(db, c, wander=False):
                 else old.hp if state == EnemyState.IN_COMBAT else hp
             ),
             max_hp=hp,
+            xp_reward=xp,
             attack=attack,
             defense=defense,
             level=level,

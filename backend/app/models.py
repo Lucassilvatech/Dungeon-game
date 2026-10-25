@@ -73,7 +73,12 @@ class Character(Base):
 
 class ItemDefinition(Base):
     __tablename__ = "item_definitions"
-    __table_args__ = (CheckConstraint("max_stack_size > 0"),)
+    __table_args__ = (
+        CheckConstraint("max_stack_size > 0"),
+        CheckConstraint(
+            "id != 'sword' OR NOT death_transferable", name="starter_sword_protected"
+        ),
+    )
     id: Mapped[str] = mapped_column(String(30), primary_key=True)
     name: Mapped[str] = mapped_column(String(60))
     kind: Mapped[str] = mapped_column(String(20))
@@ -226,6 +231,7 @@ class EnemyInstance(Base):
     state: Mapped[str] = mapped_column(String(20), default="ALIVE")
     hp: Mapped[int] = mapped_column()
     max_hp: Mapped[int] = mapped_column()
+    xp_reward: Mapped[int] = mapped_column(default=0, server_default="0")
     level: Mapped[int] = mapped_column(default=1)
     attack: Mapped[int] = mapped_column(default=6)
     defense: Mapped[int] = mapped_column(default=2)
@@ -312,3 +318,75 @@ class AuctionBid(Base):
     request_id: Mapped[str] = mapped_column(String(36))
     amount: Mapped[int] = mapped_column(Gold())
     created_at: Mapped[datetime] = mapped_column(default=utc_now)
+
+
+class AdminRole(Base):
+    __tablename__ = "admin_roles"
+    account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"), primary_key=True)
+    role: Mapped[str] = mapped_column(String(20))
+
+
+class AdminSession(Base):
+    __tablename__ = "admin_sessions"
+    token: Mapped[str] = mapped_column(String(64), primary_key=True)
+    account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"))
+    expires: Mapped[datetime] = mapped_column(DateTime)
+
+
+class AdminLoginAttempt(Base):
+    __tablename__ = "admin_login_attempts"
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    failures: Mapped[int] = mapped_column(default=0)
+    window_start: Mapped[datetime] = mapped_column(default=utc_now)
+
+
+class AdminOperation(Base):
+    __tablename__ = "admin_operations"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    actor_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"), index=True)
+    action: Mapped[str] = mapped_column(String(60))
+    target: Mapped[str] = mapped_column(String(80))
+    params: Mapped[dict] = mapped_column(JSON)
+    reason: Mapped[str] = mapped_column(String(500))
+    before: Mapped[dict] = mapped_column(JSON)
+    after: Mapped[dict | None] = mapped_column(JSON)
+    confirmation_hash: Mapped[str] = mapped_column(String(64))
+    status: Mapped[str] = mapped_column(String(20), default="PREVIEW")
+    created_at: Mapped[datetime] = mapped_column(default=utc_now)
+    expires: Mapped[datetime] = mapped_column(DateTime)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+
+class CentralBank(Base):
+    __tablename__ = "central_bank"
+    __table_args__ = (CheckConstraint("balance >= 0"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    balance: Mapped[int] = mapped_column(Gold(), default=0)
+
+
+class AdminTestCredit(Base):
+    __tablename__ = "admin_test_credits"
+    __table_args__ = (CheckConstraint("balance >= 0"),)
+    account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"), primary_key=True)
+    balance: Mapped[int] = mapped_column(Gold(), default=0)
+
+
+class GameSetting(Base):
+    __tablename__ = "game_settings"
+    key: Mapped[str] = mapped_column(String(60), primary_key=True)
+    value: Mapped[dict] = mapped_column(JSON)
+
+
+class MonsterDefinition(Base):
+    __tablename__ = "monster_definitions"
+    __table_args__ = (
+        CheckConstraint(
+            "hp > 0 AND attack >= 0 AND defense >= 0 AND level >= 1 AND xp >= 0"
+        ),
+    )
+    id: Mapped[str] = mapped_column(String(20), primary_key=True)
+    hp: Mapped[int] = mapped_column()
+    attack: Mapped[int] = mapped_column()
+    defense: Mapped[int] = mapped_column()
+    level: Mapped[int] = mapped_column()
+    xp: Mapped[int] = mapped_column()

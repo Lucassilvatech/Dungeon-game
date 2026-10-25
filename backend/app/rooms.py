@@ -81,6 +81,7 @@ def basic(kind, seed=0, danger_tier=0):
 STATIC_ROOMS = [
     ("city1", 1, "Vila do Alvorecer", RoomType.CITY),
     ("guild", 1, "Guilda · Recepção", RoomType.GUILD),
+    ("auction_hall", 1, "Guilda · Salão de Leilões", RoomType.GUILD),
     ("training", 1, "Pátio de treinamento", RoomType.TRAINING),
     ("common_a", 1, "Bosque das lanternas", RoomType.COMMON),
     ("common_b", 1, "Trilha dos vagalumes", RoomType.COMMON),
@@ -92,6 +93,7 @@ STATIC_ROOMS = [
 EDGES = [
     ("city1", "guild", (9, 7), (2, 9)),
     ("guild", "training", (35, 10), (2, 9)),
+    ("guild", "auction_hall", (35, 20), (2, 9)),
     ("city1", "common_a", (50, 18), (2, 9)),
     ("common_a", "common_b", (32, 13), (2, 9)),
     ("common_b", "combat", (32, 13), (2, 9)),
@@ -138,6 +140,21 @@ def seed_world(db):
                     ),
                 )
             )
+    hall = db.get(Room, "auction_hall")
+    if hall.data.get("npc_name") != "Leiloeiro da Guilda":
+        hall.data = {
+            **hall.data,
+            "npc_name": "Leiloeiro da Guilda",
+            "npc_role": "auctioneer",
+            "decorations": [
+                *hall.data.get("decorations", []),
+                {"kind": "banner", "x": 15, "y": 5},
+                {"kind": "banner", "x": 20, "y": 5},
+                {"kind": "table", "x": 16, "y": 6, "width": 3, "height": 1},
+                {"kind": "chair", "x": 12, "y": 13},
+                {"kind": "chair", "x": 21, "y": 13},
+            ],
+        }
     db.flush()
     for a, b, pa, pb in EDGES:
         for src, dst, p in [(a, b, pa), (b, a, pb)]:
