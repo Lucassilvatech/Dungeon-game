@@ -221,7 +221,12 @@ def link(body: Link, db=Depends(get_db)):
     )
     if not code or code.expires < utc_now():
         raise HTTPException(400, "Código inválido ou expirado")
-    a = db.get(Account, code.account_id)
+    a = db.scalar(
+        select(Account).where(Account.id == code.account_id).with_for_update()
+    )
+    existing = db.scalar(select(Account).where(Account.discord_id == body.discord_id))
+    if existing and existing.id != a.id:
+        raise HTTPException(409, "Discord já vinculado a outra conta")
     a.discord_id = body.discord_id
     db.delete(code)
     return {"linked": True}
@@ -642,3 +647,48 @@ def contract_cancel(
 
     mutex(db)
     return cancel_personal(db, game.character(db, a), id)
+
+
+@app.post("/discord/unlink")
+def unlink_discord(a=Depends(current_account), db=Depends(get_db)):
+    account = db.scalar(select(Account).where(Account.id == a.id).with_for_update())
+    account.discord_id = None
+    return {
+        "message": "Vínculo Discord removido; confirmações anteriores deixam de autorizar ações."
+    }
+
+
+@app.get("/discord/{discord_id}/queries/{section}", dependencies=[Depends(bot_access)])
+def discord_query(discord_id: str, section: str, db=Depends(get_db)):
+    from .discord_client import query
+
+    return query(db, discord_id, section)
+
+
+class DiscordEquip(BaseModel):
+    model_config = {"extra": "forbid"}
+    item_id: int = Field(gt=0)
+    equipped: bool
+
+
+@app.post("/discord/{discord_id}/equipment/preview", dependencies=[Depends(bot_access)])
+def discord_equipment_preview(discord_id: str, body: DiscordEquip, db=Depends(get_db)):
+    from .discord_client import preview
+
+    return preview(db, discord_id, body.item_id, body.equipped)
+
+
+class DiscordConfirm(BaseModel):
+    model_config = {"extra": "forbid"}
+    confirmation_token: str = Field(min_length=20, max_length=100)
+
+
+@app.post(
+    "/discord/{discord_id}/operations/{id}/confirm", dependencies=[Depends(bot_access)]
+)
+def discord_equipment_confirm(
+    discord_id: str, id: UUID, body: DiscordConfirm, db=Depends(get_db)
+):
+    from .discord_client import confirm
+
+    return confirm(db, discord_id, str(id), body.confirmation_token)

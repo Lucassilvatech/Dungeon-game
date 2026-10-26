@@ -577,3 +577,19 @@ class CharacterContract(Base):
     accepted_at: Mapped[datetime] = mapped_column(default=utc_now)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime)
     claim_request_id: Mapped[str | None] = mapped_column(String(36))
+
+
+class DiscordOperation(Base):
+    __tablename__ = "discord_operations"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"), index=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id"), index=True)
+    discord_id: Mapped[str] = mapped_column(String(30))
+    item_id: Mapped[int] = mapped_column(ForeignKey("items.id"))
+    equipped: Mapped[bool] = mapped_column(Boolean)
+    before: Mapped[dict] = mapped_column(JSON)
+    confirmation_hash: Mapped[str] = mapped_column(String(64))
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    status: Mapped[str] = mapped_column(String(20), default="PREVIEW")
+    result: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    __table_args__ = (CheckConstraint("status IN ('PREVIEW','APPLIED')"),)

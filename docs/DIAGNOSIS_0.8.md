@@ -50,3 +50,7 @@ Etapa 4 verificada: 49 testes de métricas+grupos+morte/economia aprovados (49,4
 ### Etapa 5 — coleta e contratos
 
 Coleta pessoal finita em coordenadas já existentes, sem dinheiro nem respawn temporal; capacidade respeita empilhamento e preserva excedentes legados. Contratos usam reserva real `recompensa × vagas`, com débito do Tesouro, ledger, progresso posterior à aceitação, entrega atômica e pagamento único. Retirada preserva direitos concluídos. APIs e painéis Web/ADM reutilizam permissões, prévia, confirmação e auditoria. Migração aditiva `e70ea918061f`: três tabelas novas; 1.155 hashes de campos originais da cópia 0.7 permaneceram idênticos. Regressão executada: 14 testes passaram em 52,89s, incluindo concorrência e prévia obsoleta. Nenhum contrato financeiro é criado implicitamente no seed.
+
+### Etapa 6 — Discord
+
+Quatorze comandos sem registro duplicado: vínculo, doze consultas (incluindo aliases) e equipamento confirmado. Todos usam API/estado real e respostas efêmeras. Confirmações persistentes expiram em 120s, vinculam identidade e prévia e não repetem mutação; nenhum recurso ADM. Consulta de leilões respeita mutex antes do lock de personagem. Credenciais externas ausentes: testes de integração locais e mocks são evidência de código, não de conexão ao serviço Discord. Migração `947647462008` só adiciona recibos; cópia 0.7 preserva os 1.155 hashes originais.
