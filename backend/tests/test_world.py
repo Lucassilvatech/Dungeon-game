@@ -253,4 +253,14 @@ def test_room_presence_scope_and_auth(client):
             assert b.receive_json()["players"][0]["name"] == "alice"
             assert a.receive_json()["players"][0]["name"] == "bob"
             navigate(client, other, "city1")
-            assert not a.receive_json()["players"]
+            # Movement can queue several legitimate earlier positions while HTTP
+            # navigation is running. Observe the eventual authoritative room change.
+            for _ in range(100):
+                update = a.receive_json()
+                assert update["room_id"] == "common_a"
+                if not update["players"]:
+                    break
+            else:
+                raise AssertionError(
+                    "Presence did not remove peer after room departure"
+                )

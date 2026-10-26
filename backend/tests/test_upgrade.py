@@ -22,7 +22,12 @@ def test_v1_upgrade_preserves_existing_data():
 
     def migrate(rev):
         subprocess.run(
-            [exe, "upgrade", rev], env=env, check=True, capture_output=True, text=True
+            [exe, "upgrade", rev],
+            cwd=Path(__file__).resolve().parents[1],
+            env=env,
+            check=True,
+            capture_output=True,
+            text=True,
         )
 
     dbengine = create_engine(url)
@@ -112,7 +117,12 @@ def test_existing_procedural_rooms_are_migrated_without_penalties():
 
     def migrate(rev):
         subprocess.run(
-            [exe, "upgrade", rev], env=env, check=True, capture_output=True, text=True
+            [exe, "upgrade", rev],
+            cwd=Path(__file__).resolve().parents[1],
+            env=env,
+            check=True,
+            capture_output=True,
+            text=True,
         )
 
     try:
@@ -222,6 +232,7 @@ def test_v04_upgrade_preserves_stats_inventory_balances_and_has_no_retroactive_p
     try:
         subprocess.run(
             [exe, "upgrade", "904ca715f282"],
+            cwd=Path(__file__).resolve().parents[1],
             env=env,
             check=True,
             capture_output=True,
@@ -255,13 +266,19 @@ def test_v04_upgrade_preserves_stats_inventory_balances_and_has_no_retroactive_p
             )
         subprocess.run(
             [exe, "upgrade", "head"],
+            cwd=Path(__file__).resolve().parents[1],
             env=env,
             check=True,
             capture_output=True,
             text=True,
         )
         subprocess.run(
-            [exe, "check"], env=env, check=True, capture_output=True, text=True
+            [exe, "check"],
+            cwd=Path(__file__).resolve().parents[1],
+            env=env,
+            check=True,
+            capture_output=True,
+            text=True,
         )
         with dbengine.connect() as db:
             assert tuple(
@@ -322,7 +339,12 @@ def test_v05_starter_custody_bids_and_money_are_preserved_for_individual_recover
 
     def migrate(rev):
         subprocess.run(
-            [exe, "upgrade", rev], env=env, check=True, capture_output=True, text=True
+            [exe, "upgrade", rev],
+            cwd=Path(__file__).resolve().parents[1],
+            env=env,
+            check=True,
+            capture_output=True,
+            text=True,
         )
 
     try:
@@ -385,7 +407,12 @@ def test_v05_starter_custody_bids_and_money_are_preserved_for_individual_recover
             )
         migrate("head")
         subprocess.run(
-            [exe, "check"], env=env, check=True, capture_output=True, text=True
+            [exe, "check"],
+            cwd=Path(__file__).resolve().parents[1],
+            env=env,
+            check=True,
+            capture_output=True,
+            text=True,
         )
         with dbengine.connect() as db:
             assert tuple(
