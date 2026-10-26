@@ -77,7 +77,7 @@ jobs:
             $result = 0
           } catch {
             $report.error = $_.Exception.Message
-            Write-Host "Security check did not pass: $($report.error)"
+            Write-Host "::error title=Defender check failed::$($report.error)"
           } finally {
             # Include real-time detections even if a file was quarantined before custom scan.
             try {
