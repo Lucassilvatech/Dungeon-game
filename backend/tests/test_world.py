@@ -80,7 +80,10 @@ def test_procedural_persistence_and_replay(client, monkeypatch):
     expected = __import__("json").loads(
         __import__("json").dumps(template(s["room"]["seed"]))
     )
-    assert {key: s["map"][key] for key in expected} == expected
+    assert {key: s["map"][key] for key in expected if key != "spawns"} == {
+        key: value for key, value in expected.items() if key != "spawns"
+    }
+    assert set(s["map"]["spawns"]) == set(expected["spawns"])
     assert client.post("/adventure", json=body, headers=h).status_code == 200
     with Session() as db:
         assert (

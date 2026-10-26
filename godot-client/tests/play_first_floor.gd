@@ -122,7 +122,11 @@ func run():
 	await fight(enemy(),"defend")
 	ensure(game.state.get("death")!=null and game.state.room.id=="city1","natural procedural death returns city with receipt")
 	ensure(game.state.coins_exact=="-85","medical fee creates signed debt")
-	ensure(game.state.inventory.size()==1 and game.state.inventory[0].definition=="sword","starter sword survives while other items go to custody")
+	ensure(game.state.inventory.any(func(i): return i.definition=="sword"),"starter sword survives bounded death loss")
+	var lost_units=0
+	for item in game.state.death.items:
+		lost_units+=int(item.quantity)
+	ensure(lost_units<=5,"death removes at most five units")
 	var api_class=load("res://scripts/api.gd")
 	restored=api_class.new()
 	root.add_child(restored)
@@ -137,39 +141,18 @@ func run():
 	game.tabs.current_tab=4
 	await settle()
 	await game.load_tab()
-	ensure(game.current_auctions.size()>=1,"native auction list includes lost physical items")
-	var owned_lot=game.current_auctions[0]
-	game.api.logout()
-	game.show_login()
-	game.login_user.text="nativebuyer"+str(int(Time.get_unix_time_from_system()))
-	game.login_password.text="native-test-pass-123"
-	await game.authenticate(true)
-	await game.act("/character",{"name":"Buyer"+str(int(Time.get_unix_time_from_system()))})
-	await game.act("/inventory/%d/equip" % int(game.state.inventory[0].id),{})
-	await exit_at(50,18)
-	await fight(enemy())
-	await game.act("/fast-travel",{"destination":"city1"})
-	await exit_at(9,7)
-	await game.npc()
-	await game.act("/guild/claim",{})
-	ensure(game.state.coins_exact=="10","second native player earns funds through combat and receptionist")
-	game.tabs.current_tab=4
+	ensure(game.current_auctions.size()==0,"new death does not create public auctions")
+	game.tabs.current_tab=7
 	await settle()
 	await game.load_tab()
-	var bid_button=null
-	for b in game.find_children("*","Button",true,false):
-		if b.text=="Dar lance" and not b.disabled:
-			bid_button=b
-			break
-	ensure(bid_button!=null,"funded native player has a bid control")
-	bid_button.pressed.emit()
-	await process_frame
-	for child in game.get_children():
-		if child is ConfirmationDialog and child.title=="Confirmar lance":
-			child.confirmed.emit()
-	await settle()
-	ensure(game.state.reserved_gold==owned_lot.next_bid,"native bid confirmation reserves exact gold")
-	print("PASS: Godot first-floor controller, keyboard/touch commands, city/guild/auctioneer, combat, XP/manual points, inventory/equipment, visited fast travel, committed expedition, flee preview, rewards, death/debt/protected sword, auction custody, session recovery and funded native bid confirmation (",checks," checks)")
+	var recovery=await game.api.call_api("/recovery")
+	ensure(recovery.ok and recovery.data.is_empty(),"common loot does not become valuable recovery")
+	await game.act("/fast-travel",{"destination":"guild"})
+	await exit_at(2,20)
+	ensure(game.state.room.id=="recovery_hall","personal recovery NPC room reachable")
+	await game.npc()
+	ensure(game.tabs.current_tab==7,"recovery NPC opens personal recovery panel")
+	print("PASS: Godot live controller access, registration/login/session, keyboard/touch commands, first-floor combat, equipment/effective status, travel, flee, death <=5, protected sword, recovery NPC and no death auctions (",checks," checks)")
 	game.queue_free()
 	restored.queue_free()
 	await process_frame

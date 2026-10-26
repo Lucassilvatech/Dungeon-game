@@ -90,9 +90,21 @@ def wallet(h, client, amount):
     return cid
 
 
+def historical_die(client, h, mp, **values):
+    """Reproduce a pre-0.7 listing to test escrow compatibility, never a runtime flag.
+    The production death policy is covered separately by test_procedural_update.
+    """
+    import app.deaths as deaths
+    from app.auctions import create_from_death
+
+    with mp.context() as historical:
+        historical.setattr(deaths, "lose", create_from_death)
+        return die(client, h, historical, **values)
+
+
 def auction_fixture(client, mp):
     owner = fresh(client)
-    dead = die(client, owner, mp)
+    dead = historical_die(client, owner, mp)
     a = client.get("/auctions", headers=owner).json()[0]
     bidder = fresh(client, "bidder")
     wallet(bidder, client, 1000)
@@ -127,6 +139,10 @@ def test_medical_fee_balances_cap_and_level_penalty(
     client, monkeypatch, balance, expected
 ):
     h = fresh(client)
+    with Session.begin() as db:
+        db.get(ItemDefinition, "iron_sword").death_transferable = (
+            False  # Isolate medical fee from independent confiscation.
+        )
     monkeypatch.setattr(settings, "medical_fee_base", 100)
     s = die(
         client,
@@ -173,6 +189,10 @@ def test_medical_fee_balances_cap_and_level_penalty(
 
 def test_repeated_death_at_cap_min_level_and_attribute_debt(client, monkeypatch):
     h = fresh(client)
+    with Session.begin() as db:
+        db.get(ItemDefinition, "iron_sword").death_transferable = (
+            False  # Isolate medical fee from independent confiscation.
+        )
     s = die(client, h, monkeypatch, level=16, coins=-10000, unspent_attribute_points=2)
     assert s["character"]["level"] == 6 and s["character"]["attribute_point_debt"] == 8
     s = die(client, h, monkeypatch)
@@ -225,18 +245,15 @@ def test_death_loses_all_pending_preserves_claimed_levels_and_custody_ids(
     s = die(client, h, monkeypatch, level=10, xp=150, coins=500)
     assert s["death"]["xp_lost"] == 150 and s["death"]["pending_lost"] == 850
     assert s["character"]["level"] == 10 and s["character"]["coins"] == 400
-    assert len(s["inventory"]) == 2 and any(
-        i["name"] == "Marca técnica" for i in s["inventory"]
-    )
+    assert any(i["name"] == "Marca técnica" for i in s["inventory"])
     with Session() as db:
-        lost = db.scalars(select(Item).where(Item.location == "auction")).all()
-        assert sorted((i.id, i.quantity) for i in lost) == sorted(
-            (i["id"], i["quantity"])
-            for i in before
-            if i["kind"] != "system" and i["definition"] != "sword"
-        )
+        lost = db.scalars(select(Item).where(Item.location == "destroyed")).all()
+        assert 0 <= sum(i.quantity for i in lost) <= 5
         assert all(i.owner is None and not i.equipped for i in lost)
-        assert db.scalar(select(func.count()).select_from(Auction)) == 2
+        assert sum(i["quantity"] for i in before) == sum(
+            i["quantity"] for i in s["inventory"]
+        ) + sum(i.quantity for i in lost)
+        assert db.scalar(select(func.count()).select_from(Auction)) == 0
         assert (
             db.scalar(
                 select(Battle.reward_amount).where(
@@ -275,6 +292,10 @@ def test_death_race_idempotence_and_old_receipt_never_mutates_new_expedition(
     client, monkeypatch
 ):
     h = fresh(client)
+    with Session.begin() as db:
+        db.get(ItemDefinition, "iron_sword").death_transferable = (
+            False  # Isolate death replay from item collection.
+        )
     s, b = setup_lethal(client, h, monkeypatch, level=37, coins=-9950, xp=29)
 
     def run(_):
@@ -299,7 +320,7 @@ def test_death_race_idempotence_and_old_receipt_never_mutates_new_expedition(
     assert now["room"]["id"] == new["room"]["id"] and now["character"]["level"] == 27
     with Session() as db:
         assert db.scalar(select(func.count()).select_from(DeathEvent)) == 1
-        assert db.scalar(select(func.count()).select_from(Auction)) == 1
+        assert db.scalar(select(func.count()).select_from(Auction)) == 0
 
 
 def test_death_failure_rolls_back_fee_pending_items_battle_and_event(
@@ -310,13 +331,13 @@ def test_death_failure_rolls_back_fee_pending_items_battle_and_event(
     h = fresh(client)
     pending_records(h, client, [850])
     s, b = setup_lethal(client, h, monkeypatch, coins=50, xp=37)
-    original = deaths.create_from_death
+    original = deaths.lose
 
     def fail(*args):
         original(*args)
         raise RuntimeError("injected custody failure")
 
-    monkeypatch.setattr(deaths, "create_from_death", fail)
+    monkeypatch.setattr(deaths, "lose", fail)
     with pytest.raises(RuntimeError):
         lethal(client, h, b)
     now = state(client, h)
@@ -380,7 +401,7 @@ def test_auction_prices_stacks_fallback_and_player_only(client, monkeypatch):
         db.add(ItemDefinition(id="unknown", name="Relíquia sem preço", kind="weapon"))
         db.flush()
         db.add(Item(owner=cid, definition="unknown", quantity=1))
-    die(client, h, monkeypatch)
+    historical_die(client, h, monkeypatch)
     listings = client.get("/auctions", headers=h).json()
     assert {a["name"]: a["opening_price"] for a in listings} == {
         "Espada de Ferro": "20",
@@ -510,7 +531,7 @@ def test_bid_races_no_double_spend_and_one_highest_bidder(client, monkeypatch):
         assert sorted(pool.map(run, [h, other])) == [200, 409]
     assert sum(state(client, auth)["character"]["coins"] for auth in (h, other)) == 1800
     # Same player's competing bids across two auctions cannot spend a wallet twice.
-    die(client, h, monkeypatch, coins=200)
+    historical_die(client, h, monkeypatch, coins=200)
     auctions = client.get("/auctions", headers=other).json()
     second = next(x for x in auctions if x["id"] != a["id"])
     wallet(other, client, 200)
@@ -531,7 +552,7 @@ def test_auction_item_can_be_lost_again_without_duplicate_custody(client, monkey
     assert bid(client, h, a["id"], 20).status_code == 200
     expire(a["id"])
     client.post(f'/auctions/{a["id"]}/settle', headers=h, json={})
-    dead = die(client, h, monkeypatch)
+    dead = historical_die(client, h, monkeypatch)
     with Session() as db:
         rows = db.scalars(select(Auction).where(Auction.item_id == a["item_id"])).all()
         assert sorted(x.status for x in rows) == ["OPEN", "SETTLED"]
@@ -667,11 +688,14 @@ def test_real_combat_level_gain_grants_manual_point(client, monkeypatch):
         c = db.get(Character, s["character"]["id"])
         c.xp = 45
         c.strength = 100
+        from app.models import EnemyInstance
+
+        expected_xp = db.get(EnemyInstance, s["map"]["enemies"][0]["id"]).xp_reward - 5
     kill(client, h, s["map"]["enemies"][0]["id"])
     c = state(client, h)["character"]
     assert (
         c["level"] == 2
-        and c["xp"] == 25
+        and c["xp"] == expected_xp
         and c["unspent_attribute_points"] == 1
         and c["strength"] == 100
     )
@@ -701,7 +725,7 @@ def test_due_batch_and_concurrent_guild_payment_do_not_deadlock(client, monkeypa
     cid = state(client, owner)["character"]["id"]
     with Session.begin() as db:
         db.add(Item(owner=cid, definition="crystal", quantity=1))
-    die(client, owner, monkeypatch)
+    historical_die(client, owner, monkeypatch)
     lots = client.get("/auctions", headers=owner).json()
     one = fresh(client, "one")
     two = fresh(client, "two")

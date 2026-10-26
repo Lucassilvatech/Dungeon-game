@@ -1,3 +1,4 @@
+from test_death_economy import historical_die
 from uuid import uuid4
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
@@ -209,6 +210,7 @@ def test_protected_starter_survives_death_normal_items_lost_and_recovery(
     client, monkeypatch
 ):
     ah, h = admin(client)
+    monkeypatch.setattr("app.recovery.loss_count", lambda n: n)
     s = die(client, h, monkeypatch)
     assert [i["definition"] for i in s["inventory"]] == ["sword"]
     assert len(s["death"]["items"]) == 1
@@ -266,7 +268,7 @@ def test_legitimate_buyer_keeps_starter_replacement_needs_authorized_operation(
 
 def test_cancel_refunds_reserved_gold_and_preserves_history(client, monkeypatch):
     ah, h = admin(client)
-    s = die(client, h, monkeypatch)
+    s = historical_die(client, h, monkeypatch)
     aid = s["death"]["items"][0]["auction_id"]
     bidder = fresh(client, "bidder")
     cid = state(client, bidder)["character"]["id"]

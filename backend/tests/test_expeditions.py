@@ -240,12 +240,13 @@ def test_level_gained_during_expedition_is_preserved(client, monkeypatch):
         c.level = 9
         c.xp = 440
         c.strength = 100
+        expected_xp = db.get(EnemyInstance, s["map"]["enemies"][0]["id"]).xp_reward - 10
     kill(
         client, h, s["map"]["enemies"][0]["id"]
     )  # Existing curve: level 9 needs 450, gain 30.
     assert (
         state(client, h)["character"]["level"] == 10
-        and state(client, h)["character"]["xp"] == 20
+        and state(client, h)["character"]["xp"] == expected_xp
     )
     assert flee(client, h, s["expedition"]["id"]).status_code == 200
     assert (
@@ -378,14 +379,17 @@ def test_flee_closes_active_battle_and_death_ends_failed_expedition(
     b = client.post("/battles", json={"monster": str(e["id"])}, headers=h).json()
     assert flee(client, h, s["expedition"]["id"]).status_code == 200
     with Session() as db:
-        assert db.get(Battle, b["id"]).status == "fled"
+        assert (
+            db.get(Battle, b["id"]) is None
+        )  # Finished procedural turn state is transient.
         assert (
             db.scalar(
                 select(func.count())
                 .select_from(WorldEvent)
                 .where(
-                    WorldEvent.kind == "COMBAT_FINISHED",
-                    WorldEvent.payload["result"].as_string() == "fled",
+                    WorldEvent.kind == "EXPEDITION_FLED",
+                    WorldEvent.payload["expedition"].as_integer()
+                    == s["expedition"]["id"],
                 )
             )
             == 1
