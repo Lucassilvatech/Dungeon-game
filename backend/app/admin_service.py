@@ -34,6 +34,10 @@ ACTIONS = {
     "auctions.archive": "auctions.manage",
     "world.event_create": "world.manage",
     "world.event_cancel": "world.manage",
+    "collection.refill": "collection.manage",
+    "collection.disable": "collection.manage",
+    "contracts.publish": "contracts.manage",
+    "contracts.cancel": "contracts.manage",
 }
 PARAMS = {
     "bank.issue": {"amount", "destination"},
@@ -68,6 +72,18 @@ PARAMS = {
         "duration_minutes",
     },
     "world.event_cancel": set(),
+    "collection.refill": set(),
+    "collection.disable": set(),
+    "contracts.publish": {
+        "name",
+        "description",
+        "kind",
+        "target",
+        "required",
+        "reward",
+        "slots",
+    },
+    "contracts.cancel": set(),
 }
 
 
@@ -87,6 +103,8 @@ def data(row):
             "opening_price",
             "amount",
             "reward_amount",
+            "reward",
+            "reserved",
         ):
             v = str(v) if v is not None else None
         elif hasattr(v, "isoformat"):
@@ -150,6 +168,18 @@ def lock_resources(db, action, target, p):
                 ids.add(int(name[10:]))
     if action == "world.spawn":
         ids.add(int(p["character_id"]))
+    if action.startswith("collection."):
+        node = get(db, m.ResourceNode, target)
+        ids.add(node.character_id)
+    if action == "contracts.cancel":
+        ids.update(
+            db.scalars(
+                select(m.CharacterContract.character_id).where(
+                    m.CharacterContract.contract_id == int(target),
+                    m.CharacterContract.status == "ACTIVE",
+                )
+            )
+        )
     if ids:
         db.scalars(
             select(m.Character)
@@ -164,10 +194,54 @@ def lock_resources(db, action, target, p):
     if action.startswith("bank."):
         db.scalar(select(m.CentralBank).where(m.CentralBank.id == 1).with_for_update())
         db.scalar(select(m.Treasury).where(m.Treasury.id == 1).with_for_update())
+    if action in ("contracts.publish", "contracts.cancel"):
+        if action == "contracts.cancel":
+            db.scalar(
+                select(m.GuildContract)
+                .where(m.GuildContract.id == int(target))
+                .with_for_update()
+            )
+        db.scalar(select(m.Treasury).where(m.Treasury.id == 1).with_for_update())
+    if action.startswith("collection."):
+        db.scalar(
+            select(m.ResourceNode)
+            .where(m.ResourceNode.id == int(target))
+            .with_for_update()
+        )
     db.expire_all()  # Metadata fetched before waiting must not become a stale identity-map read.
 
 
 def describe(db, action, target, p):
+    if action.startswith("collection."):
+        return {"node": data(get(db, m.ResourceNode, target))}
+    if action == "contracts.publish":
+        from .contracts import validate, payload
+
+        if target != "guild":
+            fail("Publicação exige a Guilda do primeiro andar", 422)
+        values = validate(db, p)
+        return {
+            "parameters": {**values, "reward": str(values["reward"])},
+            "reservation": str(values["reward"] * values["slots"]),
+            "accounts": {"treasury": str(db.get(m.Treasury, 1).balance)},
+            "recent_contracts": [
+                payload(row)
+                for row in db.scalars(
+                    select(m.GuildContract)
+                    .order_by(m.GuildContract.id.desc())
+                    .limit(10)
+                )
+            ],
+        }
+    if action == "contracts.cancel":
+        from .contracts import cancellation_plan
+
+        d = get(db, m.GuildContract, target)
+        return {
+            "contract": data(d),
+            "accounts": {"treasury": str(db.get(m.Treasury, 1).balance)},
+            **cancellation_plan(db, d),
+        }
     if action == "world.event_create":
         from .world_events import validate
 
@@ -372,6 +446,16 @@ def operation_payload(op):
         if op.action != "bank.burn":
             key = op.params.get("destination", "central_bank")
             projected[key] = str(int(projected[key]) + n)
+    if op.action == "contracts.publish":
+        projected["treasury"] = str(
+            int(projected["treasury"]) - int(op.before["reservation"])
+        )
+        projected["contract_reserve"] = op.before["reservation"]
+    if op.action == "contracts.cancel":
+        projected["treasury"] = str(
+            int(projected["treasury"]) + int(op.before["refund"])
+        )
+        projected["contract_reserve"] = op.before["retained"]
     return {
         **data(op),
         "confirmation_token": op.confirmation_hash if op.status == "PREVIEW" else None,
@@ -459,7 +543,31 @@ def apply(db, actor, op):
 
     p = op.params
     action = op.action
-    if action.startswith("bank."):
+    if action == "contracts.publish":
+        from .contracts import publish
+
+        publish(db, p, op.id)
+    elif action == "contracts.cancel":
+        from .contracts import cancel_publication
+
+        cancel_publication(db, int(op.target), op.id)
+    elif action.startswith("collection."):
+        n = get(db, m.ResourceNode, op.target)
+        if action == "collection.refill":
+            n.remaining = n.capacity
+            n.enabled = True
+        else:
+            n.enabled = False
+        event(
+            db,
+            "RESOURCE_ADMIN_CHANGED",
+            get(db, m.Character, n.character_id),
+            node_id=n.id,
+            operation_id=op.id,
+            remaining=n.remaining,
+            enabled=n.enabled,
+        )
+    elif action.startswith("bank."):
         from .admin_economy import execute
 
         execute(db, op)

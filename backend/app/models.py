@@ -513,3 +513,67 @@ class GameplayDay(Base):
     )
     day: Mapped[date] = mapped_column(Date, primary_key=True, index=True)
     counters: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class ResourceNode(Base):
+    __tablename__ = "resource_nodes"
+    __table_args__ = (
+        UniqueConstraint("character_id", "room_id", "generation", "node_key"),
+        CheckConstraint("capacity > 0 AND remaining >= 0 AND remaining <= capacity"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id"), index=True)
+    room_id: Mapped[str] = mapped_column(ForeignKey("rooms.id"), index=True)
+    generation: Mapped[int] = mapped_column(default=0)
+    node_key: Mapped[str] = mapped_column(String(40))
+    definition: Mapped[str] = mapped_column(ForeignKey("item_definitions.id"))
+    x: Mapped[int] = mapped_column()
+    y: Mapped[int] = mapped_column()
+    capacity: Mapped[int] = mapped_column()
+    remaining: Mapped[int] = mapped_column()
+    enabled: Mapped[bool] = mapped_column(default=True, server_default="true")
+
+
+class GuildContract(Base):
+    __tablename__ = "guild_contracts"
+    __table_args__ = (
+        CheckConstraint(
+            "required > 0 AND reward > 0 AND reserved >= 0 AND slots > 0 AND taken >= 0 AND taken <= slots"
+        ),
+        CheckConstraint("kind IN ('kill','collect','deliver')"),
+        CheckConstraint("status IN ('OPEN','CANCELLED','COMPLETED')"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100))
+    description: Mapped[str] = mapped_column(String(500))
+    kind: Mapped[str] = mapped_column(String(20))
+    target: Mapped[str] = mapped_column(String(30))
+    required: Mapped[int] = mapped_column()
+    reward: Mapped[int] = mapped_column(Gold())
+    slots: Mapped[int] = mapped_column()
+    taken: Mapped[int] = mapped_column(default=0)
+    reserved: Mapped[int] = mapped_column(Gold(), default=0)
+    status: Mapped[str] = mapped_column(String(20), default="OPEN", index=True)
+    created_at: Mapped[datetime] = mapped_column(default=utc_now)
+    operation_id: Mapped[str | None] = mapped_column(ForeignKey("admin_operations.id"))
+
+
+class CharacterContract(Base):
+    __tablename__ = "character_contracts"
+    __table_args__ = (
+        UniqueConstraint("character_id", "contract_id"),
+        UniqueConstraint("character_id", "request_id"),
+        CheckConstraint("progress >= 0"),
+        CheckConstraint("status IN ('ACTIVE','PAID','CANCELLED')"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id"), index=True)
+    contract_id: Mapped[int] = mapped_column(
+        ForeignKey("guild_contracts.id"), index=True
+    )
+    request_id: Mapped[str] = mapped_column(String(36))
+    progress: Mapped[int] = mapped_column(default=0)
+    status: Mapped[str] = mapped_column(String(20), default="ACTIVE", index=True)
+    accepted_at: Mapped[datetime] = mapped_column(default=utc_now)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime)
+    claim_request_id: Mapped[str | None] = mapped_column(String(36))

@@ -106,6 +106,9 @@ def snapshot(db, c, wander=False):
     enemies = instances(db, c, wander=wander)
     room, data = room_payload(db, c)
     data["enemies"] = [payload(e) for e in enemies]
+    from .resources import state as resource_state
+
+    data["gather_nodes"] = resource_state(db, c)
     data["monsters"] = {
         e.spawn_key: [e.x, e.y] for e in enemies if e.state != EnemyState.DEAD
     }
@@ -120,6 +123,7 @@ def snapshot(db, c, wander=False):
 
     records = pending(db, c)
     summary = reward_summary_from(records)
+    inventory_rows = inventory(db, c)
     db.flush()
     return {
         "guild_rewards": summary,
@@ -156,7 +160,11 @@ def snapshot(db, c, wander=False):
         "death": latest(db, c),
         "coins_exact": str(c.coins),
         "reserved_gold": str(int(reserved)),
-        "inventory": inventory(db, c),
+        "inventory": inventory_rows,
+        "collection_capacity": {
+            "used": len(inventory_rows),
+            "limit": settings.collection_slots,
+        },
         "expedition": expedition,
         "battle": battle_data(b, db) if b else None,
         "encounter_rules": {
@@ -426,6 +434,9 @@ def action(
 
         if not training:
             add(db, c, monsters_defeated=1, xp_earned=c.xp - xp_before)
+            from .contracts import progress
+
+            progress(db, c, "kill", e.species, 1)
         gain_levels(db, c)
         if not training and (not secret or first):
             event(

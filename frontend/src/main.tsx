@@ -16,6 +16,7 @@ import {
   PersonalRecovery,
 } from "./DeathEconomy";
 import "./style.css";
+import {Gathering,ContractBoard} from './CollectionContracts';
 import {Encounters} from "./Encounters";
 import {AudioControls,sound} from "./audio";
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -201,6 +202,7 @@ function App() {
         setPeers([]);
         return api("/rooms/exits/" + t.id, {});
       }
+      if(t.kind==="resource")return api(`/resources/${t.id}/collect`,{request_id:crypto.randomUUID()});
       if (t.kind === "npc") return api("/interact", {});
       if (t.kind === "monster") {
         if (
@@ -610,6 +612,7 @@ function App() {
               ["auction", "⚖ Leilão"],
               ["recovery", "♜ Recuperação"],
               ["history", "◷ Histórico"],
+ ["collection", "♧ Coleta"], ["contracts", "▤ Contratos"],
               ["raid", "♧ Raid"],
             ].map(([id, label]) => (
               <button
@@ -909,7 +912,9 @@ function App() {
               {tab === "recovery" && (
                 <PersonalRecovery state={state} busy={busy} action={action} />
               )}
-              {tab==="history"&&<><h2>Histórico e notificações</h2><p>Últimas operações do seu personagem. Registros financeiros completos permanecem auditados.</p><ol>{state.events.slice(-20).reverse().map(e=><li key={e.id}>{({ITEM_ADDED:"Item recebido",GUILD_REWARD_CLAIMED:"Recompensa paga",EXPEDITION_STARTED:"Expedição iniciada",EXPEDITION_COMPLETED:"Expedição concluída",EXPEDITION_FLED:"Fuga confirmada",PLAYER_DIED_IN_EXPEDITION:"Resgate após morte",PERSONAL_ITEM_RECOVERED:"Item recuperado",GUILD_DEBT_COLLECTION:"Cobrança da Guilda",ATTRIBUTE_POINT_SPENT:"Atributos distribuídos",FAST_TRAVEL:"Viagem rápida"} as Record<string,string>)[e.kind]??"Progresso registrado"}{e.payload.amount!=null?" · "+String(e.payload.amount)+" moedas":""}</li>)}</ol></>}
+              {tab==="collection"&&<Gathering state={state} busy={busy} target={target}/>}
+ {tab==="contracts"&&<ContractBoard state={state} busy={busy} action={action}/>}
+ {tab==="history"&&<><h2>Histórico e notificações</h2><p>Últimas operações do seu personagem. Registros financeiros completos permanecem auditados.</p><ol>{state.events.slice(-20).reverse().map(e=><li key={e.id}>{({ITEM_ADDED:"Item recebido",GUILD_REWARD_CLAIMED:"Recompensa paga",EXPEDITION_STARTED:"Expedição iniciada",EXPEDITION_COMPLETED:"Expedição concluída",EXPEDITION_FLED:"Fuga confirmada",PLAYER_DIED_IN_EXPEDITION:"Resgate após morte",PERSONAL_ITEM_RECOVERED:"Item recuperado",GUILD_DEBT_COLLECTION:"Cobrança da Guilda",ATTRIBUTE_POINT_SPENT:"Atributos distribuídos",FAST_TRAVEL:"Viagem rápida"} as Record<string,string>)[e.kind]??"Progresso registrado"}{e.payload.amount!=null?" · "+String(e.payload.amount)+" moedas":""}</li>)}</ol></>}
               {tab === "raid" && (
                 <>
                   <p className="eyebrow">NINGUÉM PRECISA EXPLORAR SOZINHO</p>

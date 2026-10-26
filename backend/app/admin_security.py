@@ -21,6 +21,10 @@ READ = {
     "auctions.read",
     "world.read",
     "audit.read",
+    "encounters.read",
+    "collection.read",
+    "contracts.read",
+    "metrics.read",
 }
 ROLES = {
     "observer": READ,
@@ -31,8 +35,9 @@ ROLES = {
         "monsters.manage",
         "auctions.manage",
         "world.manage",
+        "collection.manage",
     },
-    "economist": READ | {"economy.manage"},
+    "economist": READ | {"economy.manage", "contracts.manage"},
     "owner": READ
     | {
         "players.manage",
@@ -40,7 +45,9 @@ ROLES = {
         "monsters.manage",
         "auctions.manage",
         "world.manage",
+        "collection.manage",
         "economy.manage",
+        "contracts.manage",
     },
 }
 

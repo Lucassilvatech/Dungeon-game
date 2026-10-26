@@ -142,6 +142,55 @@ def view(
         raise HTTPException(422, "Página inválida")
     permission = module + ".read"
     require(actor, permission)
+    if module == "encounters":
+        from .encounters import payload
+
+        return [
+            payload(db, g)
+            for g in db.scalars(
+                select(m.CombatEncounter)
+                .order_by(m.CombatEncounter.id.desc())
+                .offset(offset)
+                .limit(100)
+            )
+        ]
+    if module == "collection":
+        return [
+            {**data(n), "name": db.get(m.ItemDefinition, n.definition).name}
+            for n in db.scalars(
+                select(m.ResourceNode)
+                .order_by(m.ResourceNode.id.desc())
+                .offset(offset)
+                .limit(100)
+            )
+        ]
+    if module == "contracts":
+        from .contracts import payload
+
+        return {
+            "definitions": [
+                payload(d)
+                for d in db.scalars(
+                    select(m.GuildContract)
+                    .order_by(m.GuildContract.id.desc())
+                    .offset(offset)
+                    .limit(100)
+                )
+            ],
+            "acceptances": [
+                data(a)
+                for a in db.scalars(
+                    select(m.CharacterContract)
+                    .order_by(m.CharacterContract.id.desc())
+                    .offset(offset)
+                    .limit(100)
+                )
+            ],
+        }
+    if module == "metrics":
+        from .observability import summary
+
+        return summary(db)
     if module == "overview":
         return {
             "players": db.scalar(select(func.count()).select_from(m.Character)),

@@ -45,3 +45,27 @@ def add_item(db, c, definition_id, quantity, reference):
         quantity=quantity,
     )
     db.flush()
+
+
+def ensure_collection_capacity(db, c, definition, quantity, limit):
+    """Legacy surplus is preserved; collection may fill an existing stack without growing slots."""
+    from math import ceil
+    from .game import fail
+
+    rows = db.scalars(
+        select(Item).where(Item.owner == c.id, Item.location == "inventory")
+    ).all()
+    free = sum(
+        max(0, definition.max_stack_size - i.quantity)
+        for i in rows
+        if definition.stackable and i.definition == definition.id and not i.equipped
+    )
+    needed = ceil(
+        max(0, quantity - free)
+        / (definition.max_stack_size if definition.stackable else 1)
+    )
+    if needed and len(rows) + needed > limit:
+        fail(
+            "Mochila sem espaço para coleta; libere um slot ou complete uma pilha existente"
+        )
+    return {"used": len(rows), "limit": limit}

@@ -37,6 +37,8 @@ def seed():
         for key, name, kind, power in [
             ("sword", "Espada de aprendiz", "weapon", 3),
             ("crystal", "Cristal da clareira", "material", 0),
+            ("herb", "Folha Luminosa", "material", 0),
+            ("ore", "Minério de Musgo", "material", 0),
         ]:
             if not db.get(ItemDefinition, key):
                 db.add(
@@ -46,7 +48,9 @@ def seed():
                         kind=kind,
                         power=power,
                         death_transferable=key != "sword",
-                        base_value=100 if key == "sword" else 10,
+                        base_value={"sword": 100, "crystal": 10, "herb": 5, "ore": 8}[
+                            key
+                        ],
                         stackable=kind == "material",
                         max_stack_size=99 if kind == "material" else 1,
                         description=(

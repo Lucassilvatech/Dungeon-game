@@ -568,3 +568,77 @@ def player_metrics(a=Depends(current_account), db=Depends(get_db)):
     from .observability import summary
 
     return summary(db, game.character(db, a).id)
+
+
+class GameOperation(BaseModel):
+    model_config = {"extra": "forbid"}
+    request_id: UUID
+
+
+@app.get("/resources")
+def resource_nodes(a=Depends(current_account), db=Depends(get_db)):
+    from .resources import state
+
+    return state(db, game.character(db, a))
+
+
+@app.post("/resources/{id}/collect")
+def resource_collect(
+    id: int, body: GameOperation, a=Depends(current_account), db=Depends(get_db)
+):
+    from .resources import collect
+
+    return collect(db, game.character(db, a), id, str(body.request_id))
+
+
+@app.get("/contracts")
+def contracts(offset: int = 0, a=Depends(current_account), db=Depends(get_db)):
+    from .contracts import listing
+
+    if offset < 0:
+        game.fail("Página inválida", 422)
+    return listing(db, game.character(db, a), offset)
+
+
+@app.post("/contracts/{id}/accept")
+def contract_accept(
+    id: int, body: GameOperation, a=Depends(current_account), db=Depends(get_db)
+):
+    from .contracts import accept
+    from .auctions import mutex
+
+    mutex(db)
+    return accept(db, game.character(db, a), id, str(body.request_id))
+
+
+@app.post("/contracts/accepted/{id}/deliver")
+def contract_deliver(
+    id: int, body: GameOperation, a=Depends(current_account), db=Depends(get_db)
+):
+    from .contracts import deliver
+    from .auctions import mutex
+
+    mutex(db)
+    return deliver(db, game.character(db, a), id, str(body.request_id))
+
+
+@app.post("/contracts/accepted/{id}/claim")
+def contract_claim(
+    id: int, body: GameOperation, a=Depends(current_account), db=Depends(get_db)
+):
+    from .contracts import claim
+    from .auctions import mutex
+
+    mutex(db)
+    return claim(db, game.character(db, a), id, str(body.request_id))
+
+
+@app.post("/contracts/accepted/{id}/cancel")
+def contract_cancel(
+    id: int, body: GameOperation, a=Depends(current_account), db=Depends(get_db)
+):
+    from .contracts import cancel_personal
+    from .auctions import mutex
+
+    mutex(db)
+    return cancel_personal(db, game.character(db, a), id)

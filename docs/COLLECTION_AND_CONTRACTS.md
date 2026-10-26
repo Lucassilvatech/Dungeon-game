@@ -1,0 +1,15 @@
+# Coleta e contratos — especificação de implementação 0.8
+
+Implementado e testado: 14 testes backend de regressão nesta etapa; navegador Chromium validou coleta real em 390px, estoque/inventário após recarregar e orientação de localização dos contratos. Fluxos administrativos e financeiros cobertos por API; publicação/pagamento por UI serão revalidados no fechamento.
+
+Coleta inicial: Folha Luminosa no Bosque e Minério de Musgo na Trilha. Dois pontos pessoais por sala/geração, estoque finito, uma unidade por operação, sem reposição temporal automática. Usar coordenadas de recursos já existentes, excluindo paredes/NPCs/monstros/saídas. Refazer pedido com mesmo UUID não coleta duas vezes. Sem combate e perto do ponto; mochila usa stacks existentes e teto de slots de coleta configurável (30), sem apagar itens legados excedentes ou perder loot antigo. Coletar não cria moeda. Reposição/desativação exclusivamente ADM com permissão/prévia/confirmação/auditoria.
+
+Contratos publicados por administrador autorizado da Guilda, sem conta ADM padrão e sem publicação financeira implícita no seed. Tipos iniciais: matar espécie elegível, coletar recurso ou entregar material. Aceitar/entregar/resgatar exige recepção da Guilda e ausência de combate; consulta é livre ao proprietário. Progresso conta somente ações posteriores à aceitação. Morte/fuga não cria outro contrato nem permite repetir uma recompensa já paga.
+
+Publicação debita antecipadamente `recompensa × vagas` do Tesouro para reserva de contrato identificada no ledger. Sem orçamento, tudo reverte. Aceitação ocupa vaga; uma aceitação por personagem/definição, no máximo três ativas. Pagamento debita a reserva e usa crédito normal da carteira assinada, inclusive para abater dívida; UUID/estado/ledger único impedem duplicação.
+
+Entrega consome atomicamente as unidades exigidas dos materiais elegíveis. Pilhas inteiras viram tombstones `consumed` em vez de exclusão física, preservando referências de leilões históricos. Pilhas parciais diminuem sem ir a zero. Não consumir espada, equipamentos protegidos ou itens de outra conta.
+
+Cancelamento pessoal só para contrato incompleto: libera vaga, mantém orçamento na reserva da publicação para outro aventureiro e não retira materiais já coletados. Publicação cancelada devolve somente orçamento não comprometido ao Tesouro. **Direitos já concluídos (inclusive materiais entregues) conservam sua reserva e continuam resgatáveis**, mesmo após retirada da publicação. Aceitações incompletas são canceladas sem pagamento; não podem completar objetivos depois da retirada. Registros pagos/histórico/ledger nunca são apagados.
+
+Ordem dos locks financeiros: mutex de leilões/ADM antes do personagem, depois aceitação/definição e Tesouro quando necessário. Progresso durante combate/coleta usa somente lock do personagem e linhas próprias, sem adquirir mutex financeiro depois. Cancelamento ADM bloqueia previamente personagens afetados; prévia inclui aceitações/progresso para detectar estado alterado. Reserva de contratos entra na reconciliação oficial, não em créditos sandbox.

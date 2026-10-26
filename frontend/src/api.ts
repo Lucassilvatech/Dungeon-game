@@ -41,7 +41,9 @@ export type Enemy = {
   ai_state: string;
 };
 export type Encounter={id:number;status:string;turn:number;size:number;selected_enemy_id:number;enemies:Enemy[];last_round:{actor:string;enemy_id?:number;damage:number}[];damage_dealt:number;damage_received:number};
+export type ResourceNode={id:number;name:string;definition:string;x:number;y:number;remaining:number;capacity:number;enabled:boolean};
 export type State = {
+ collection_capacity:{used:number;limit:number};
   encounter:Encounter|null;
   encounter_rules:{max_enemies:number;radius:number};
   guild_rewards:{count:number;total:number;groups:Record<string,number>};
@@ -98,6 +100,7 @@ export type State = {
   battle: Battle | null;
   unlocked_floor: number;
   map: {
+ gather_nodes:ResourceNode[];
     enemies: Enemy[];
     seed?: number;
     npc_name?: string;

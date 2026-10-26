@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
+import {PublishContract} from "./Contracts";
 import { WorldEvents } from "./WorldEvents";
 
 type Row = Record<string, any>;
@@ -15,8 +16,10 @@ const modules = [
   ["auctions", "Leilões"],
   ["world", "Mundo e eventos"],
   ["audit", "Auditoria"],
+ ["encounters","Encontros"],["collection","Coleta"],["contracts","Contratos"],["metrics","Métricas de jogo"],
 ];
 const names: Record<string, string> = {
+ "contracts.publish":"Publicar contrato (formulário guiado)","contracts.cancel":"Retirar publicação preservando direitos", "collection.refill":"Repor estoque pessoal auditado", "collection.disable":"Suspender ponto de coleta",
   "bank.issue": "Emitir moeda oficial",
   "bank.burn": "Retirar moeda de circulação",
   "bank.transfer": "Transferir reservas existentes",
@@ -41,6 +44,7 @@ const names: Record<string, string> = {
   "auctions.cancel": "Suspender leilão e devolver reservas",
 };
 const targetLabels: Record<string, string> = {
+ "contracts.cancel":"ID da publicação","collection.refill":"ID do ponto pessoal","collection.disable":"ID do ponto pessoal",
   "items.protect": "ID da definição",
   "items.transfer": "ID do item",
   "items.recover_starter": "ID do leilão",
@@ -440,7 +444,7 @@ function App() {
         >
           Encerrar sessão ADM
         </button>
-        <a href="/">Cliente web legado</a>
+        <a href="/">Cliente Web principal</a>
       </aside>
       <main>
         <header>
@@ -751,6 +755,10 @@ function App() {
                 <Table rows={data.events} columns={["id", "kind", "payload"]} />
               </>
             )}
+            {module === "encounters" && <Table rows={data} columns={["id","character_id","status","turn","size","damage_dealt","damage_received","enemies"]}/>}
+            {module === "collection" && <><p>Estoque por personagem e geração. Reposição é excepcional, com prévia e auditoria.</p><Table rows={data} columns={["id","character_id","room_id","name","remaining","capacity","enabled"]} onChoose={r=>chooseAction("collection.refill",String(r.id))}/></>}
+            {module === "contracts" && <><Table rows={data.definitions} columns={["id","name","kind","target","required","reward","slots","taken","reserved","status"]} onChoose={r=>chooseAction("contracts.cancel",String(r.id))}/><h3>Aceitações persistentes</h3><Table rows={data.acceptances} columns={["id","character_id","contract_id","progress","status"]}/>{session?.permissions?.includes("contracts.manage")&&<PublishContract busy={busy} preview={body=>run(async()=>{setPreview(await request("/operations/preview",body))})}/>}</>}
+            {module === "metrics" && <><p>Somente ações instrumentadas desde a atualização. Duração desconhecida de combates antigos não é estimada.</p><Table rows={Object.entries(data).filter(([k])=>k!=="totals").map(([key,value])=>({key,value}))} columns={["key","value"]}/><Table rows={Object.entries(data.totals??{}).map(([key,value])=>({key,value}))} columns={["key","value"]}/></>}
             {module === "audit" && (
               <Table
                 rows={data}
@@ -782,7 +790,7 @@ function App() {
               >
                 <option value="">Selecione uma operação</option>
                 {allowed
-                  .filter((k) => k !== "world.event_create")
+                  .filter((k) => !["world.event_create","contracts.publish"].includes(k))
                   .map((k) => (
                     <option key={k} value={k}>
                       {names[k]}

@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     procedural_level_weight: float = Field(default=0.65, ge=0, le=1)
     encounter_max_enemies: int = Field(default=2, ge=2, le=3)
     encounter_radius: int = Field(default=8, ge=1, le=12)
+    collection_slots: int = Field(default=30, ge=1, le=1000)
+    max_active_contracts: int = Field(default=3, ge=1, le=10)
     discord_service_key: str = ""
     model_config = {"env_file": ".env", "extra": "ignore"}
 

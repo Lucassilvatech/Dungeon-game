@@ -29,7 +29,12 @@ def metrics(db):
     emitted = sum(e.amount for e in entries if e.source == "mint")
     retired = sum(e.amount for e in entries if e.destination in ("burn", "sink"))
     signed = sum(c.coins for c in players)
-    net = signed + treasury + bank + escrow
+    from .models import GuildContract
+
+    contract_reserves = int(
+        db.scalar(select(func.coalesce(func.sum(GuildContract.reserved), 0)))
+    )
+    net = signed + treasury + bank + escrow + contract_reserves
     pending = sum(
         reward_value(b)
         for b in db.scalars(
@@ -70,6 +75,7 @@ def metrics(db):
         player_signed=str(signed),
         medical_debt=str(sum(max(0, -c.coins) for c in players)),
         escrow=str(escrow),
+        contract_reserves=str(contract_reserves),
         central_bank=str(bank),
         guild_treasury=str(treasury),
         pending_obligations=str(pending),
