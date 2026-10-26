@@ -34,3 +34,7 @@ Pagamento centralizado na recepcionista, não na antiga curadora das salas. O re
 ## Penalidade de fuga — 0.4
 
 A fuga reduz direitos monetários ainda não resgatados, não moeda em circulação: restante=floor(total/2), perda=ceil(total/2). Todos os registros pendentes do personagem são considerados, sem filtrar pela expedição. A alocação do restante segue Battle.id; valores ajustados são a única fonte para resgate. Carteira e Tesouro permanecem intactos no ato da fuga. Ajustes antes/depois ficam no resultado da expedição; o ledger de transferências permanece exclusivo de pagamentos reais. XP atual é zerado sem reduzir nível ou itens. Nenhum banco/economia paralelo foi criado.
+
+## Reservas de contratos — 0.8
+
+Oferta líquida oficial agora inclui carteira assinada dos personagens + Tesouro + Banco Central + reservas de lances + reservas de contratos. Publicação transfere Tesouro → `contract:ID`; pagamento transfere pool → carteira, amortizando dívida pelo mecanismo normal; retirada devolve só orçamento livre. Direitos já concluídos mantêm reserva até pagamento. Ledger registra referências únicas de reserva/pagamento/cancelamento; nenhum contrato cria moedas implicitamente. Materiais coletados são itens finitos, sem conversão direta em moeda. Ver [COLLECTION_AND_CONTRACTS.md](COLLECTION_AND_CONTRACTS.md).

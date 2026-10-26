@@ -39,3 +39,11 @@ Para concessão oficial a personagem use conta `character:ID` no fluxo auditado 
 API `/admin/auth/login` emite sessão administrativa independente; `/admin/session` consulta permissões; `/admin/auth/logout` revoga. Consultas por módulo e `/admin/operations/preview` / `.../{UUID}/confirm` verificam autorização no FastAPI. Dados financeiros exatos usam texto decimal. Login falho e sessão expirada exibem erro; falha de confirmação por estado alterado exige nova prévia. Rejeições de operações existentes são registradas como FAILED com rollback dos efeitos.
 
 Não exponha o painel em endereço público sem TLS e configuração de proxy/autenticação adequadas. O Compose publica loopback; tokens Bearer não usam cookies, portanto não há credencial ambiental de cookie para CSRF. Mais detalhes em SECURITY_AUDIT.md.
+
+## Módulos 0.8
+
+Novas leituras: encontros, pontos pessoais de coleta, publicações/aceitações de contratos e métricas agregadas. Observer pode consultar; operator pode gerir estoque de coleta; economist pode publicar/retirar contratos; owner reúne permissões. Papéis existentes não viram poderes pelo Discord e não há conta padrão.
+
+Em Contratos, formulário guiado apresenta objetivo/alvo/quantidade/vagas/recompensa e justificativa. Publicar exige prévia e confirmação; reserva `recompensa × vagas` do Tesouro, sem emissão. Retirada mostra aceitações e valores retidos/devolvidos: quem já concluiu mantém pagamento garantido. Alteração de progresso depois da prévia impede confirmação até recalcular. Cancelamento pessoal incompleto libera vaga sem destruir orçamento. Nunca alterar reservas por SQL para contornar auditoria.
+
+Coleta mostra estoque por personagem/região/geração, não um estoque global. Reposição/desativação usa ID do ponto pessoal, permissão, motivo, prévia, confirmação e recibo. Não é reposição automática por timer nem criação direta de moedas. Métricas iniciam na instrumentação 0.8; não tratar ausência de amostras antigas como zero mortes/tempo.

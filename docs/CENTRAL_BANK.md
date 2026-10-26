@@ -20,3 +20,7 @@ Dívida é saldo assinado, não segunda moeda. O painel distingue dinheiro dispo
 ## Recursos administrativos isolados
 
 AdminTestCredit é um contador próprio por conta administrativa, criado/consumido somente por operações auditadas sandbox. Não aparece no saldo Character.coins, não possui Item negociável, não é destino/origem de contas oficiais, não é aceito por lances e não entra no total oficial. A tela o identifica como crédito de teste não negociável; não há conversão para ouro. Ter papel ADM não concede ouro infinito ao personagem.
+
+## Compatibilidade 0.8
+
+Banco Central continua manual e preservado. Contratos não o tornam autônomo: são financiados pelo Tesouro existente e o pool `contract:ID` integra a reconciliação oficial. Créditos sandbox continuam excluídos. Não há emissão automática para pagar contratos sem orçamento; publicação insuficiente reverte integralmente.

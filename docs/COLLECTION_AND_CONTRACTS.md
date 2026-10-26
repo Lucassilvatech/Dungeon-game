@@ -1,6 +1,6 @@
 # Coleta e contratos — especificação de implementação 0.8
 
-Implementado e testado: 14 testes backend de regressão nesta etapa; navegador Chromium validou coleta real em 390px, estoque/inventário após recarregar e orientação de localização dos contratos. Fluxos administrativos e financeiros cobertos por API; publicação/pagamento por UI serão revalidados no fechamento.
+Implementado e testado: 14 testes backend de regressão nesta etapa; navegador Chromium validou coleta real em 390px, estoque/inventário após recarregar e orientação de localização dos contratos. Fluxos administrativos e financeiros cobertos por API; publicação com prévia/confirmação ADM e aceitação/coleta/pagamento pela UI móvel também passaram no fechamento.
 
 Coleta inicial: Folha Luminosa no Bosque e Minério de Musgo na Trilha. Dois pontos pessoais por sala/geração, estoque finito, uma unidade por operação, sem reposição temporal automática. Usar coordenadas de recursos já existentes, excluindo paredes/NPCs/monstros/saídas. Refazer pedido com mesmo UUID não coleta duas vezes. Sem combate e perto do ponto; mochila usa stacks existentes e teto de slots de coleta configurável (30), sem apagar itens legados excedentes ou perder loot antigo. Coletar não cria moeda. Reposição/desativação exclusivamente ADM com permissão/prévia/confirmação/auditoria.
 

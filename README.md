@@ -1,31 +1,43 @@
-# Dungeon Game — primeiro andar · atualização 0.7
+# Dungeon Game — Web First · primeiro andar · 0.8
 
 > O build Windows 0.6 de desenvolvimento recebeu relato de bloqueio “vírus detectado” e está em investigação. Não desative o antivírus ou crie exclusão. [Status e verificações](docs/security/WINDOWS_BUILD_TRIAGE.md).
 
-RPG persistente com FastAPI, PostgreSQL, cliente Godot 4 para Windows/Android, Central Administrativa web e cliente Discord. React/TypeScript/Phaser permanece como cliente legado durante a migração. Esta versão aperfeiçoa exclusivamente o **primeiro andar**. Não expande andares superiores nem raids. Arte e sprites originais gerados pelo projeto, sem assets das referências comerciais.
+RPG persistente com backend autoritativo FastAPI/PostgreSQL, **React/TypeScript/Phaser como cliente principal Web**, Discord complementar e Central Administrativa Web. Godot Windows/Android permanece preservado, sem novos builds nesta etapa. Esta versão aperfeiçoa exclusivamente o **primeiro andar**. Não expande andares superiores nem raids. Arte e sprites originais gerados pelo projeto, sem assets das referências comerciais.
 
-## Atualização de mecânicas, acesso e downloads
+## Evolução 0.8
+
+Encontros opcionais com dois inimigos e seleção de alvo, coleta finita, contratos com orçamento reservado no Tesouro, consultas privadas/ações confirmadas de equipamento no Discord, métricas/simulações, reconexão e áudio opcional. O máximo procedural agora é raro e alcançável sem refazer inimigos persistidos. [Entrega e validações](docs/DELIVERY_0.8.md) · [Web First](docs/WEB_FIRST.md) · [Grupos](docs/COMBAT_ENCOUNTERS.md) · [Coleta/contratos](docs/COLLECTION_AND_CONTRACTS.md) · [Discord](docs/DISCORD_INTEGRATION.md) · [Balanceamento](docs/BALANCE_REPORT_0.8.md).
+
+Build Web de desenvolvimento: [baixar ZIP](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/3863c2c930502453fb02bee54a6cdad13e757906/builds/development/0.8.0-web-b3a3a51/DungeonGame-Web-0.8.zip) · [SHA256](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/3863c2c930502453fb02bee54a6cdad13e757906/builds/development/0.8.0-web-b3a3a51/SHA256SUMS). Contém frontend estático e requer backend 0.8/proxy; não é executável Windows/APK nem jogo offline.
+
+A validação externa do bot e testes de carga em produção permanecem pendentes; não antecipados andares, classes, raids ou mercado geral.
+
+## Histórico 0.7 e downloads nativos preservados
 
 Atributos efetivos compartilhados entre status e combate; sequência/boss 1–10%; gerador universal; perdas de morte até cinco unidades; recuperação pessoal; confisco por dívida; ocultação/arquivamento de leilões e agenda de eventos ADM. [Relatório de entrega, instalação, testes e pendências](docs/DELIVERY_0.7.md) · [Regras técnicas](docs/PROCEDURAL_ECONOMY_UPDATE.md).
 
-Builds de desenvolvimento: [Windows x64](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/b17d07bc16fc14a0767c99f66cc6a139f0235739/builds/development/0.7.0-bd480e0/DungeonGame-Windows-x64.zip) · [Android APK](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/b17d07bc16fc14a0767c99f66cc6a139f0235739/builds/development/0.7.0-bd480e0/DungeonGame-Android.apk). Downloads integrais confirmados com HTTP 200 e SHA256; isso verifica integridade, não ausência de malware. Backend atualizado obrigatório.
+Builds históricos **0.7**, sem exportação nova em 0.8: [Windows x64](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/b17d07bc16fc14a0767c99f66cc6a139f0235739/builds/development/0.7.0-bd480e0/DungeonGame-Windows-x64.zip) · [Android APK](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/b17d07bc16fc14a0767c99f66cc6a139f0235739/builds/development/0.7.0-bd480e0/DungeonGame-Android.apk). Downloads integrais confirmados com HTTP 200 e SHA256; isso verifica integridade, não ausência de malware. Backend atualizado obrigatório.
 
 ## Revisar esta evolução sem alterar a main
 
-Esta implementação está em **feature/procedural-economy-godot-fixes**, para revisão por PR; a main permanece estável e não houve merge automático. Guarde alterações locais antes de trocar de branch. Para testar o código desta entrega:
+Esta implementação está em **feature/web-discord-first-floor-0.8**, baseada em `feature/procedural-economy-godot-fixes`, para revisão por PR; a main permanece estável e não houve merge automático. Guarde alterações locais antes de trocar de branch. Para testar o código desta entrega:
 
 ```powershell
 git fetch origin
-git switch feature/procedural-economy-godot-fixes
+git switch feature/web-discord-first-floor-0.8
 ```
 
 Use os comandos de execução abaixo na branch selecionada. Não use reset/force push ou apague volumes para atualizar.
 
-## Cliente principal Godot e Central Administrativa
+## Cliente principal Web e Central Administrativa
+
+Abra a Web pela porta 8080 após subir a stack. Teclado e clique/toque movimentam por rotas válidas; painéis apresentam personagem, inventário, exploração, Guilda, leilões, recuperação, histórico, coleta e contratos. Encontros em grupo são opcionais e perigosos para iniciantes. Áudio começa silenciado. Contratos são publicados por administrador autorizado com dinheiro real reservado, sem publicações financeiras automáticas no seed.
+
+## Cliente Godot preservado
 
 Abra `godot-client/project.godot` no Godot **4.6.3 Standard** e execute. Android físico exige configurar servidor alcançável antes de entrar. Windows local usa API `http://127.0.0.1:8080/api`; Android permite configurar URL e controles por toque (emulador: `http://10.0.2.2:8080/api`, aparelho físico: endereço HTTPS alcançável). Os presets exportam `.exe` Windows x86-64 e APK Android; ambos foram gerados nesta nuvem. Inicialização nativa Windows/headless passou no CI; jogo em janela/login Windows e dispositivo Android permanecem **não validados**. O fluxo jogável passou no motor Godot Linux/headless. [Cliente, controles, exportação e testes](docs/GODOT_MIGRATION.md).
 
-Central ADM: `http://localhost:8080/admin`, com entrada web e sessão independentes. Não há administrador/senha padrão: crie uma conta normal e conceda um papel explicitamente pelo [procedimento local](docs/ADMINISTRATION.md). O personagem administrativo continua normal. O cliente web legado permanece em `http://localhost:8080`.
+Central ADM: `http://localhost:8080/admin`, com entrada web e sessão independentes. Não há administrador/senha padrão: crie uma conta normal e conceda um papel explicitamente pelo [procedimento local](docs/ADMINISTRATION.md). O personagem administrativo continua normal. O cliente Web principal está em `http://localhost:8080`.
 
 Implementado: viagem rápida validada somente a locais permanentes visitados, Salão de Leilões na Guilda, informações/histórico reais dos anúncios, proteção permanente da Espada de Aprendiz (`sword`), diagnóstico e recuperação individual auditada, módulos administrativos e Banco Central manual com contabilidade e créditos de teste isolados. Não foram implementados andares superiores ou habilidades futuras.
 
@@ -87,7 +99,7 @@ docker compose logs backend
 docker compose down
 ```
 
-`down` conserva o volume. Migração atual: **d0fc148417a5** (sequência, recuperação pessoal, confisco e eventos; dados anteriores preservados). A anterior é **b3057d8109ee**, que protege a espada inicial, cria sessões/papéis/auditoria administrativa, Banco Central inicialmente zerado, configurações e perfis persistentes de monstros, preservando os inimigos existentes e seu XP. A anterior, 039105b3ae1a, adicionou morte, dívida, custódia/leilões, pontos de atributo e NUMERIC. A anterior, 904ca715f282, adicionou expedições persistentes e perigo regional. A migração anterior de stacks/inimigos é 11ac6a18a976. Aventuras antigas ocupadas são adotadas como ativas; histórico abandonado é arquivado sem aplicar penalidade retroativa. Contas, inventário, equipamentos, saldos, XP, inimigos mortos e batalhas em andamento são preservados. Faça backup dos dados importantes antes de atualizar.
+`down` conserva o volume. Migração atual: **4cee57744ea1** (0.8: grupos, métricas, coleta/contratos, recibos Discord e limites/índices; todas aditivas). A base 0.7 é **d0fc148417a5** (sequência, recuperação pessoal, confisco e eventos; dados anteriores preservados). A anterior é **b3057d8109ee**, que protege a espada inicial, cria sessões/papéis/auditoria administrativa, Banco Central inicialmente zerado, configurações e perfis persistentes de monstros, preservando os inimigos existentes e seu XP. A anterior, 039105b3ae1a, adicionou morte, dívida, custódia/leilões, pontos de atributo e NUMERIC. A anterior, 904ca715f282, adicionou expedições persistentes e perigo regional. A migração anterior de stacks/inimigos é 11ac6a18a976. Aventuras antigas ocupadas são adotadas como ativas; histórico abandonado é arquivado sem aplicar penalidade retroativa. Contas, inventário, equipamentos, saldos, XP, inimigos mortos e batalhas em andamento são preservados. Faça backup dos dados importantes antes de atualizar.
 
 ## Discord e limites atuais
 

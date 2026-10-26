@@ -1,5 +1,15 @@
 # Primeiro andar: regras e implementação
 
+## Evolução atual 0.8
+
+Web é o cliente principal; combate individual/regras de expedição da 0.7 continuam. Grupos opt-in começam com dois inimigos próximos: uma ação do jogador, seguida pelos sobreviventes em ordem estável de ID. Alvo, HP e recibos persistem; cada inimigo paga XP/loot/direito uma vez. O iniciante deve preferir combate individual até se preparar. [Regras e compatibilidade](COMBAT_ENCOUNTERS.md).
+
+Máximo procedural agora tem cauda transformada `u >= 0.995`, preservando bins anteriores abaixo dela, influência da proximidade/perigo e consumo de RNG. Só novas instâncias recebem revisão 2; comparar resultados em [BALANCE_REPORT_0.8.md](BALANCE_REPORT_0.8.md).
+
+Folha Luminosa em `common_a`, Minério de Musgo em `common_b`; até dois pontos pessoais por geração, estoque 3/2 respectivamente, sem reposição temporal. Coleta exige proximidade, ausência de combate e espaço de mochila (30 slots para novas coletas, preenchendo stacks existentes quando possível). Não afeta excedentes antigos nem cria moeda. Contratos da recepção exigem reserva antecipada do Tesouro e só contam ações após aceitação. Entregas consomem materiais; retirada de publicação preserva pagamentos já adquiridos. [Especificação](COLLECTION_AND_CONTRACTS.md).
+
+Métricas são posteriores à instrumentação; simulações não representam sessões humanas. Áudio original opcional inicia mudo. Não implementados cooperação, raids completas, classes, habilidades avançadas ou andares superiores.
+
 > **Regras atuais 0.7:** [sequência, geração, retenção, morte/recuperação, dívida e eventos](PROCEDURAL_ECONOMY_UPDATE.md). As regras novas substituem a perda de todos os itens por leilão das versões históricas abaixo.
 
 ## Combate

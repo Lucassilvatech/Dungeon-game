@@ -58,3 +58,11 @@ Quatorze comandos sem registro duplicado: vínculo, doze consultas (incluindo al
 ### Etapa 7 — segurança e observação
 
 Cinco testes específicos aprovados em 12,60s: tentativas rejeitadas contam fora do rollback; limite concorrente atômico; identidade por conta apesar de rotação de tokens/proxy compartilhado; login com limite; logs sem credenciais; autenticação WebSocket malformada rejeitada; índices presentes. Fixture geral isola testes de jogo desabilitando limites, sem alterar padrão de produção habilitado. Central ADM já acompanha encontros/coleta/contratos/métricas pelas permissões existentes. Presença continua um worker, três sockets por personagem e mensagens limitadas; broker distribuído é pré-requisito de escala horizontal. Nenhum Redis obrigatório.
+
+### Etapa 8 — validação e ajustes finais
+
+Primeira suite completa: 169 aprovados, cinco falhas. Quatro testes históricos dependiam do cwd para achar alembic.ini; tornados portáveis com cwd explícito. O teste de presença precisava consumir atualizações de posição legitimamente enfileiradas antes da saída da sala; agora exige a atualização autoritativa eventual da sala, mantendo validação de escopo. Os cinco passaram em 14,30s. Nova suite completa: 174 aprovados, dois avisos, 326,64s; nenhum teste pulado. Resultado final no DELIVERY_0.8.
+
+Sete scripts Chromium passaram sobre Nginx/FastAPI/PostgreSQL: smoke, session, encounters, collection, contracts, admin e events. Contrato foi publicado com formulário guiado/prévia/confirmação ADM, aceito e pago pela UI móvel, após coleta por movimento real; reconciliação zero. Label do objetivo ganhou nome acessível explícito. Papéis temporários revogados em finally. Reinício preservou hashes canônicos das 1.553 linhas nas 40 tabelas; health e alembic check passaram. Imagem Discord compilou sem conectar ao serviço.
+
+npm audit encontrou avisos altos do Vite 6.4.1; patch mínimo 6.4.5 eliminou os avisos (zero no audit final), TypeScript/Vite compilou e bundles coincidiram com os testados. Nenhum pacote de produção novo. API GitHub/GraphQL retorna Forbidden pela rede; push Git funciona. PR tem título/descrição revisáveis no repositório, sem fingir número/link de PR criado.

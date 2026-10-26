@@ -1,5 +1,17 @@
 # Arquitetura
 
+## Estado atual 0.8
+
+Backend autoritativo → Web React/TypeScript/Phaser principal → Discord complementar; Godot preservado. Esta seção e os documentos 0.8 prevalecem sobre descrições históricas das entregas abaixo.
+
+`encounters.py` coordena grupo opt-in, rounds e alvo sobre recibos Battle por inimigo, reaproveitando dano/XP/loot/expedições. `resources.py` fornece estoque pessoal finito por geração e coleção idempotente; `contracts.py` reserva orçamento real, acompanha progresso e conserva direitos concluídos quando publicação é retirada. `observability.py` agrega contadores diários persistentes sem fabricar duração histórica. `discord_client.py` adapta consultas e equipamento confirmado sem estado paralelo; `request_controls.py` conta limites em transação independente e emite logs sem credenciais. [Detalhes de grupos](COMBAT_ENCOUNTERS.md), [coleta/contratos](COLLECTION_AND_CONTRACTS.md), [Discord](DISCORD_INTEGRATION.md).
+
+Snapshot `/state` consolida recompensas, destinos, Tesouro, encontro, capacidade e nós de coleta. Campos antigos permanecem; rotas antigas de combate delegam ao encontro ativo. O legado Godot não apresenta seleção completa de grupos/coleta/contratos: isso é limitação de interface registrada, sem remoção do cliente.
+
+Migrações 0.8 incrementais: `76be3b21ba40` → `4f7ba7966ca8` → `e70ea918061f` → `947647462008` → `4cee57744ea1`. Não há reset/backfill punitivo ou alteração de monstros instanciados. Downgrade automático bloqueado para não destruir direitos/recibos; restauração deve usar backup verificado.
+
+Limites são compartilhados em PostgreSQL. Presença ainda é local: runtime fixa um worker; broker distribuído e coordenação de jobs são pré-requisitos para escala horizontal. Ver [auditoria](SECURITY_AUDIT.md) e [métricas locais](BALANCE_REPORT_0.8.md).
+
 > **Módulos 0.7:** [sequência, geração, retenção, morte/recuperação, dívida e eventos](PROCEDURAL_ECONOMY_UPDATE.md). As regras novas substituem a perda de todos os itens por leilão das versões históricas abaixo.
 
 Monorepo com backend FastAPI, PostgreSQL 17, clientes Godot/web/Discord e entrada web independente para a Central ADM. `frontend/src/Map.tsx` renderiza mapa e captura entrada; React apresenta menus e chama `/api`. Vite faz proxy no desenvolvimento; Nginx faz proxy na imagem de produção. Nenhum cliente envia dano, moedas ou atributos calculados.

@@ -1,10 +1,24 @@
 # Desenvolvimento e validação
 
+## Fluxo atual 0.8
+
+Use branch `feature/web-discord-first-floor-0.8`; preserve main e `godot-client`. Suba PostgreSQL e serviços com os comandos abaixo. Runtime mantém um worker até presença ter broker. Execute apenas suites sequenciais por banco: as fixtures fazem TRUNCATE; paralelismo entre suites exige bancos separados.
+
+No Linux, na raiz: `DATABASE_URL=postgresql+psycopg://USER:PASS@localhost:5432/tower08_test TOWER_TEST_DATABASE=1 PYTHONPATH=backend .venv/bin/python -m pytest backend/tests -q`. Alternativamente rode `../.venv/bin/python -m pytest -q` dentro de backend. O usuário de teste precisa de CREATEDB para testes de migração. `alembic upgrade head` e `alembic check` devem preceder os testes.
+
+Frontend: `npm ci && npm run build` dentro de frontend. Stack Nginx ativa: `node tests/smoke.cjs`, `session.cjs`, `encounters.cjs`, `collection.cjs`, `contracts.cjs`, `admin.cjs` e `events.cjs` (cada caminho em `tests/`). Os testes usam contas próprias persistentes. `contracts.cjs`/ADM/eventos concedem papel temporário pelo CLI e revogam em finally; somente executar no ambiente local de desenvolvimento autorizado. Contratos de teste usam reserva real e cancelamento auditado; não limpe ledger/personagens para desfazer testes.
+
+`scripts/compare_levels_08.py` compara distribuição anterior/revisada com a mesma seed; `scripts/balance_08.py` simula perfis legais; `scripts/benchmark_08.py` mede HTTP/SQL somente em DB explicitamente descartável. Artefatos ficam em docs. Nenhum desses scripts mede conexão Discord, GPU mobile ou carga pública.
+
+Suite funcional isola regras de jogo desabilitando limites pelo monkeypatch da fixture. `test_security_08.py` habilita e testa limites reais concorrentes; produção permanece habilitada. `test_upgrade_08.py` popula schema 0.7 e compara todos os campos antigos após upgrade, inclusive reservas/auditoria/recuperação. Cópia real preservada foi verificada adicionalmente, sem publicar dump/senhas.
+
+Integração externa Discord e execução GitHub Actions não são presumidas a partir de testes locais. Detalhes e resultados finais em [DELIVERY_0.8.md](DELIVERY_0.8.md). Seções seguintes registram implementação histórica.
+
 Python 3.12+, Node 22+, PostgreSQL 17. Execute no checkout existente; tarefas cloud já são isoladas e não precisam de worktrees.
 
 ## Sem containers para aplicação
 
-Crie `.venv` na raiz, instale `backend/requirements.txt` e `discord-bot/requirements.txt`. Disponibilize PostgreSQL e configure `DATABASE_URL` no ambiente do terminal (não no Git). Dentro de `backend`:
+Crie `.venv` na raiz, instale `backend/requirements-dev.txt` (runtime e dependências de teste do bot). Disponibilize PostgreSQL e configure `DATABASE_URL` no ambiente do terminal (não no Git). Dentro de `backend`:
 
 ```powershell
 ..\.venv\Scripts\alembic upgrade head
@@ -45,7 +59,7 @@ npm run test:e2e
 
 `BASE_URL` muda o destino (padrão porta 8080); `CHROMIUM_PATH` permite usar Chromium já instalado; `SMOKE_SCREENSHOT` define onde salvar a captura (padrão: `tower-smoke.png` na pasta temporária do sistema). O teste cria uma conta de teste real e não apaga seu registro. Ele cobre criação, mapa Phaser, equipamento, teclado, combate, loot e persistência ao recarregar.
 
-Validação inicial na nuvem: PostgreSQL real, testes de concorrência, build TypeScript/Vite, build Docker com CA e fluxo Chromium sobre Nginx/Compose. O bot foi importado e seus cinco comandos foram registrados localmente; a API de vínculo/consulta foi testada. Conexão e slash commands no Discord externo continuam pendentes de credenciais. Arte procedural provisória, sem assets externos. O bundle Phaser é grande; otimização de carregamento fica para a próxima etapa.
+Validação inicial na nuvem: PostgreSQL real, testes de concorrência, build TypeScript/Vite, build Docker com CA e fluxo Chromium sobre Nginx/Compose. Na validação histórica, o bot foi importado e seus cinco comandos da época foram registrados localmente; a API de vínculo/consulta foi testada. Conexão e slash commands no Discord externo continuam pendentes de credenciais. Arte procedural provisória, sem assets externos. O bundle Phaser é grande; otimização de carregamento fica para a próxima etapa.
 
 ## Verificação da implementação 2
 

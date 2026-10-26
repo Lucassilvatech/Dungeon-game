@@ -10,14 +10,16 @@ Entregue na branch de revisão 0.6: cliente Godot jogável por API, presets/expo
 
 Implementado na evolução 0.7: atributos efetivos no status/combate; acesso Android configurável e diagnóstico específico; sequência persistente 1–10%; espécies procedurais compartilhadas; retenção de estado temporário; morte 0–5 unidades e recuperação pessoal; confisco com avaliação/recorrência; visibilidade/histórico de leilões e eventos ADM explicados. Builds versionados e checks de distribuição. Ver PROCEDURAL_ECONOMY_UPDATE.md para evidências e limites reais de validação.
 
-Próximos passos pequenos:
+Implementado em 0.8: Web como cliente principal, máximo procedural raro/alcançável com comparação estatística, grupos pequenos opcionais com estado persistente e recompensa única, coleta finita e contratos com reserva real, consultas privadas Discord/equipamento confirmado, métricas e simulações, áudio opcional, painel ADM e limites persistentes. Evidências e limitações em [DELIVERY_0.8.md](DELIVERY_0.8.md); Godot preservado sem exportação nova.
 
-1. Executar os builds em Windows real e dispositivo Android (toque, GPU, sessões e rede) e validar a Central em ambiente de revisão; só considerar retirada do Phaser depois. Validar balanceamento do primeiro andar com jogadores: tempo por combate, risco entre concluir/fugir/morrer, capacidade de recuperação sem equipamento, taxa médica, crescimento de dívida e duração/preços dos espólios. Medir antes de fixar os parâmetros provisórios. Preservar a distinção entre salas comuns e Aventura.
-2. Refinar arte original, sinalização de caminhos, áudio opcional e interação da Guilda. Melhorar seleção/navegação em dispositivos móveis.
-3. Implementar encontros com grupos de inimigos: participantes/seleção de alvo/ordem de turnos, preservando a recompensa única por instância. Não declarar o lobby de raid como combate coletivo.
-4. Coleta real com consumo/estoques e auditoria; contratos pequenos com orçamento reservado.
-5. Medir contenção do mutex de leilões antes de escalar; broker de presença antes de múltiplos workers, limites de requisições, revogação de sessões, TLS e telemetria; otimizar bundle Phaser.
-6. Validar bot em Discord externo com credenciais próprias; adicionar ações pelo mesmo backend quando tiverem fluxo estável no navegador.
+Próximos passos 0.9, sem marcar como entregues:
+
+1. Sessões reais com iniciantes para avaliar tempo de combate, dívida e risco dos grupos. Simulação mostrou dificuldade alta para iniciantes; não alterar estatísticas individuais arbitrariamente.
+2. Validar bot em servidor Discord com credenciais seguras; depois ampliar operações confirmadas conforme regras do backend.
+3. Perfilar snapshot com volume representativo, agrupar consultas e medir contenção financeira. Bundle Phaser ainda grande, embora carregado após login.
+4. Broker de presença antes de múltiplos workers, teste de carga e implantação TLS protegida. Rate limits e revogação já existem, mas não substituem controles de borda.
+5. Refinar acessibilidade e apresentação com feedback de jogadores. Expandir poucos recursos/contratos somente com dados de economia real.
+6. Godot permanece opcional; Windows/Android reais e o alerta histórico de distribuição mantêm trilha de validação separada, sem exigir novo build para jogar na Web.
 
 Andares superiores, raids avançadas, mercado completo, emissão autônoma do Banco Central, mentoria, muitas profissões e endgame continuam fora do escopo atual. O conteúdo legado não foi apagado; não deve orientar novas implementações até o primeiro andar estar consolidado.
 

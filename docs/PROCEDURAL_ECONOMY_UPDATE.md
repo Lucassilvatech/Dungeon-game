@@ -73,3 +73,7 @@ Limites: login/jogo em janela no Windows, GPU/toque e instalação/cadastro/logi
 Regressão web legado também aprovada: cidade/Guilda/treino/mobile/combate, reconexão, aventura/fuga, atributos e morte/recuperação de duas contas. Reinício real backend/frontend preservou exatamente todos os registros acompanhados, incluindo recuperação, cobrança, eventos agendados, custódia, lances, Banco Central e ledger; papéis ADM temporários revogados (contagem final zero).
 
 Simulação reproduzível de combate/distribuição: `.venv/bin/python scripts/simulate_procedural.py`, 60 mil inimigos e 120 mil combates isolados pelas fórmulas reais de dano, resultados em `procedural-combat-simulation.json`. Política e atributos dos dois personagens-modelo estão explícitos; isso não simula decisões humanas ou sobrevivência à aventura inteira. Somente primeiro andar: não se inventaram limites ou balanceamento para andares futuros. As duas simulações não alteram bases, RNG global ou dados do jogo.
+
+## Revisão incremental 0.8
+
+O limite superior inalcançável documentado na 0.7 foi corrigido somente para novas instâncias: bins antigos permanecem abaixo da cauda transformada `u >= 0.995`, agora reservada ao máximo. Mesma seed reproduz a versão revisada, com igual número de sorteios; instâncias congeladas não são refeitas. Fórmula, contagens antes/depois, distribuição e limitações em [BALANCE_REPORT_0.8.md](BALANCE_REPORT_0.8.md). Grupos/coleta/contratos são aditivos e mantêm as regras econômicas/expedições descritas nesta versão histórica.
