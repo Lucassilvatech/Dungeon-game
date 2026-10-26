@@ -51,3 +51,10 @@ A chave Android de desenvolvimento deve ser configurada no editor ou por `GODOT_
 - **Não validado:** execução em Windows real, instalação/toque/GPU em dispositivo Android e execução do workflow remoto. O teste headless verifica comandos e integração, não ergonomia, FPS ou renderização numa GPU móvel. Validar esses itens antes de descontinuar o Phaser.
 
 Para repetir o teste nativo use backend isolado com `SECRET_CHANCE=0`, `WANDER_INTERVAL=100000` e `DUNGEON_API_URL` apontando para ele, então `godot --headless --path godot-client --script tests/play_first_floor.gd`. O teste cria suas próprias contas e nunca modifica progresso de outros jogadores. Use diretório de dados Godot de teste vazio para não restaurar uma sessão anterior durante o bootstrap.
+
+
+## Correções 0.7
+
+Android físico agora começa sem URL implícita de emulador: configure servidor alcançável. A UI separa erros e pausa atualização após três falhas; botão explícito permite tentar novamente. Atributos apresentam bases/bônus/temporários/resultado e usam a mesma projeção do combate. Novos painéis mostram categoria/cores, sequência e recuperação pessoal.
+
+Builds, execução do servidor/LAN/HTTPS, assinatura de desenvolvimento e evidências atuais: [PROCEDURAL_ECONOMY_UPDATE.md](PROCEDURAL_ECONOMY_UPDATE.md). Inicialização Windows nativa/headless passou; login/jogo gráfico Windows e Android instalado ainda requerem validação de plataforma.

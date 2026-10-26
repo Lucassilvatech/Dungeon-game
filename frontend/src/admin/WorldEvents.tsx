@@ -61,7 +61,8 @@ export function WorldEvents({
             <input
               required
               maxLength={100}
-              aria-label="Nome" value={name}
+              aria-label="Nome"
+              value={name}
               onChange={(e) => setName(e.target.value)}
             />
           </label>
@@ -70,7 +71,8 @@ export function WorldEvents({
             <textarea
               required
               maxLength={500}
-              aria-label="Descrição" value={description}
+              aria-label="Descrição"
+              value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
           </label>
@@ -82,7 +84,11 @@ export function WorldEvents({
           </label>
           <label>
             Região afetada
-            <select aria-label="Região afetada" value={region} onChange={(e) => setRegion(e.target.value)}>
+            <select
+              aria-label="Região afetada"
+              value={region}
+              onChange={(e) => setRegion(e.target.value)}
+            >
               <option value="procedural">
                 Todas as novas aventuras procedurais
               </option>
@@ -109,7 +115,8 @@ export function WorldEvents({
               min={0}
               max={400}
               required
-              aria-label="Aumento percentual" value={intensity}
+              aria-label="Aumento percentual"
+              value={intensity}
               onChange={(e) => setIntensity(Number(e.target.value))}
             />
             <small>
@@ -122,7 +129,8 @@ export function WorldEvents({
             <input
               type="datetime-local"
               required
-              aria-label="Início (UTC)" value={start}
+              aria-label="Início (UTC)"
+              value={start}
               onChange={(e) => setStart(e.target.value)}
             />
             <small>
@@ -137,7 +145,8 @@ export function WorldEvents({
               required
               min={1}
               max={10080}
-              aria-label="Duração em minutos" value={duration}
+              aria-label="Duração em minutos"
+              value={duration}
               onChange={(e) => setDuration(Number(e.target.value))}
             />
           </label>
@@ -157,7 +166,8 @@ export function WorldEvents({
               required
               minLength={10}
               maxLength={500}
-              aria-label="Justificativa auditável" value={reason}
+              aria-label="Justificativa auditável"
+              value={reason}
               onChange={(e) => setReason(e.target.value)}
             />
           </label>

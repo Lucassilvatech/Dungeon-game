@@ -33,3 +33,8 @@ A segunda execução capturou `CloudMAPS=0` no runner (engine 1.1.26090.9, assin
 A execução [40236933256](https://github.com/Lucassilvatech/Dungeon-game/actions/runs/40236933256) terminou com sucesso, analisando os mesmos hashes com Defender ativo, assinaturas atualizadas, MAPS avançado ativado e conectividade com a Microsoft validada. A anotação pública registrou `NO_DETECTION_IN_THIS_SCAN`, engine `1.1.26090.9`, assinaturas `1.461.202.0`, `CloudMAPS=2`. Registro em windows-defender-cloud-status.json; relatório completo nos artefatos da execução.
 
 A detecção local **não foi reproduzida**, mas isso não é uma decisão do fornecedor confirmando falso positivo. O build permanece marcado como em investigação. Não orientar restauração/exclusão no antivírus. Recomendar atualização normal das definições e revisão pelo fornecedor se o alerta persistir. O caso preparado em MICROSOFT_REVIEW_CASE.txt contém hashes/URL para análise e não foi submetido automaticamente.
+
+
+## Atualização 0.7
+
+Nova versão funcional com correções reais de mecânicas/acesso, não uma recompressão para contornar antivírus. ZIP 0.7: `19a069950896650e1c165f95129f74088f0e4fb7fe8c91feef34479e6a416e02`. [Run 40258420595](https://github.com/Lucassilvatech/Dungeon-game/actions/runs/40258420595) passou com Defender atualizado, MAPS=2 e conexão à nuvem validada; nenhuma detecção nessa varredura. EXE também iniciou em Windows/headless. Versões/configuração/limites: windows-0.7-verification.json. Isto não prova ausência de malware nem encerra o relato local da versão anterior. Não houve revisão concluída pelo fornecedor ou certificado Authenticode fornecido.

@@ -117,3 +117,14 @@ Avisos anteriores de TestClient/bundle Phaser permanecem. A plataforma cloud tev
 Validação final 0.6: **114 testes PostgreSQL passaram** (195,80s), com um aviso de depreciação TestClient. Godot real passou em **44 verificações** incluindo lance financiado de segundo jogador; Chromium passou no cliente legado e na Central ADM (todos os módulos, emissão/retirada pareadas, replay, reconciliação, mobile e revogação). TypeScript/Vite, imagens Docker e alembic check passaram. EXE Windows e APK Android foram gerados; pacote embutido Windows foi carregado pelo Godot Linux e assinatura APK v2/v3 foi verificada com SDK 36. Não houve execução nativa em Windows ou dispositivo Android.
 
 Persistência operacional: comparação do backup pré-0.6 confirmou **207 registros existentes preservados**, com somente a proteção prevista e a recuperação individual auditada do item 18 como alterações intencionais; a variação do Tesouro correspondeu ao ledger dos novos fluxos de teste. Reinício Compose down/up sem -v manteve todos os registros de gameplay, custódia, lances, dívida, Banco Central, configurações/perfis e auditoria idênticos. Ao encerrar a validação: reconciliação 0, Banco Central 0 e nenhum papel administrativo temporário ativo.
+
+
+## Mecânicas e distribuição 0.7
+
+Use a mesma suíte em banco descartável: baseline 114; suite final **142 aprovados**, sem skips/falhas (239,07s). As fixtures de anúncios antigos reproduzem explicitamente custódia histórica, sem alterar a regra nova de morte em produção. Novos testes validam sequência/geração/BFS/limites/distribuição, atributos efetivos, 0–5 unidades, recuperação pessoal atômica/concurrente, confisco/marcos, não cobrar dívida duas vezes e ocultação/eventos administrativos.
+
+Godot: `tests/play_first_floor.gd` passou com 42 verificações contra backend isolado; `tests/connection_errors.gd` verifica URL/timeout/TLS/DNS e conexão recusada. Chromium: `node frontend/tests/events.cjs` cria/cancela um evento futuro pela UI e revoga o papel temporário; requer o mesmo acesso local ao Docker do teste ADM. Nunca executar pytest contra o volume operacional.
+
+`python scripts/build_clients.py /diretório/saída` exporta ambos os clientes e gera ZIP/instruções/hashes/manifesto. SDK/configuração e limites de validação estão em PROCEDURAL_ECONOMY_UPDATE.md. Workflows foram realmente executados: exportação remota aprovada e Windows/Defender/nuvem/inicialização headless aprovados. Não confundir inicialização headless com jogo gráfico ou execução em Android.
+
+Smoke completo do cliente legado também passou após atualizar as expectativas de morte. Comparação de reinício manteve registros de gameplay/economia/novas tabelas exatamente iguais; zero papéis ADM temporários ao encerrar. Simulação reproduzível: `scripts/simulate_procedural.py` grava estatísticas e combates isolados em docs/procedural-combat-simulation.json.

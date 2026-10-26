@@ -1,23 +1,29 @@
-# Dungeon Game — primeiro andar · Godot e Central ADM
+# Dungeon Game — primeiro andar · atualização 0.7
 
-> O build Windows de desenvolvimento recebeu relato de bloqueio “vírus detectado” e está em investigação. Não desative o antivírus ou crie exclusão. [Status e verificações](docs/security/WINDOWS_BUILD_TRIAGE.md).
+> O build Windows 0.6 de desenvolvimento recebeu relato de bloqueio “vírus detectado” e está em investigação. Não desative o antivírus ou crie exclusão. [Status e verificações](docs/security/WINDOWS_BUILD_TRIAGE.md).
 
 RPG persistente com FastAPI, PostgreSQL, cliente Godot 4 para Windows/Android, Central Administrativa web e cliente Discord. React/TypeScript/Phaser permanece como cliente legado durante a migração. Esta versão aperfeiçoa exclusivamente o **primeiro andar**. Não expande andares superiores nem raids. Arte e sprites originais gerados pelo projeto, sem assets das referências comerciais.
 
+## Atualização de mecânicas, acesso e downloads
+
+Atributos efetivos compartilhados entre status e combate; sequência/boss 1–10%; gerador universal; perdas de morte até cinco unidades; recuperação pessoal; confisco por dívida; ocultação/arquivamento de leilões e agenda de eventos ADM. [Relatório de entrega, instalação, testes e pendências](docs/DELIVERY_0.7.md) · [Regras técnicas](docs/PROCEDURAL_ECONOMY_UPDATE.md).
+
+Builds de desenvolvimento: [Windows x64](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/b17d07bc16fc14a0767c99f66cc6a139f0235739/builds/development/0.7.0-bd480e0/DungeonGame-Windows-x64.zip) · [Android APK](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/b17d07bc16fc14a0767c99f66cc6a139f0235739/builds/development/0.7.0-bd480e0/DungeonGame-Android.apk). Downloads integrais confirmados com HTTP 200 e SHA256; isso verifica integridade, não ausência de malware. Backend atualizado obrigatório.
+
 ## Revisar esta evolução sem alterar a main
 
-Esta implementação está em **feature/godot-admin-migration**, para revisão por PR; a main permanece estável e não houve merge automático. Guarde alterações locais antes de trocar de branch. Para testar o código desta entrega:
+Esta implementação está em **feature/procedural-economy-godot-fixes**, para revisão por PR; a main permanece estável e não houve merge automático. Guarde alterações locais antes de trocar de branch. Para testar o código desta entrega:
 
 ```powershell
 git fetch origin
-git switch feature/godot-admin-migration
+git switch feature/procedural-economy-godot-fixes
 ```
 
 Use os comandos de execução abaixo na branch selecionada. Não use reset/force push ou apague volumes para atualizar.
 
 ## Cliente principal Godot e Central Administrativa
 
-Abra `godot-client/project.godot` no Godot **4.6.3 Standard** e execute. Windows local usa API `http://127.0.0.1:8080/api`; Android permite configurar URL e controles por toque (emulador: `http://10.0.2.2:8080/api`, aparelho físico: endereço HTTPS alcançável). Os presets exportam `.exe` Windows x86-64 e APK Android; ambos foram gerados nesta nuvem. Execução nativa no Windows e em dispositivo Android permanece **não validada**; o fluxo jogável foi executado no motor Godot Linux/headless. [Cliente, controles, exportação e testes](docs/GODOT_MIGRATION.md).
+Abra `godot-client/project.godot` no Godot **4.6.3 Standard** e execute. Android físico exige configurar servidor alcançável antes de entrar. Windows local usa API `http://127.0.0.1:8080/api`; Android permite configurar URL e controles por toque (emulador: `http://10.0.2.2:8080/api`, aparelho físico: endereço HTTPS alcançável). Os presets exportam `.exe` Windows x86-64 e APK Android; ambos foram gerados nesta nuvem. Inicialização nativa Windows/headless passou no CI; jogo em janela/login Windows e dispositivo Android permanecem **não validados**. O fluxo jogável passou no motor Godot Linux/headless. [Cliente, controles, exportação e testes](docs/GODOT_MIGRATION.md).
 
 Central ADM: `http://localhost:8080/admin`, com entrada web e sessão independentes. Não há administrador/senha padrão: crie uma conta normal e conceda um papel explicitamente pelo [procedimento local](docs/ADMINISTRATION.md). O personagem administrativo continua normal. O cliente web legado permanece em `http://localhost:8080`.
 
@@ -52,11 +58,11 @@ Não apague `.env` nem use `docker compose down -v` para atualizar. O startup ap
 9. Derrote todos para marcar **EXPEDIÇÃO CONCLUÍDA** e liberar **RETORNAR** ou **NOVA AVENTURA**, preservando XP, itens e recompensas.
 10. Para sair antes, escolha **FUGIR DA AVENTURA**. A confirmação mostra valores reais: perde-se 50% do total monetário pendente na Guilda (inclusive registros de outras salas), arredondando a perda para cima; todo o XP do nível atual é zerado. **Nível, atributos conquistados, moedas já recebidas e itens permanecem.** A fuga encerra a expedição e retorna à cidade. Exemplo: 301 pendentes → 150 restantes, 151 perdidas.
 
-11. **Morrer em Aventura procedural é diferente de fugir:** encerra a expedição como FAILED, zera todo o XP atual e todas as recompensas monetárias pendentes da Guilda, e transfere todos os itens físicos carregados (inclusive equipados e stacks) para custódia de leilão. A **Espada de Aprendiz** e itens estruturais marcados como não transferíveis são preservados. A proteção vale para novos e antigos personagens, pela identidade estável da definição, sem proteger outras espadas. O resumo de morte persiste em F5 até você confirmar **RETORNAR À CIDADE**; o resgate já ocorreu no backend.
+11. **Morrer em Aventura procedural é diferente de fugir:** encerra a expedição como FAILED, zera todo o XP atual e todas as recompensas monetárias pendentes da Guilda, e sorteia a perda de 0 a 5 unidades elegíveis. Comuns são destruídos; raros/únicos ficam no NPC de recuperação pessoal, por 200% do valor-base, sem leilão público. A **Espada de Aprendiz** e itens estruturais marcados como não transferíveis são preservados. A proteção vale para novos e antigos personagens, pela identidade estável da definição, sem proteger outras espadas. O resumo de morte persiste em F5 até você confirmar **RETORNAR À CIDADE**; o resgate já ocorreu no backend.
 12. A taxa médica padrão provisória é **100 moedas por morte** (`MEDICAL_FEE_BASE`). Ela pode deixar o saldo negativo. Saldo 50 − taxa 100 = −50. Pagamentos futuros e devoluções de lances compensam automaticamente esse mesmo saldo, sem outra moeda de dívida: −500 +300 = −200; −500 +800 = 300.
 13. O saldo nunca fica abaixo de **−10.000**. Cada morte que alcance ou tente ultrapassar esse limite reduz o nível em até 10, com mínimo 1. Em mortes futuras no limite, aplica novamente uma única penalidade por morte. Normalmente, morrer só zera XP e mantém o nível. O respawn restaura toda a vida e energia; `RESPAWN_HP_PERCENT` permite ajustar a porcentagem de vida apenas para esse resgate procedural.
 14. Na aba **Leilão**, apenas personagens de contas autenticadas podem dar lances. O início é `max(MIN_AUCTION_START_PRICE, ceil(valor_base × quantidade / 5))`; espada vale 100 (início 20), cristal vale 10 por unidade (20 cristais iniciam em 40). Valores são provisórios, definidos no backend. Sem valor base confiável, usa-se o mínimo configurado, padrão 1. Duração provisória: **24 horas**, configurável em `AUCTION_DURATION_HOURS`.
-15. O maior lance fica reservado: sai do saldo disponível e aparece como ouro em custódia. Ser superado devolve a reserva; aumentar seu próprio lance cobra só a diferença. Saldo disponível ≤0 impede lance, mesmo com uma reserva anterior. Não há teto comercial de lance; PostgreSQL NUMERIC e valores decimais em texto na UI preservam inteiros grandes. Ao terminar, o vencedor recebe o mesmo item/stack; o valor vai para o Tesouro (ou sink configurado), nunca para quem morreu. Sem lances, fica **UNSOLD**, arquivado em custódia, sem destruição automática. Não existe compra por NPC.
+15. O maior lance fica reservado: sai do saldo disponível e aparece como ouro em custódia. Ser superado devolve a reserva; aumentar seu próprio lance cobra só a diferença. Saldo disponível ≤0 impede lance, mesmo com uma reserva anterior. Não há teto comercial de lance; PostgreSQL NUMERIC e valores decimais em texto na UI preservam inteiros grandes. Ao terminar, o vencedor recebe o mesmo item/stack; o valor vai para o Tesouro (ou sink configurado), nunca novamente para o antigo proprietário. Sem lances, fica **UNSOLD**, arquivado em custódia, sem destruição automática. Itens confiscados por dívida foram avaliados e compensados antes da venda; não há compra de leilões por NPC.
 16. Na aba **Personagem**, distribua **1 ponto por novo nível** entre os atributos existentes: **Força e Defesa**. Prepare um ou vários pontos e confirme em lote. Eles acumulam; não há respec nesta etapa. A vida máxima continua derivada do nível. Ao perder níveis, consomem-se pontos não gastos primeiro; o restante vira `attribute_point_debt`, quitado por ganhos futuros antes de conceder novos pontos. Os atributos escolhidos permanecem.
 
 ### Política de migração dos atributos
@@ -81,7 +87,7 @@ docker compose logs backend
 docker compose down
 ```
 
-`down` conserva o volume. Migração atual: **b3057d8109ee**, que protege a espada inicial, cria sessões/papéis/auditoria administrativa, Banco Central inicialmente zerado, configurações e perfis persistentes de monstros, preservando os inimigos existentes e seu XP. A anterior, 039105b3ae1a, adicionou morte, dívida, custódia/leilões, pontos de atributo e NUMERIC. A anterior, 904ca715f282, adicionou expedições persistentes e perigo regional. A migração anterior de stacks/inimigos é 11ac6a18a976. Aventuras antigas ocupadas são adotadas como ativas; histórico abandonado é arquivado sem aplicar penalidade retroativa. Contas, inventário, equipamentos, saldos, XP, inimigos mortos e batalhas em andamento são preservados. Faça backup dos dados importantes antes de atualizar.
+`down` conserva o volume. Migração atual: **d0fc148417a5** (sequência, recuperação pessoal, confisco e eventos; dados anteriores preservados). A anterior é **b3057d8109ee**, que protege a espada inicial, cria sessões/papéis/auditoria administrativa, Banco Central inicialmente zerado, configurações e perfis persistentes de monstros, preservando os inimigos existentes e seu XP. A anterior, 039105b3ae1a, adicionou morte, dívida, custódia/leilões, pontos de atributo e NUMERIC. A anterior, 904ca715f282, adicionou expedições persistentes e perigo regional. A migração anterior de stacks/inimigos é 11ac6a18a976. Aventuras antigas ocupadas são adotadas como ativas; histórico abandonado é arquivado sem aplicar penalidade retroativa. Contas, inventário, equipamentos, saldos, XP, inimigos mortos e batalhas em andamento são preservados. Faça backup dos dados importantes antes de atualizar.
 
 ## Discord e limites atuais
 
@@ -93,7 +99,7 @@ docker compose --profile discord up --build -d
 
 Na aba Personagem, gere código de cinco minutos e use `/vincular` no bot; `/personagem`, `/status`, `/inventario` e `/mapa` consultam dados reais. A conexão externa depende das credenciais e não foi validada nesta entrega.
 
-A prioridade adicional escolhida no roadmap foi sinalização de perigo e feedback de exploração; combate ainda é individual por alvo. A lista de instâncias prepara encontros com grupos, mas combate contra vários alvos simultâneos e raids coletivas não estão implementados. Presença visual usa um único worker; exige broker antes de escalar. O leilão atual é exclusivo de espólios de morte. Coleta, contratos, mercado geral e economia avançada permanecem futuros. Antes de exposição pública, completar TLS, rate limiting e gestão de sessões. O bundle Phaser ainda merece otimização.
+A prioridade adicional escolhida no roadmap foi sinalização de perigo e feedback de exploração; combate ainda é individual por alvo. A lista de instâncias prepara encontros com grupos, mas combate contra vários alvos simultâneos e raids coletivas não estão implementados. Presença visual usa um único worker; exige broker antes de escalar. O leilão recebe confisco por dívida e conserva anúncios históricos de morte. Dívida ≥1000 permite tentativa independente, sem limite de cinco itens, com avaliação/abatimento/excedente e novo marco de +1000 de dívida adicional. Coleta, contratos, mercado geral e economia avançada permanecem futuros. Antes de exposição pública, completar TLS, rate limiting e gestão de sessões. O bundle Phaser ainda merece otimização.
 
 ## Configuração provisória desta etapa
 

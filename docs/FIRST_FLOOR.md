@@ -1,5 +1,7 @@
 # Primeiro andar: regras e implementação
 
+> **Regras atuais 0.7:** [sequência, geração, retenção, morte/recuperação, dívida e eventos](PROCEDURAL_ECONOMY_UPDATE.md). As regras novas substituem a perda de todos os itens por leilão das versões históricas abaixo.
+
 ## Combate
 
 Parâmetros centrais em `balance.py` e Settings:

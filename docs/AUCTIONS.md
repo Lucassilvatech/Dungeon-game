@@ -1,5 +1,7 @@
 # Espólios, proteção e recuperação
 
+> **Atualização 0.7 dos leilões:** [sequência, geração, retenção, morte/recuperação, dívida e eventos](PROCEDURAL_ECONOMY_UPDATE.md). As regras novas substituem a perda de todos os itens por leilão das versões históricas abaixo.
+
 O leilão permanece exclusivo de itens perdidos em morte procedural. Não é mercado geral. Reserva/diferença/devolução, escrow, entrega única, Tesouro/sink e prazo configurável de 24h da 0.5 permanecem.
 
 A API de anúncio/detalhe retorna somente informações reais: ID, item/quantidade original, descrição, tipo, poder da definição, proteção, origem/death_event_id, preço inicial/atual, incremento mínimo 1, próximo lance, início/fim, situação e destino financeiro. `GET /auctions/{id}` acrescenta histórico de lances com licitante, valor exato e timestamp. Raridade, durabilidade e efeitos especiais não existentes **não** são inventados. Interface Godot e web exibem os campos suportados e a regra de entrega.

@@ -1,5 +1,7 @@
 # Arquitetura
 
+> **Módulos 0.7:** [sequência, geração, retenção, morte/recuperação, dívida e eventos](PROCEDURAL_ECONOMY_UPDATE.md). As regras novas substituem a perda de todos os itens por leilão das versões históricas abaixo.
+
 Monorepo com backend FastAPI, PostgreSQL 17, clientes Godot/web/Discord e entrada web independente para a Central ADM. `frontend/src/Map.tsx` renderiza mapa e captura entrada; React apresenta menus e chama `/api`. Vite faz proxy no desenvolvimento; Nginx faz proxy na imagem de produção. Nenhum cliente envia dano, moedas ou atributos calculados.
 
 `backend/app/main.py`: contratos HTTP e validação Pydantic. `security.py`: PBKDF2 com salt, sessões opacas com hash no banco e validade de sete dias. `game.py`: regras transacionais. `world.py`: mapa autoritativo. `models.py`: persistência SQLAlchemy; migrações Alembic congelam o schema. `seed.py`: catálogo e emissão inicial auditada, idempotente sob lock PostgreSQL.
@@ -66,3 +68,6 @@ A Central web tem entrada `frontend/admin.html` e bundle `src/admin`, servido em
 CentralBank(id=1) nasce com zero e integra o ledger existente; transferências não emitem, mint/burn são explícitos. Contabilidade e ordem dos locks estão em ACCOUNTING.md. Configuração administrativa é GameSetting com valores allowlisted. MonsterDefinition é persistente e aplicado somente a novas instâncias; EnemyInstance.xp_reward congela também o XP, preservando mortos e batalhas em andamento.
 
 Migração b3057d8109ee é aditiva: protege somente definição sword, cria os modelos ADM/econômicos e congela XP dos inimigos históricos pelos perfis anteriores. Não recupera itens nem reembolsa lances automaticamente. A constraint impede desproteger a espada inicial. Leilões de item protegido são suspensos logicamente até procedimento individual; nenhum original entregue a comprador é retirado silenciosamente.
+
+
+0.7: `attributes.effective` projeta base/bônus/resultado sem mutar bases. `procedural.py` fornece distribuição universal e BFS de conexões; Expedition congela sorteio. `procedural_retention.py` elimina estado transitório ao encerrar, mantendo pendências/recibos e bosses. `recovery.py` separa perda de unidades e recuperação pessoal; `debt.py` executa avaliação/compra de custódia com ledger e marcos acumulados. `world_events.py` valida agenda e aplica multiplicador somente a novos encontros. Operações administrativas reaproveitam mutex, permissões, prévia, confirmação e auditoria. Migração d0fc148417a5 é aditiva; downgrade destrutivo é recusado.

@@ -8,6 +8,8 @@ Entregue em 0.5: morte transacional em Aventura, perda global das pendências/XP
 
 Entregue na branch de revisão 0.6: cliente Godot jogável por API, presets/exportações Windows/Android, viagem rápida descoberta, Salão de Leilões/NPC próprio, anúncios detalhados, proteção/recuperação individual da espada inicial, Central ADM web com permissões/prévias/auditoria e Banco Central manual com recursos de teste isolados. React/Phaser permanece. Não houve merge automático na main.
 
+Implementado na evolução 0.7: atributos efetivos no status/combate; acesso Android configurável e diagnóstico específico; sequência persistente 1–10%; espécies procedurais compartilhadas; retenção de estado temporário; morte 0–5 unidades e recuperação pessoal; confisco com avaliação/recorrência; visibilidade/histórico de leilões e eventos ADM explicados. Builds versionados e checks de distribuição. Ver PROCEDURAL_ECONOMY_UPDATE.md para evidências e limites reais de validação.
+
 Próximos passos pequenos:
 
 1. Executar os builds em Windows real e dispositivo Android (toque, GPU, sessões e rede) e validar a Central em ambiente de revisão; só considerar retirada do Phaser depois. Validar balanceamento do primeiro andar com jogadores: tempo por combate, risco entre concluir/fugir/morrer, capacidade de recuperação sem equipamento, taxa médica, crescimento de dívida e duração/preços dos espólios. Medir antes de fixar os parâmetros provisórios. Preservar a distinção entre salas comuns e Aventura.
