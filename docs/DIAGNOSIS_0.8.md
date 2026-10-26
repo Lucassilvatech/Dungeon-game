@@ -32,3 +32,7 @@ A suite baseline 0.7 foi iniciada em PostgreSQL descartável; o resultado será 
 6. Discord primeiro amplia consultas privadas; operações selecionadas usam intenções com confirmação vinculadas ao usuário, expiração/idempotência e as mesmas funções do jogo. Não haverá poderes ADM nem economia paralela. Token/chave externa não foram fornecidos; testes locais devem usar mocks e API real em banco descartável, sem declarar teste em servidor Discord.
 7. Estender permissões/observabilidade ADM pelo fluxo existente. Locks financeiros antes dos personagens; progresso de contratos durante combate/coleta não pode adquirir mutex financeiro depois de segurar personagem. Sessões/rate limiting não devem revelar tokens nem ser anulados por rollback de requisição rejeitada.
 8. Migrações aditivas sem penalidades retroativas; copiar banco 0.7 representativo e comparar campos anteriores. PR preparado, main e Godot intactos, sem merge/force push.
+
+## Registro da etapa 1
+
+A comparação de 60 mil amostras seed-idênticas confirmou: frequência do teto passou de zero para 0,55% em p=0 e 2,10% em p=1; média do slime aumentou apenas 0,0055/0,021 nível nesses extremos. Os atributos/seed continuam calculados no mesmo fluxo RNG; somente a pequena cauda promovida muda o t. Dados congelados de aventuras existentes não são atualizados. Evidência detalhada: level-distribution-0.8.json.

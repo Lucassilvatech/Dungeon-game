@@ -88,9 +88,11 @@ def generate(config, floor_id, p, seed, category="common", k=None, level_weight=
     if low > high or low < 1 or not 0 <= p <= 1:
         raise ValueError("Invalid species/floor limits")
     k = settings.procedural_proximity_k if k is None else k
-    level = max(
-        low, min(high, low + floor((high - low) * rng.random() ** (1 / (1 + k * p))))
-    )
+    # Preserve all old bins except a small upper tail of the transformed draw.
+    # The tail makes the configured maximum possible without widening every bin.
+    u = rng.random() ** (1 / (1 + k * p))
+    level = high if high > low and u >= 0.995 else low + floor((high - low) * u)
+    level = max(low, min(high, level))
     t = (level - low) / max(1, high - low)
     weight = settings.procedural_level_weight if level_weight is None else level_weight
     result = {"level": level}
@@ -155,6 +157,6 @@ def configure_room(db, c, room, expedition):
     room.data = {
         **room.data,
         "spawns": spawns,
-        "procedural_version": 1,
+        "procedural_version": 2,
         "boss_proximity": p,
     }

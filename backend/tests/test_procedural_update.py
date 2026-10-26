@@ -70,7 +70,9 @@ def test_generator_statistical_bias_and_exact_formula():
     low = [generate(SPECIES["slime"], 1, 0, i)["level"] for i in range(3000)]
     near = [generate(SPECIES["slime"], 1, 1, i)["level"] for i in range(3000)]
     assert sum(near) > sum(low) * 1.25 and len(set(near)) > 1
-    assert max(near) == 4  # Mandated floor/r<1 formula makes Lmax exclusive.
+    assert (
+        max(near) == 5
+    )  # 0.8 adds a rare upper tail; existing frozen instances do not reroll.
     assert chance(0) == 0.01 and chance(1) == 0.02 and chance(100) == 0.10
 
 
