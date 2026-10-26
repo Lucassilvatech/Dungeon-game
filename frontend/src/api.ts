@@ -1,6 +1,7 @@
 import type { DeathReceipt } from "./DeathEconomy";
 import type { Room } from "./types";
 export type Item = {
+  power:number;
   id: number;
   name: string;
   kind: string;
@@ -24,7 +25,8 @@ export type Battle = {
   reward_amount: number | null;
 };
 export type Enemy = {
-  category_label?: string; name_color?: string;
+  category_label?: string;
+  name_color?: string;
   id: number;
   spawn_key: string;
   species: string;
@@ -38,6 +40,11 @@ export type Enemy = {
   ai_state: string;
 };
 export type State = {
+  attributes: Record<
+    string,
+    { base: number; equipment: number; temporary: number; effective: number }
+  >;
+  next_boss_chance: number;
   death: DeathReceipt | null;
   coins_exact: string;
   reserved_gold: string;

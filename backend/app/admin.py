@@ -265,7 +265,15 @@ def view(
                     select(m.Room).where(m.Room.floor_id == 1, m.Room.owner_id == None)
                 )
             ],
-            "scheduled_events": [__import__("app.world_events", fromlist=["payload"]).payload(e) for e in db.scalars(select(m.ScheduledWorldEvent).order_by(m.ScheduledWorldEvent.starts_at.desc()).offset(offset).limit(100))],
+            "scheduled_events": [
+                __import__("app.world_events", fromlist=["payload"]).payload(e)
+                for e in db.scalars(
+                    select(m.ScheduledWorldEvent)
+                    .order_by(m.ScheduledWorldEvent.starts_at.desc())
+                    .offset(offset)
+                    .limit(100)
+                )
+            ],
             "events": [
                 data(e)
                 for e in db.scalars(

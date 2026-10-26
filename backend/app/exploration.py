@@ -131,6 +131,7 @@ def adventure(db, c, request_id):
 
     record = register(db, c, room)
     from .procedural import configure_room
+
     configure_room(db, c, room, record)
     sync(db, c)
     return {

@@ -1,6 +1,9 @@
 name: Godot clients
 on:
   workflow_dispatch:
+  push:
+    branches: [feature/procedural-economy-godot-fixes]
+    paths: ['godot-client/**', 'scripts/build_clients.py', '.github/workflows/godot-clients.yml']
   pull_request:
     paths: ['godot-client/**', '.github/workflows/godot-clients.yml']
 permissions:
@@ -38,11 +41,9 @@ jobs:
           GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
           GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
         run: |
-          mkdir -p exports
-          godot --headless --path godot-client --editor --quit
-          godot --headless --path godot-client --export-debug Windows ../exports/DungeonGame.exe
-          godot --headless --path godot-client --export-debug Android ../exports/DungeonGame.apk
+          python3 scripts/build_clients.py exports
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose exports/DungeonGame-Android.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: dungeon-clients-development
+          name: dungeon-clients-0.7-development
           path: exports/

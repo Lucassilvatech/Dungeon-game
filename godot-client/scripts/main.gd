@@ -225,7 +225,11 @@ func authenticate(register: bool):
 	if busy:
 		return
 	set_busy(true)
-	api.base_url=api_url.text.strip_edges().trim_suffix("/")
+	var selected_url=api_url.text.strip_edges().trim_suffix("/")
+	if selected_url != api.base_url:
+		api.token=""
+	api.base_url=selected_url
+	api.persist()
 	var response=await api.call_api("/auth/register" if register else "/auth/login",{"username":login_user.text,"password":login_password.text})
 	login_password.clear()
 	if response.ok:

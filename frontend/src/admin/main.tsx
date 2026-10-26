@@ -351,9 +351,7 @@ function App() {
             {x} Nenhuma emissão é automática.
           </p>
         ))}
-        {values.unavailable?.map((x: string) => (
-          <p key={x}>{x}</p>
-        ))}
+        {values.unavailable?.map((x: string) => <p key={x}>{x}</p>)}
       </>
     );
   }
@@ -692,12 +690,41 @@ function App() {
                     "highest_bid",
                     "bids",
                     "ends_at",
-                    "proceeds_destination", "hidden", "archived", "origin", "assessed_value",
+                    "proceeds_destination",
+                    "hidden",
+                    "archived",
+                    "origin",
+                    "assessed_value",
                   ]}
-                  onChoose={(r) => chooseAction("auctions.cancel", String(r.id))}
+                  onChoose={(r) =>
+                    chooseAction("auctions.cancel", String(r.id))
+                  }
                 />
-                <p>Ocultar suspende a negociação, cancela com reembolso de reservas e mantém a custódia. Arquivar exige leilão encerrado; histórico financeiro permanece disponível aqui.</p>
-                {session?.permissions?.includes("auctions.manage") && data.map((a:Row)=><p key={a.id}>Leilão #{a.id}: <button onClick={()=>chooseAction("auctions.hide",String(a.id))}>Preparar ocultação</button> <button onClick={()=>chooseAction("auctions.archive",String(a.id))}>Preparar arquivamento</button></p>)}
+                <p>
+                  Ocultar suspende a negociação, cancela com reembolso de
+                  reservas e mantém a custódia. Arquivar exige leilão encerrado;
+                  histórico financeiro permanece disponível aqui.
+                </p>
+                {session?.permissions?.includes("auctions.manage") &&
+                  data.map((a: Row) => (
+                    <p key={a.id}>
+                      Leilão #{a.id}:{" "}
+                      <button
+                        onClick={() =>
+                          chooseAction("auctions.hide", String(a.id))
+                        }
+                      >
+                        Preparar ocultação
+                      </button>{" "}
+                      <button
+                        onClick={() =>
+                          chooseAction("auctions.archive", String(a.id))
+                        }
+                      >
+                        Preparar arquivamento
+                      </button>
+                    </p>
+                  ))}
               </>
             )}
             {module === "world" && (
@@ -708,7 +735,18 @@ function App() {
                   columns={["id", "name", "kind", "danger_tier"]}
                   onChoose={(r) => chooseAction("world.region", r.id)}
                 />
-                <WorldEvents busy={busy} rooms={data.rooms} events={data.scheduled_events??[]} canManage={session?.permissions?.includes("world.manage")} preview={async body=>run(async()=>{setPreview(await request("/operations/preview",body));})} cancel={id=>chooseAction("world.event_cancel",id)} />
+                <WorldEvents
+                  busy={busy}
+                  rooms={data.rooms}
+                  events={data.scheduled_events ?? []}
+                  canManage={session?.permissions?.includes("world.manage")}
+                  preview={async (body) =>
+                    run(async () => {
+                      setPreview(await request("/operations/preview", body));
+                    })
+                  }
+                  cancel={(id) => chooseAction("world.event_cancel", id)}
+                />
                 <h3>Eventos persistentes</h3>
                 <Table rows={data.events} columns={["id", "kind", "payload"]} />
               </>
@@ -743,11 +781,13 @@ function App() {
                 onChange={(e) => chooseAction(e.target.value)}
               >
                 <option value="">Selecione uma operação</option>
-                {allowed.filter(k=>k!=="world.event_create").map((k) => (
-                  <option key={k} value={k}>
-                    {names[k]}
-                  </option>
-                ))}
+                {allowed
+                  .filter((k) => k !== "world.event_create")
+                  .map((k) => (
+                    <option key={k} value={k}>
+                      {names[k]}
+                    </option>
+                  ))}
               </select>
             </label>
             {action && (

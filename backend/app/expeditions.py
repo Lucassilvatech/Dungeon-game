@@ -82,7 +82,8 @@ def sync(db, c):
         )
     if record.status == ExpeditionStatus.COMPLETED:
         from .procedural_retention import prune
-        prune(db,c,record.room_id)
+
+        prune(db, c, record.room_id)
     return record, alive
 
 
@@ -247,14 +248,18 @@ def flee(db, c, expedition_id, confirmation_token):
     enter(db, c, db.get(Room, "city1"))
     db.flush()
     from .procedural_retention import prune
-    prune(db,c,record.room_id)
+
+    prune(db, c, record.room_id)
     return {"status": "FLED", **result, "replayed": False}
 
 
 def abandon_sequence(db, c):
     from .game import idle
+
     guard_departure(db, c)
     idle(db, c)
     c.adventure_streak = 0
     event(db, "ADVENTURE_SEQUENCE_ABANDONED", c)
-    return {"message": "Sequência abandonada. Próxima aventura: 1% de chance de boss especial."}
+    return {
+        "message": "Sequência abandonada. Próxima aventura: 1% de chance de boss especial."
+    }

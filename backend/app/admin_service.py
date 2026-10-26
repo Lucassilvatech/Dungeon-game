@@ -56,7 +56,17 @@ PARAMS = {
     "auctions.cancel": {"destination"},
     "auctions.hide": set(),
     "auctions.archive": set(),
-    "world.event_create": {"name","description","region","floor_id","effect","intensity","conditions","starts_at","duration_minutes"},
+    "world.event_create": {
+        "name",
+        "description",
+        "region",
+        "floor_id",
+        "effect",
+        "intensity",
+        "conditions",
+        "starts_at",
+        "duration_minutes",
+    },
     "world.event_cancel": set(),
 }
 
@@ -117,7 +127,13 @@ def lock_resources(db, action, target, p):
         if item.owner:
             ids.add(item.owner)
         ids.add(int(p["owner_id"]))
-    if action in ("items.recover_starter", "items.replace_starter", "auctions.cancel", "auctions.hide", "auctions.archive"):
+    if action in (
+        "items.recover_starter",
+        "items.replace_starter",
+        "auctions.cancel",
+        "auctions.hide",
+        "auctions.archive",
+    ):
         auction = get(db, m.Auction, target)
         item = get(db, m.Item, auction.item_id)
         ids.add(auction.former_owner_id)
@@ -154,10 +170,17 @@ def lock_resources(db, action, target, p):
 def describe(db, action, target, p):
     if action == "world.event_create":
         from .world_events import validate
+
         values = validate(db, p)
-        return {"event": {k:(v.isoformat()+"Z" if hasattr(v,"isoformat") else v) for k,v in values.items()}, "impact":f"Raros: multiplicador {1+values['intensity']/100:g}; teto 25%; só novas aventuras. Eventos sobrepostos usam maior multiplicador."}
+        return {
+            "event": {
+                k: (v.isoformat() + "Z" if hasattr(v, "isoformat") else v)
+                for k, v in values.items()
+            },
+            "impact": f"Raros: multiplicador {1+values['intensity']/100:g}; teto 25%; só novas aventuras. Eventos sobrepostos usam maior multiplicador.",
+        }
     if action == "world.event_cancel":
-        return {"event":data(get(db,m.ScheduledWorldEvent,target))}
+        return {"event": data(get(db, m.ScheduledWorldEvent, target))}
     if action.startswith("bank."):
         n = amount(p.get("amount"))
         names = set()
@@ -198,7 +221,13 @@ def describe(db, action, target, p):
         }
     if action == "items.protect":
         return {"definition": data(get(db, m.ItemDefinition, target))}
-    if action in ("items.recover_starter", "items.replace_starter", "auctions.cancel", "auctions.hide", "auctions.archive"):
+    if action in (
+        "items.recover_starter",
+        "items.replace_starter",
+        "auctions.cancel",
+        "auctions.hide",
+        "auctions.archive",
+    ):
         a = get(db, m.Auction, target)
         return {
             "auction": data(a),
@@ -524,7 +553,9 @@ def apply(db, actor, op):
         a = get(db, m.Auction, op.target)
         if action == "auctions.archive" and a.status in ("OPEN", "CLOSED"):
             fail("Cancele com reembolso antes de arquivar um leilão ativo")
-        if action != "auctions.archive":
+        if action == "auctions.cancel" or (
+            action == "auctions.hide" and a.status in ("OPEN", "CLOSED", "UNSOLD")
+        ):
             cancel_auction(db, op)
         if action in ("auctions.hide", "auctions.archive"):
             a.hidden = True
@@ -532,11 +563,12 @@ def apply(db, actor, op):
             a.archived = True
     elif action == "world.event_create":
         from .world_events import validate
-        db.add(m.ScheduledWorldEvent(id=op.id,operation_id=op.id,**validate(db,p)))
+
+        db.add(m.ScheduledWorldEvent(id=op.id, operation_id=op.id, **validate(db, p)))
     elif action == "world.event_cancel":
-        e = get(db,m.ScheduledWorldEvent,op.target)
+        e = get(db, m.ScheduledWorldEvent, op.target)
         if e.cancelled_at is None:
-            e.cancelled_at=utc_now()
+            e.cancelled_at = utc_now()
     elif action == "monsters.balance":
         d = get(db, m.MonsterDefinition, op.target)
         for k, v in p.items():

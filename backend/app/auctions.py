@@ -86,7 +86,9 @@ def payload(db, a):
         kind=definition.kind,
         attributes={"power": definition.power},
         protected=not definition.death_transferable or definition.id == "sword",
-        accepts_bids=not a.hidden and not a.archived and a.status == "OPEN"
+        accepts_bids=not a.hidden
+        and not a.archived
+        and a.status == "OPEN"
         and definition.death_transferable
         and definition.id != "sword"
         and a.ends_at > utc_now(),
@@ -94,7 +96,8 @@ def payload(db, a):
         next_bid=str(max(a.opening_price, a.highest_bid + 1)),
         origin=a.origin,
         assessed_value=str(a.assessed_value),
-        hidden=a.hidden, archived=a.archived,
+        hidden=a.hidden,
+        archived=a.archived,
         death_event_id=a.death_event_id,
         delivery="Same item/stack, unequipped, on settlement",
         former_owner_id=a.former_owner_id,
@@ -205,7 +208,11 @@ def listing(db, offset=0):
     return [
         payload(db, a)
         for a in db.scalars(
-            select(Auction).where(Auction.hidden == False, Auction.archived == False).order_by(Auction.id.desc()).offset(offset).limit(100)
+            select(Auction)
+            .where(Auction.hidden == False, Auction.archived == False)
+            .order_by(Auction.id.desc())
+            .offset(offset)
+            .limit(100)
         )
     ]
 
@@ -271,7 +278,7 @@ def settle(db, auction_id):
 
     mutex(db)
     a = db.scalar(select(Auction).where(Auction.id == auction_id).with_for_update())
-    if not a:
+    if not a or a.hidden or a.archived:
         fail("Leilão inexistente", 404)
     return settle_locked(db, a)
 

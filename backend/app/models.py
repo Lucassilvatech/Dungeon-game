@@ -68,7 +68,9 @@ class Character(Base):
     attribute_point_debt: Mapped[int] = mapped_column(default=0, server_default="0")
     adventure_streak: Mapped[int] = mapped_column(default=0, server_default="0")
     debt_accrued: Mapped[int] = mapped_column(Gold(), default=0, server_default="0")
-    debt_next_collection: Mapped[int] = mapped_column(Gold(), default=0, server_default="0")
+    debt_next_collection: Mapped[int] = mapped_column(
+        Gold(), default=0, server_default="0"
+    )
     room_id: Mapped[str] = mapped_column(
         ForeignKey("rooms.id"), default="city1", server_default="city1"
     )
@@ -90,7 +92,9 @@ class ItemDefinition(Base):
     death_transferable: Mapped[bool] = mapped_column(
         default=True, server_default="true"
     )
-    rarity: Mapped[str] = mapped_column(String(20), default="common", server_default="common")
+    rarity: Mapped[str] = mapped_column(
+        String(20), default="common", server_default="common"
+    )
     unique_item: Mapped[bool] = mapped_column(default=False, server_default="false")
     stackable: Mapped[bool] = mapped_column(default=False, server_default="false")
     max_stack_size: Mapped[int] = mapped_column(default=1, server_default="1")
@@ -233,7 +237,9 @@ class EnemyInstance(Base):
     generation: Mapped[int] = mapped_column(default=0)
     spawn_key: Mapped[str] = mapped_column(String(40))
     species: Mapped[str] = mapped_column(String(20))
-    category: Mapped[str] = mapped_column(String(20), default="common", server_default="common")
+    category: Mapped[str] = mapped_column(
+        String(20), default="common", server_default="common"
+    )
     state: Mapped[str] = mapped_column(String(20), default="ALIVE")
     hp: Mapped[int] = mapped_column()
     max_hp: Mapped[int] = mapped_column()
@@ -306,7 +312,9 @@ class Auction(Base):
     death_event_id: Mapped[int | None] = mapped_column(ForeignKey("death_events.id"))
     hidden: Mapped[bool] = mapped_column(default=False, server_default="false")
     archived: Mapped[bool] = mapped_column(default=False, server_default="false")
-    origin: Mapped[str] = mapped_column(String(30), default="expedition_death", server_default="expedition_death")
+    origin: Mapped[str] = mapped_column(
+        String(30), default="expedition_death", server_default="expedition_death"
+    )
     assessed_value: Mapped[int] = mapped_column(Gold(), default=0, server_default="0")
     former_owner_id: Mapped[int] = mapped_column(ForeignKey("characters.id"))
     opening_price: Mapped[int] = mapped_column(Gold())
@@ -398,7 +406,9 @@ class MonsterDefinition(Base):
         ),
     )
     id: Mapped[str] = mapped_column(String(20), primary_key=True)
-    procedural_config: Mapped[dict] = mapped_column(JSON, default=dict, server_default="{}")
+    procedural_config: Mapped[dict] = mapped_column(
+        JSON, default=dict, server_default="{}"
+    )
     hp: Mapped[int] = mapped_column()
     attack: Mapped[int] = mapped_column()
     defense: Mapped[int] = mapped_column()
@@ -415,7 +425,10 @@ class RecoveryItem(Base):
     price: Mapped[int] = mapped_column(Gold())
     recovered_at: Mapped[datetime | None] = mapped_column(DateTime)
     request_id: Mapped[str | None] = mapped_column(String(36))
-    __table_args__ = (UniqueConstraint("death_event_id", "item_id"), CheckConstraint("price >= 0"))
+    __table_args__ = (
+        UniqueConstraint("death_event_id", "item_id"),
+        CheckConstraint("price >= 0"),
+    )
 
 
 class DebtCollection(Base):
@@ -444,4 +457,6 @@ class ScheduledWorldEvent(Base):
     starts_at: Mapped[datetime] = mapped_column(DateTime)
     ends_at: Mapped[datetime] = mapped_column(DateTime)
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime)
-    operation_id: Mapped[str] = mapped_column(ForeignKey("admin_operations.id"), unique=True)
+    operation_id: Mapped[str] = mapped_column(
+        ForeignKey("admin_operations.id"), unique=True
+    )

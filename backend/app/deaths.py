@@ -81,6 +81,7 @@ def resolve(db, c, battle):
     items = lose(db, c, death)
     c.adventure_streak = 0
     from .debt import collect
+
     collection = collect(db, c)
     expedition.status = "FAILED"
     expedition.finished_at = utc_now()
@@ -112,7 +113,8 @@ def resolve(db, c, battle):
     c.energy = 10
     db.flush()
     from .procedural_retention import prune
-    prune(db,c,room.id)
+
+    prune(db, c, room.id)
     return receipt
 
 

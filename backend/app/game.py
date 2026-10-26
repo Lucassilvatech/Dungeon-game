@@ -69,6 +69,7 @@ def inventory(db, c):
             definition=d.id,
             protected=not d.death_transferable or d.id == "sword",
             kind=d.kind,
+            power=d.power,
             quantity=i.quantity,
             equipped=i.equipped,
             location=i.location,
@@ -130,8 +131,12 @@ def snapshot(db, c, wander=False):
                 "adventure_streak",
             )
         },
-        "next_boss_chance": __import__("app.procedural", fromlist=["chance"]).chance(c.adventure_streak),
-        "attributes": __import__("app.attributes", fromlist=["effective"]).effective(db, c),
+        "next_boss_chance": __import__("app.procedural", fromlist=["chance"]).chance(
+            c.adventure_streak
+        ),
+        "attributes": __import__("app.attributes", fromlist=["effective"]).effective(
+            db, c
+        ),
         "death": latest(db, c),
         "coins_exact": str(c.coins),
         "reserved_gold": str(int(reserved)),
@@ -205,10 +210,13 @@ def interact(db, c):
             "open_auctions": True,
         }
     if current(db, c).id == "recovery_hall":
-        npc=current(db,c).data.get("npc")
-        if not npc or distance((c.x,c.y),npc)>1:
+        npc = current(db, c).data.get("npc")
+        if not npc or distance((c.x, c.y), npc) > 1:
             fail("Aproxime-se do Guardião de Recuperação")
-        return {"message":"Recuperação pessoal: adicional de 100%, total de 200% do valor-base.","open_recovery":True}
+        return {
+            "message": "Recuperação pessoal: adicional de 100%, total de 200% do valor-base.",
+            "open_recovery": True,
+        }
     receptionist(db, c)
     return {
         "message": "Recepcionista da Guilda: seus registros estão prontos para conferência.",
@@ -315,7 +323,9 @@ def action(db, c, battle_id, turn, action):
     dealt = (
         0
         if action == "defend"
-        else damage(stats["strength"]["effective"], e.defense, c.level, skill=action == "skill")
+        else damage(
+            stats["strength"]["effective"], e.defense, c.level, skill=action == "skill"
+        )
     )
     e.hp = max(0, e.hp - dealt)
     b.hp = e.hp
@@ -419,10 +429,16 @@ def action(db, c, battle_id, turn, action):
         incoming = (
             0
             if training
-            else damage(e.attack, stats["defense"]["effective"], e.level, guard=action == "defend")
+            else damage(
+                e.attack,
+                stats["defense"]["effective"],
+                e.level,
+                guard=action == "defend",
+            )
         )
         c.hp = max(0, c.hp - incoming)
         if c.hp == 0:
+            c.adventure_streak = 0
             b.status = "lost"
             e.state = EnemyState.ALIVE
             e.hp = e.max_hp
@@ -511,8 +527,9 @@ def pay(db, c, rows):
             amount=reward_value(b),
         )
     from .procedural_retention import prune
+
     for room_id in {b.room_id for b in rows}:
-        prune(db,c,room_id)
+        prune(db, c, room_id)
     return {
         "paid": total,
         "message": f"Recepcionista: {total} moedas pagas por {len(rows)} registros.",

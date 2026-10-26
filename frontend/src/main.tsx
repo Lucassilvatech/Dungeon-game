@@ -9,7 +9,12 @@ import {
 } from "./ExpeditionPanel";
 import { route } from "./pathfinding";
 import type { Peer, Target } from "./types";
-import { DeathSummary, AttributePanel, AuctionHouse } from "./DeathEconomy";
+import {
+  DeathSummary,
+  AttributePanel,
+  AuctionHouse,
+  PersonalRecovery,
+} from "./DeathEconomy";
 import "./style.css";
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 function App() {
@@ -122,6 +127,7 @@ function App() {
         setNotice(r.message);
         if (r?.rewards) setTab("guild");
         if (r?.open_auctions) setTab("auction");
+        if (r?.open_recovery) setTab("recovery");
       } else if (r?.code) setNotice("Código Discord (5 minutos): " + r.code);
       else if (r?.status) {
         setFx({
@@ -568,6 +574,7 @@ function App() {
               ["exploration", "✧ Exploração"],
               ["guild", "⚑ Guilda"],
               ["auction", "⚖ Leilão"],
+              ["recovery", "♜ Recuperação"],
               ["raid", "♧ Raid"],
             ].map(([id, label]) => (
               <button
@@ -618,6 +625,12 @@ function App() {
                       níveis (mínimo 1).
                     </p>
                   )}
+                  {Object.entries(state.attributes).map(([key, a]) => (
+                    <p key={key}>
+                      {key}: base {a.base} + equipamentos {a.equipment} +
+                      temporários {a.temporary} = <strong>{a.effective}</strong>
+                    </p>
+                  ))}
                   <p>Ouro reservado em leilões: {state.reserved_gold}</p>
                   <AttributePanel state={state} busy={busy} action={action} />
                   <button
@@ -658,7 +671,7 @@ function App() {
                           {i.protected ? " · protegido" : ""}
                           <small>
                             {i.kind === "weapon"
-                              ? "ARMA · FORÇA +3"
+                              ? "ARMA · FORÇA +" + i.power
                               : "EMPILHÁVEL · " +
                                 i.quantity +
                                 "/" +
@@ -667,12 +680,16 @@ function App() {
                         </span>
                         {i.kind === "weapon" && (
                           <button
-                            disabled={busy || i.equipped}
+                            disabled={busy}
                             onClick={() =>
-                              action("/inventory/" + i.id + "/equip")
+                              action(
+                                "/inventory/" +
+                                  i.id +
+                                  (i.equipped ? "/unequip" : "/equip"),
+                              )
                             }
                           >
-                            {i.equipped ? "Equipada" : "Equipar"}
+                            {i.equipped ? "Desequipar" : "Equipar"}
                           </button>
                         )}
                       </div>
@@ -854,6 +871,9 @@ function App() {
               )}
               {tab === "auction" && (
                 <AuctionHouse state={state} busy={busy} action={action} />
+              )}
+              {tab === "recovery" && (
+                <PersonalRecovery state={state} busy={busy} action={action} />
               )}
               {tab === "raid" && (
                 <>

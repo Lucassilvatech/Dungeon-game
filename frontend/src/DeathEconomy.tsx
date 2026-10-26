@@ -83,7 +83,8 @@ export function DeathSummary({
           <ul>
             {death.items.map((i) => (
               <li key={i.item_id}>
-                {i.name} ×{i.quantity} · {i.destination??`leilão histórico #${i.auction_id}`}
+                {i.name} ×{i.quantity} ·{" "}
+                {i.destination ?? `leilão histórico #${i.auction_id}`}
               </li>
             ))}
           </ul>
@@ -91,8 +92,9 @@ export function DeathSummary({
           <p>Nenhum item físico elegível carregado.</p>
         )}
         <p>
-          Itens comuns são destruídos; valiosos ficam na recuperação pessoal por 200% do valor-base. Confisco de dívida é independente. Pagamentos futuros
-          compensam automaticamente qualquer saldo negativo.
+          Itens comuns são destruídos; valiosos ficam na recuperação pessoal por
+          200% do valor-base. Confisco de dívida é independente. Pagamentos
+          futuros compensam automaticamente qualquer saldo negativo.
         </p>
         <button disabled={busy} autoFocus onClick={onReturn}>
           RETORNAR À CIDADE
@@ -399,6 +401,76 @@ export function AuctionHouse({
         resolvidos automaticamente; sem lances, o item permanece arquivado e não
         é destruído.
       </p>
+    </>
+  );
+}
+
+export function PersonalRecovery({
+  state,
+  busy,
+  action,
+}: {
+  state: State;
+  busy: boolean;
+  action: Action;
+}) {
+  const [items, setItems] = useState<any[]>([]);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    let active = true;
+    api("/recovery")
+      .then((r) => {
+        if (active) setItems(r);
+      })
+      .catch((e) => {
+        if (active) setError(String(e.message));
+      });
+    return () => {
+      active = false;
+    };
+  }, [state]);
+  return (
+    <>
+      <h2>Recuperação pessoal</h2>
+      <p>
+        O Guardião de Recuperação, na Guilda, guarda somente seus itens
+        valiosos. Preço: valor-base + 100% = 200%. Itens comuns perdidos são
+        destruídos.
+      </p>
+      <p role="status">{error}</p>
+      {items.length === 0 ? (
+        <p>Nenhum item para recuperar.</p>
+      ) : (
+        items.map((i) => (
+          <article key={i.id}>
+            <h3>
+              {i.name} ×{i.quantity}
+            </h3>
+            <p>
+              Valor-base: {i.base_value} · Recuperação: {i.price} moedas (+100%)
+            </p>
+            {i.recovered ? (
+              <p>Já recuperado</p>
+            ) : (
+              <button
+                disabled={busy}
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      `Pagar ${i.price} moedas para recuperar este item?`,
+                    )
+                  )
+                    action(`/recovery/${i.id}/recover`, {
+                      request_id: crypto.randomUUID(),
+                    });
+                }}
+              >
+                Recuperar
+              </button>
+            )}
+          </article>
+        ))
+      )}
     </>
   );
 }
