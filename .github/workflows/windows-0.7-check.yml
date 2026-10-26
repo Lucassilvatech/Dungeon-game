@@ -1,0 +1,125 @@
+name: Windows 0.7 build verification
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/procedural-economy-godot-fixes]
+    paths:
+      - '.github/workflows/windows-0.7-check.yml'
+      - 'builds/development/0.7.0-bd480e0/**'
+permissions:
+  contents: read
+jobs:
+  defender:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify origin and scan with current Microsoft Defender
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $reportDir = Join-Path $env:GITHUB_WORKSPACE 'security-report'
+          New-Item -ItemType Directory -Force $reportDir | Out-Null
+          $scanDir = Join-Path $env:RUNNER_TEMP 'dungeon-windows-scan'
+          New-Item -ItemType Directory -Force $scanDir | Out-Null
+          $report = [ordered]@{ commit=$env:GITHUB_SHA; started_at=(Get-Date).ToUniversalTime().ToString('o'); status='NOT_SCANNED'; findings=@(); error=$null }
+          $result = 1
+          try {
+            $source = Join-Path $env:GITHUB_WORKSPACE 'builds/development/0.7.0-bd480e0/DungeonGame-Windows-x64.zip'
+            $zipHash = (Get-FileHash -Algorithm SHA256 $source).Hash.ToLowerInvariant()
+            if ($zipHash -ne '19a069950896650e1c165f95129f74088f0e4fb7fe8c91feef34479e6a416e02') { throw 'Published ZIP does not match expected SHA256' }
+            Copy-Item $source $scanDir
+            Expand-Archive $source -DestinationPath (Join-Path $scanDir 'extracted')
+            $exe = Join-Path $scanDir 'extracted/DungeonGame.exe'
+            $exeHash = (Get-FileHash -Algorithm SHA256 $exe).Hash.ToLowerInvariant()
+            if ($exeHash -ne 'b1fc08d5c87c08fcbf2bb6e1ab106ef36e8f25df1d8964d6aebc976c413741ad') { throw 'EXE does not match expected SHA256' }
+            $report.zip_sha256 = $zipHash
+            $report.exe_sha256 = $exeHash
+            $report.authenticode_status = [string](Get-AuthenticodeSignature $exe).Status
+            $before = Get-MpComputerStatus
+            if (-not $before.AntivirusEnabled) { throw 'Defender is not enabled on this runner; no antivirus result can be claimed' }
+            Update-MpSignature -ErrorAction Stop
+            $state = Get-MpComputerStatus
+            # Public game binaries only. Strengthen protection on the disposable runner;
+            # never disable real-time protection or introduce exclusions.
+            Set-MpPreference -MAPSReporting Advanced -ErrorAction Stop
+            Set-MpPreference -SubmitSamplesConsent SendSafeSamples -ErrorAction Stop
+            Set-MpPreference -DisableBlockAtFirstSeen $false -ErrorAction Stop
+            $preferences = Get-MpPreference
+            if ([int]$preferences.MAPSReporting -eq 0 -or $preferences.DisableBlockAtFirstSeen) { throw 'Cloud protection could not be enabled; cloud-dependent detection is not validated' }
+            $report.cloud_settings = [ordered]@{
+              MAPSReporting=[string]$preferences.MAPSReporting
+              SubmitSamplesConsent=[string]$preferences.SubmitSamplesConsent
+              DisableBlockAtFirstSeen=$preferences.DisableBlockAtFirstSeen
+              DisableRealtimeMonitoring=$preferences.DisableRealtimeMonitoring
+            }
+            $report.engine_version = $state.AMEngineVersion
+            $report.signature_version = $state.AntivirusSignatureVersion
+            $report.signature_updated_at = [string]$state.AntivirusSignatureLastUpdated
+            if ($null -eq $state.AntivirusSignatureLastUpdated -or ((Get-Date) - $state.AntivirusSignatureLastUpdated).TotalDays -gt 1) { throw 'Defender signatures are not current' }
+            $scanner = Get-ChildItem "$env:ProgramData/Microsoft/Windows Defender/Platform/*/MpCmdRun.exe" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+            if ($null -eq $scanner) { $scanner = Get-Item "$env:ProgramFiles/Windows Defender/MpCmdRun.exe" -ErrorAction Stop }
+            & $scanner.FullName -ValidateMapsConnection 2>&1 | Tee-Object -FilePath (Join-Path $reportDir 'defender-cloud-connection.log')
+            $report.cloud_connection_exit_code = $LASTEXITCODE
+            if ($LASTEXITCODE -ne 0) { throw 'Defender cloud connection validation failed; do not claim a cloud-validated result' }
+            $scanStart = Get-Date
+            & $scanner.FullName -Scan -ScanType 3 -File $scanDir 2>&1 | Tee-Object -FilePath (Join-Path $reportDir 'defender-scan.log')
+            $scanExit = $LASTEXITCODE
+            $report.scanner_exit_code = $scanExit
+            $detections = @(Get-MpThreatDetection | Where-Object { $_.InitialDetectionTime -ge $scanStart.AddMinutes(-1) })
+            $report.findings = @($detections | Select-Object ThreatID,ActionSuccess,InitialDetectionTime,Resources)
+            $report.threat_names = @(Get-MpThreat | Select-Object ThreatID,ThreatName,IsActive)
+            if ($scanExit -ne 0 -or $detections.Count -gt 0) {
+              $report.status = 'DETECTION_OR_SCAN_ERROR'
+              throw "Defender detection or scan error; exit code $scanExit"
+            }
+            $report.status = 'NO_DETECTION_IN_THIS_SCAN'
+            $result = 0
+          } catch {
+            $report.error = $_.Exception.Message
+            Write-Host "Security check did not pass: $($report.error)"
+          } finally {
+            # Include real-time detections even if a file was quarantined before custom scan.
+            try {
+              $observed = @(Get-MpThreatDetection | Where-Object { $_.InitialDetectionTime -ge ([datetime]$report.started_at).AddSeconds(-5) })
+              $report.findings = @($observed | Select-Object ThreatID,ActionSuccess,InitialDetectionTime,Resources)
+              $report.threat_names = @(Get-MpThreat | Select-Object ThreatID,ThreatName,IsActive)
+              if ($observed.Count -gt 0) { $report.status='DETECTION'; $result=1 }
+            } catch { $report.detection_query_error=$_.Exception.Message }
+            $report.finished_at = (Get-Date).ToUniversalTime().ToString('o')
+            $report | ConvertTo-Json -Depth 10 | Set-Content -Encoding utf8 (Join-Path $reportDir 'report.json')
+            @(
+              '## Windows build security investigation'
+              "- Result: $($report.status)"
+              "- Commit: $($report.commit)"
+              "- Engine: $($report.engine_version)"
+              "- Signature version: $($report.signature_version)"
+              "- Signature updated: $($report.signature_updated_at)"
+              "- Cloud configuration: $($report.cloud_settings | ConvertTo-Json -Compress)"
+              "- EXE SHA256: $($report.exe_sha256)"
+              '- User report: Trojan:Script/Wacatac.B!ml. No detection in CI does not override a local detection.'
+            ) | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
+            Write-Host "::notice title=Defender investigation::Result=$($report.status); Engine=$($report.engine_version); Signatures=$($report.signature_version); CloudMAPS=$($report.cloud_settings.MAPSReporting)"
+          }
+          if ($result -ne 0) { exit 1 }
+      - name: Preserve scanner result even if detection or scanner unavailable
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-defender-report
+          path: security-report/
+      - name: Start exported Windows client headlessly
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $exe = Join-Path $env:RUNNER_TEMP 'dungeon-windows-scan/extracted/DungeonGame.exe'
+          $stdout = Join-Path $env:RUNNER_TEMP 'dungeon-native-out.log'
+          $stderr = Join-Path $env:RUNNER_TEMP 'dungeon-native-err.log'
+          $p = Start-Process -FilePath $exe -ArgumentList '--headless','--quit-after','20' -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+          if (-not $p.WaitForExit(60000)) { Stop-Process -Id $p.Id; throw 'Windows startup timed out' }
+          $p.Refresh()
+          Get-Content $stdout
+          Get-Content $stderr
+          if ($p.ExitCode -ne 0) { throw "Windows client failed with exit $($p.ExitCode)" }
+          if (Select-String -Path $stderr -Pattern 'SCRIPT ERROR|Parse Error|Failed to load script') { throw 'Windows script loading failed' }
+          Write-Host '::notice title=Windows client startup::Native EXE started and exited successfully; login and graphical gameplay still require platform validation.'

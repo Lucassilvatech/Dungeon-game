@@ -1,0 +1,21 @@
+{
+  "version": "0.7.0",
+  "source_commit": "bd480e0705101ebeae44d538404b0f34f029e373",
+  "godot": "4.6.3.stable.official.7d41c59c4",
+  "development": true,
+  "backend_required": true,
+  "artifacts": {
+    "DungeonGame.exe": {
+      "sha256": "b1fc08d5c87c08fcbf2bb6e1ab106ef36e8f25df1d8964d6aebc976c413741ad",
+      "bytes": 100687984
+    },
+    "DungeonGame-Windows-x64.zip": {
+      "sha256": "19a069950896650e1c165f95129f74088f0e4fb7fe8c91feef34479e6a416e02",
+      "bytes": 33536490
+    },
+    "DungeonGame-Android.apk": {
+      "sha256": "72a8fa5bbaecde3b10a2ed966921abeeb082ad6f064669d9798912bab3f65bc1",
+      "bytes": 84547008
+    }
+  }
+}
