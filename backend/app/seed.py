@@ -18,6 +18,7 @@ def seed():
             db.execute(text("SELECT pg_advisory_xact_lock(7312026)"))
         from .models import CentralBank, MonsterDefinition
         from .balance import ENEMIES
+        from .procedural import SPECIES
 
         if not db.get(CentralBank, 1):
             db.add(CentralBank(id=1, balance=0))
@@ -26,6 +27,7 @@ def seed():
                 db.add(
                     MonsterDefinition(
                         id=species,
+                        procedural_config=SPECIES.get(species, {}),
                         **dict(zip(("hp", "attack", "defense", "level", "xp"), stats))
                     )
                 )

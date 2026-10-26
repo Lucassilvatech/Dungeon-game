@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     auction_duration_hours: float = Field(default=24, gt=0)
     auction_proceeds_destination: Literal["treasury", "sink"] = "treasury"
     auction_sweep_seconds: float = Field(default=30, ge=1)
+    adventure_boss_increment: float = Field(default=0.01, ge=0, le=0.09)
+    procedural_proximity_k: float = Field(default=3, ge=0, le=10)
+    procedural_level_weight: float = Field(default=0.65, ge=0, le=1)
     discord_service_key: str = ""
     model_config = {"env_file": ".env", "extra": "ignore"}
 

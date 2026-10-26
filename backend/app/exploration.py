@@ -129,7 +129,9 @@ def adventure(db, c, request_id):
     enter(db, c, room)
     from .expeditions import register, sync
 
-    register(db, c, room)
+    record = register(db, c, room)
+    from .procedural import configure_room
+    configure_room(db, c, room, record)
     sync(db, c)
     return {
         "message": "Nova expedição criada. Seed e baixas são preservadas nesta instância."

@@ -68,6 +68,7 @@ def sync(db, c):
     enemies = instances(db, c)
     alive = sum(e.state != EnemyState.DEAD for e in enemies)
     if not alive:
+        c.adventure_streak += 1
         record.status = ExpeditionStatus.COMPLETED
         record.finished_at = utc_now()
         db.get(RoomState, (c.id, record.room_id)).completed = True
@@ -79,6 +80,9 @@ def sync(db, c):
             key=f"exp-completed:{record.id}",
             expedition=record.id,
         )
+    if record.status == ExpeditionStatus.COMPLETED:
+        from .procedural_retention import prune
+        prune(db,c,record.room_id)
     return record, alive
 
 
@@ -111,6 +115,10 @@ def state(db, c):
     if not record:
         return None
     return dict(
+        streak=c.adventure_streak,
+        boss_chance=record.boss_chance / 10000,
+        boss_rolled=record.boss_rolled,
+        special_boss=record.special_boss,
         id=record.id,
         room_id=record.room_id,
         seed=record.seed,
@@ -213,6 +221,7 @@ def flee(db, c, expedition_id, confirmation_token):
             enemy.state = "ALIVE"
             enemy.ai_state = "IDLE"
             enemy.hp = enemy.max_hp
+    c.adventure_streak = 0
     record.status = ExpeditionStatus.FLED
     record.finished_at = utc_now()
     result = {
@@ -237,4 +246,15 @@ def flee(db, c, expedition_id, confirmation_token):
     )
     enter(db, c, db.get(Room, "city1"))
     db.flush()
+    from .procedural_retention import prune
+    prune(db,c,record.room_id)
     return {"status": "FLED", **result, "replayed": False}
+
+
+def abandon_sequence(db, c):
+    from .game import idle
+    guard_departure(db, c)
+    idle(db, c)
+    c.adventure_streak = 0
+    event(db, "ADVENTURE_SEQUENCE_ABANDONED", c)
+    return {"message": "Sequência abandonada. Próxima aventura: 1% de chance de boss especial."}

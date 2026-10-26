@@ -34,6 +34,11 @@ def instances(db, c, wander=False):
         )
         .order_by(EnemyInstance.id)
     ).all()
+    if room.data.get("procedural_version"):
+        from .models import Expedition
+        record=db.scalar(select(Expedition).where(Expedition.room_id==room.id))
+        if record and record.status != "ACTIVE":
+            return existing
     known = {e.spawn_key for e in existing}
     for key, spawn in spawns.items():
         if key in known:
@@ -57,6 +62,9 @@ def instances(db, c, wander=False):
             hp = room.data.get("enemy_hp", hp)
             attack = room.data.get("enemy_attack", attack)
             level = room.data.get("enemy_level", level)
+        if spawn.get("stats"):
+            generated = spawn["stats"]
+            hp, attack, defense, level, xp = (generated[k] for k in ("hp", "attack", "defense", "level", "xp"))
         old = db.scalar(
             select(Battle)
             .where(
@@ -80,6 +88,7 @@ def instances(db, c, wander=False):
             generation=rs.generation,
             spawn_key=key,
             species=species,
+            category=spawn.get("category", "boss" if species == "boss" else "unique" if species == "warden" else "common"),
             hp=(
                 0
                 if state == EnemyState.DEAD
@@ -147,7 +156,10 @@ def instances(db, c, wander=False):
 
 
 def payload(e):
+    from .procedural import CATEGORIES
+    label, color, icon = CATEGORIES[e.category]
     return dict(
+        category=e.category, category_label=label, name_color=color, category_icon=icon,
         id=e.id,
         spawn_key=e.spawn_key,
         species=e.species,
