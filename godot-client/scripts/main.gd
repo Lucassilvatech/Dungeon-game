@@ -21,6 +21,7 @@ var api_url: LineEdit
 var name_input: LineEdit
 var creation: HBoxContainer
 var displayed_death = 0
+var connection_failures = 0
 var polling: Timer
 var current_auctions: Array = []
 var socket = WebSocketPeer.new()
@@ -134,6 +135,12 @@ func build_ui():
 	var auth=row(login_box)
 	button("Entrar",auth,func(): authenticate(false))
 	button("Criar conta",auth,func(): authenticate(true))
+	button("Tentar novamente",auth,func():
+		connection_failures=0
+		if api.token.is_empty():
+			notice.text="Confira o servidor e informe conta e senha para entrar."
+		else:
+			refresh())
 	creation=row(root)
 	name_input=line("Nome do personagem",creation)
 	button("Criar personagem",creation,func(): act("/character",{"name":name_input.text}))
@@ -145,7 +152,7 @@ func build_ui():
 	var top=row(game_box)
 	room_label=label("",top)
 	room_label.size_flags_horizontal=Control.SIZE_EXPAND_FILL
-	button("Atualizar",top,func(): refresh())
+	button("Atualizar",top,func(): connection_failures=0; refresh())
 	button("Sair",top,func(): api.logout(); show_login())
 	hud=label("",game_box)
 	var meters=row(game_box)
@@ -194,7 +201,7 @@ func build_ui():
 	polling.wait_time=2.0
 	polling.autostart=true
 	polling.timeout.connect(func():
-		if not busy and not api.token.is_empty():
+		if not busy and not api.token.is_empty() and connection_failures < 3:
 			refresh(false))
 	add_child(polling)
 
@@ -241,6 +248,7 @@ func refresh(panels = true):
 	set_busy(true)
 	var response=await api.call_api("/state")
 	if response.ok:
+		connection_failures=0
 		state=response.data
 		login_box.hide()
 		creation.hide()
@@ -250,7 +258,10 @@ func refresh(panels = true):
 		creation.show()
 		login_box.hide()
 	else:
+		connection_failures+=1
 		show_error(response)
+		if connection_failures>=3:
+			notice.text+=" Atualização automática pausada após 3 falhas. Use Atualizar para tentar novamente."
 	set_busy(false)
 	if response.ok and panels:
 		await load_tab()
@@ -431,6 +442,9 @@ func load_tab():
 	match tabs.current_tab:
 		0:
 			label("Nível %d · Força %d · Defesa %d\nPontos livres: %d · Dívida de pontos: %d\nCada novo nível quita dívida antes de conceder 1 ponto manual." % [int(c.level),int(c.strength),int(c.defense),int(c.unspent_attribute_points),int(c.attribute_point_debt)],box)
+			for key in state.get("attributes",{}):
+				var a=state.attributes[key]
+				label("%s: base %d + equipamento %d + temporários %d = %d" % [key,int(a.base),int(a.equipment),int(a.temporary),int(a.effective)],box)
 			label("Ouro disponível: "+state.coins_exact+" · Reservado: "+state.reserved_gold,box)
 			if state.coins_exact.begins_with("-"):
 				label("Dívida médica ativa. Pagamentos futuros compensam o saldo negativo. Cada morte ao atingir −10.000 perde até 10 níveis (mínimo 1).",box)
@@ -455,7 +469,7 @@ func load_tab():
 				var r=row(box)
 				label("%s ×%d%s%s\n%s" % [item.name,int(item.quantity)," · equipado" if item.equipped else ""," · protegido" if item.get("protected",false) else "",item.description],r)
 				if item.kind=="weapon":
-					button("Equipar",r,func(): act("/inventory/%d/equip" % int(item.id),{}),item.equipped)
+					button("Desequipar" if item.equipped else "Equipar",r,func(): act("/inventory/%d/" % int(item.id)+("unequip" if item.equipped else "equip"),{}))
 		2:
 			label("Caminhos físicos (preservados)",box)
 			for e in state.room.exits:

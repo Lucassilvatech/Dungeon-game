@@ -79,3 +79,13 @@ def allocate(db, c, strength, defense, request_id):
         remaining=c.unspent_attribute_points,
     )
     return {"message": "Distribuição de atributos confirmada."}
+
+
+def effective(db, c):
+    """One read-only projection shared by status and combat; legacy power is strength."""
+    from sqlalchemy import select
+    from .models import Item, ItemDefinition
+    bonuses = {"strength": 0, "defense": 0}
+    for definition in db.scalars(select(ItemDefinition).join(Item, Item.definition == ItemDefinition.id).where(Item.owner == c.id, Item.location == "inventory", Item.equipped == True)):
+        bonuses["strength"] += definition.power if definition.kind == "weapon" else 0
+    return {key: {"base": getattr(c, key), "equipment": bonuses[key], "temporary": 0, "effective": getattr(c, key) + bonuses[key]} for key in bonuses}

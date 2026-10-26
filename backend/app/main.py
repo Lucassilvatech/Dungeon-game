@@ -451,3 +451,10 @@ def auction_details(auction_id: int, a=Depends(current_account), db=Depends(get_
 from .admin import router as admin_router
 
 app.include_router(admin_router)
+
+
+@app.post("/inventory/{item_id}/unequip")
+def unequip(item_id: int, a=Depends(current_account), db=Depends(get_db)):
+    c = game.character(db, a)
+    game.unequip(db, c, item_id)
+    return game.snapshot(db, c)

@@ -129,6 +129,7 @@ def snapshot(db, c, wander=False):
                 "room_id",
             )
         },
+        "attributes": __import__("app.attributes", fromlist=["effective"]).effective(db, c),
         "death": latest(db, c),
         "coins_exact": str(c.coins),
         "reserved_gold": str(int(reserved)),
@@ -299,22 +300,15 @@ def action(db, c, battle_id, turn, action):
         fail("Ação inválida", 422)
     if action == "skill" and c.energy < 2:
         fail("Energia insuficiente")
-    power = (
-        db.scalar(
-            select(ItemDefinition.power)
-            .join(Item, Item.definition == ItemDefinition.id)
-            .where(
-                Item.owner == c.id, Item.equipped == True, Item.location == "inventory"
-            )
-        )
-        or 0
-    )
+    from .attributes import effective
+
+    stats = effective(db, c)
     if action == "skill":
         c.energy -= 2
     dealt = (
         0
         if action == "defend"
-        else damage(c.strength + power, e.defense, c.level, skill=action == "skill")
+        else damage(stats["strength"]["effective"], e.defense, c.level, skill=action == "skill")
     )
     e.hp = max(0, e.hp - dealt)
     b.hp = e.hp
@@ -418,7 +412,7 @@ def action(db, c, battle_id, turn, action):
         incoming = (
             0
             if training
-            else damage(e.attack, c.defense, e.level, guard=action == "defend")
+            else damage(e.attack, stats["defense"]["effective"], e.level, guard=action == "defend")
         )
         c.hp = max(0, c.hp - incoming)
         if c.hp == 0:
@@ -542,3 +536,11 @@ def equip(db, c, item_id):
     ):
         old.equipped = False
     item.equipped = True
+
+
+def unequip(db, c, item_id):
+    idle(db, c)
+    item = db.get(Item, item_id)
+    if not item or item.owner != c.id or item.location != "inventory":
+        fail("Item indisponível", 404)
+    item.equipped = False
