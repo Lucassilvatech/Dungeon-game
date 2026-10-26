@@ -24,6 +24,7 @@ export type Battle = {
   reward_amount: number | null;
 };
 export type Enemy = {
+  category_label?: string; name_color?: string;
   id: number;
   spawn_key: string;
   species: string;

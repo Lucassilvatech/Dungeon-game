@@ -184,8 +184,9 @@ export function Map({
         const label = this.label(
           sprite.x,
           sprite.y - 27,
-          e.name + " · " + e.level,
+          (e.category_label??"Comum") + " · " + e.name + " · " + e.level,
         );
+        label.setColor(e.name_color??"#eeeeee");
         this.actors.set(e.id, {
           sprite,
           label,

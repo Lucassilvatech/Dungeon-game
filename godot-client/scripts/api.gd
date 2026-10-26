@@ -66,9 +66,9 @@ func call_api(path: String, body = null) -> Dictionary:
 	return {"ok": status >= 200 and status < 300, "status": status, "data": parsed}
 
 func connection_error(result: int) -> String:
-    match result:
-        HTTPRequest.RESULT_TIMEOUT: return "Tempo limite excedido. Confira o endereço e toque em Tentar novamente."
-        HTTPRequest.RESULT_TLS_HANDSHAKE_ERROR: return "Falha no certificado HTTPS. Verifique o certificado do servidor."
-        HTTPRequest.RESULT_CANT_RESOLVE: return "Servidor não encontrado. Confira o endereço da API."
-        HTTPRequest.RESULT_CANT_CONNECT: return "Falha de conexão. O backend precisa estar ativo e acessível nesta rede."
-        _: return "Conexão interrompida. Confira a rede e tente novamente."
+	match result:
+		HTTPRequest.RESULT_TIMEOUT: return "Tempo limite excedido. Confira o endereço e toque em Tentar novamente."
+		HTTPRequest.RESULT_TLS_HANDSHAKE_ERROR: return "Falha no certificado HTTPS. Verifique o certificado do servidor."
+		HTTPRequest.RESULT_CANT_RESOLVE: return "Servidor não encontrado. Confira o endereço da API."
+		HTTPRequest.RESULT_CANT_CONNECT: return "Falha de conexão. O backend precisa estar ativo e acessível nesta rede."
+		_: return "Conexão interrompida. Confira a rede e tente novamente."

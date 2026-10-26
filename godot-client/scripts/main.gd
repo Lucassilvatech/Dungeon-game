@@ -187,7 +187,7 @@ func build_ui():
 	tabs.custom_minimum_size.y=200
 	tabs.size_flags_vertical=Control.SIZE_EXPAND_FILL
 	game_box.add_child(tabs)
-	for title in ["Personagem","Inventário","Caminhos","Guilda","Leilões","Exploração","Raid"]:
+	for title in ["Personagem","Inventário","Caminhos","Guilda","Leilões","Exploração","Raid","Recuperação"]:
 		var container=ScrollContainer.new()
 		container.name=title
 		container.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
@@ -292,6 +292,8 @@ func act(path: String, body = {}):
 			notice.text=response.data.message
 		if response.data is Dictionary and response.data.get("open_auctions",false):
 			tabs.current_tab=4
+		if response.data is Dictionary and response.data.get("open_recovery",false):
+			tabs.current_tab=7
 	else:
 		show_error(response)
 	set_busy(false)
@@ -412,9 +414,9 @@ func flee_preview():
 
 func show_death(d: Dictionary):
 	displayed_death=int(d.death_event_id)
-	var text="Expedição fracassada. Resgate concluído na cidade.\nXP perdido: %d\nPendências perdidas: %s\nTaxa médica: %s\nSaldo atual: %s\nNíveis perdidos: %d\nItens enviados ao leilão:\n" % [int(d.xp_lost),d.pending_lost_exact,str(d.medical_fee),d.balance_after_exact,int(d.levels_lost)]
+	var text="Expedição fracassada. Resgate concluído na cidade.\nXP perdido: %d\nPendências perdidas: %s\nTaxa médica: %s\nSaldo atual: %s\nNíveis perdidos: %d\nItens perdidos na morte (até 5 unidades):\n" % [int(d.xp_lost),d.pending_lost_exact,str(d.medical_fee),d.balance_after_exact,int(d.levels_lost)]
 	for item in d.items:
-		text+="%s ×%d\n" % [item.name,int(item.quantity)]
+		text+="%s ×%d · %s\n" % [item.name,int(item.quantity),item.get("destination","leilão histórico")]
 	text+="A espada inicial protegida permanece com você."
 	var popup=AcceptDialog.new()
 	popup.title="VOCÊ MORREU"
@@ -495,7 +497,7 @@ func load_tab():
 					label("%s ×%d" % [monster,int(result.data.groups[monster])],box)
 				button("Resgatar recompensas",box,func(): act("/guild/claim",{}),state.room.id!="guild")
 		4:
-			label("Espólios de morte · jogadores somente. Ouro vencedor vai ao Tesouro/sink. Prazo configurável, padrão 24h. Sem lances, item arquivado em custódia.",box)
+			label("Confiscos de dívida e espólios históricos · jogadores somente. Ouro vencedor vai ao Tesouro/sink. Prazo configurável, padrão 24h. Sem lances, item arquivado em custódia.",box)
 			set_busy(true)
 			var result=await api.call_api("/auctions")
 			set_busy(false)
@@ -506,9 +508,12 @@ func load_tab():
 		5:
 			if state.get("expedition")!=null:
 				label("Expedição "+state.expedition.status+" · restantes "+str(int(state.expedition.alive_enemies)),box)
+			label("Sequência: %d · Chance da próxima aventura: %.0f%%" % [int(c.get("adventure_streak",0)),float(state.get("next_boss_chance",0.01))*100],box)
+			button("Abandonar sequência",box,func(): dialog("Abandonar sequência","Zerar sequência e voltar à chance inicial de 1%?",func(): act("/adventures/abandon-sequence",{})),state.get("expedition")!=null and state.expedition.status=="ACTIVE")
 			for e in state.map.enemies:
 				if e.state!="DEAD":
-					button("%s · Nv. %d · HP %d/%d" % [e.name,int(e.level),int(e.hp),int(e.max_hp)],box,func(): walk_to({"kind":"enemy","x":int(e.x),"y":int(e.y),"id":int(e.id)}))
+					var enemy_button=button("%s %s · %s · Nv. %d · HP %d/%d" % [e.get("category_icon","●"),e.get("category_label","Comum"),e.name,int(e.level),int(e.hp),int(e.max_hp)],box,func(): walk_to({"kind":"enemy","x":int(e.x),"y":int(e.y),"id":int(e.id)}))
+					enemy_button.add_theme_color_override("font_color",Color(e.get("name_color","#eeeeee")))
 			if state.room.kind=="TRAINING":
 				button("Novo exercício sem recompensas",box,func(): act("/training/reset",{}))
 			if state.room.kind=="SECRET_DUNGEON":
@@ -528,12 +533,23 @@ func load_tab():
 				var invite=line("Convite",box)
 				button("Entrar",box,func(): act("/raids/join",{"invite":invite.text}))
 
+		7:
+			label("Recuperação pessoal · somente seus itens. Adicional de 100%: preço total 200% do valor-base. Caminhe até o Guardião de Recuperação na Guilda.",box)
+			set_busy(true)
+			var result=await api.call_api("/recovery")
+			set_busy(false)
+			if result.ok and is_instance_valid(box):
+				for item in result.data:
+					label("%s ×%d · base %s · recuperação %s (+100%%)%s" % [item.name,int(item.quantity),item.base_value,item.price," · recuperado" if item.recovered else ""],box)
+					if not item.recovered:
+						button("Recuperar",box,func(): dialog("Confirmar recuperação", "Pagar "+item.price+" moedas?",func(): act("/recovery/%d/recover" % int(item.id),{"request_id":uuid()})))
+
 func render_auction(box: VBoxContainer,a: Dictionary):
 	label("#%d · %s ×%d · %s\n%s\nTipo: %s · Atributos: %s\nInicial: %s · Atual: %s · Próximo: %s · Incremento mínimo: %s\nEncerramento: %s · Destino: %s" % [int(a.id),a.name,int(a.quantity),a.status,a.description,a.kind,str(a.attributes),a.opening_price,a.highest_bid,a.next_bid,a.minimum_increment,a.ends_at,a.proceeds_destination],box)
 	button("Detalhes e histórico",box,func():
 		var r=await api.call_api("/auctions/%d" % int(a.id))
 		if r.ok:
-			var text="Origem: espólio da morte #%d\nEntrega: mesmo item/stack, desequipado, ao vencedor.\n" % int(r.data.death_event_id)
+			var text="Origem: %s\nEntrega: mesmo item/stack, desequipado, ao vencedor.\n" % str(r.data.origin)
 			for b in r.data.bids:
 				text+="Jogador %d: %s moedas · %s\n" % [int(b.bidder_id),b.amount,b.created_at]
 			dialog(a.name,text)

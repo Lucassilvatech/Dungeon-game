@@ -101,6 +101,7 @@ func enemy(e: Dictionary, alpha: float):
 	draw_rect(Rect2(at+Vector2(-6,-13),Vector2(12,4)),color.lightened(0.15))
 	draw_rect(Rect2(at+Vector2(-4,-8),Vector2(2,3)),Color(0.05,0.1,0.12,alpha))
 	draw_rect(Rect2(at+Vector2(3,-8),Vector2(2,3)),Color(0.05,0.1,0.12,alpha))
+	draw_string(ThemeDB.fallback_font,at+Vector2(-30,-24),e.get("category_label","Comum")+" · "+e.name,HORIZONTAL_ALIGNMENT_LEFT,-1,12,Color(e.get("name_color","#eeeeee")))
 	if e.state == "IN_COMBAT":
 		draw_rect(Rect2(at+Vector2(-10,-18),Vector2(20,2)),Color("412b36"))
 		draw_rect(Rect2(at+Vector2(-10,-18),Vector2(20*float(e.hp)/float(e.max_hp),2)),Color("e4ae67"))

@@ -20,7 +20,9 @@ export type DeathReceipt = {
     item_id: number;
     name: string;
     quantity: number;
-    auction_id: number;
+    auction_id?: number;
+    destination?: string;
+    recovery_id?: number;
   }[];
 };
 
@@ -76,12 +78,12 @@ export function DeathSummary({
             níveis novamente.
           </p>
         )}
-        <h2>Itens enviados para leilão</h2>
+        <h2>Itens perdidos (até cinco unidades)</h2>
         {death.items.length ? (
           <ul>
             {death.items.map((i) => (
               <li key={i.item_id}>
-                {i.name} ×{i.quantity} · leilão #{i.auction_id}
+                {i.name} ×{i.quantity} · {i.destination??`leilão histórico #${i.auction_id}`}
               </li>
             ))}
           </ul>
@@ -89,7 +91,7 @@ export function DeathSummary({
           <p>Nenhum item físico elegível carregado.</p>
         )}
         <p>
-          Itens perdidos ficam em custódia do leilão. Pagamentos futuros
+          Itens comuns são destruídos; valiosos ficam na recuperação pessoal por 200% do valor-base. Confisco de dívida é independente. Pagamentos futuros
           compensam automaticamente qualquer saldo negativo.
         </p>
         <button disabled={busy} autoFocus onClick={onReturn}>

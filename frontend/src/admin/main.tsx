@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
+import { WorldEvents } from "./WorldEvents";
 
 type Row = Record<string, any>;
 const modules = [
@@ -33,6 +34,10 @@ const names: Record<string, string> = {
   "monsters.balance": "Ajustar perfil para novos encontros",
   "world.spawn": "Criar spawn administrativo identificado",
   "world.region": "Ajustar perigo regional",
+  "auctions.hide": "Ocultar e suspender com reembolso",
+  "auctions.archive": "Arquivar histórico de leilão encerrado",
+  "world.event_cancel": "Cancelar evento agendado",
+  "world.event_create": "Agendar evento do mundo (use o formulário de eventos)",
   "auctions.cancel": "Suspender leilão e devolver reservas",
 };
 const targetLabels: Record<string, string> = {
@@ -45,6 +50,9 @@ const targetLabels: Record<string, string> = {
   "world.region": "ID da região",
   "world.spawn": "ID da região",
   "auctions.cancel": "ID do leilão",
+  "auctions.hide": "ID do leilão",
+  "auctions.archive": "ID do leilão",
+  "world.event_cancel": "ID do evento",
   "economy.configure": "Parâmetro econômico",
 };
 const params: Record<string, Record<string, string>> = {
@@ -684,12 +692,12 @@ function App() {
                     "highest_bid",
                     "bids",
                     "ends_at",
-                    "proceeds_destination",
+                    "proceeds_destination", "hidden", "archived", "origin", "assessed_value",
                   ]}
-                  onChoose={(r) =>
-                    chooseAction("auctions.cancel", String(r.id))
-                  }
+                  onChoose={(r) => chooseAction("auctions.cancel", String(r.id))}
                 />
+                <p>Ocultar suspende a negociação, cancela com reembolso de reservas e mantém a custódia. Arquivar exige leilão encerrado; histórico financeiro permanece disponível aqui.</p>
+                {session?.permissions?.includes("auctions.manage") && data.map((a:Row)=><p key={a.id}>Leilão #{a.id}: <button onClick={()=>chooseAction("auctions.hide",String(a.id))}>Preparar ocultação</button> <button onClick={()=>chooseAction("auctions.archive",String(a.id))}>Preparar arquivamento</button></p>)}
               </>
             )}
             {module === "world" && (
@@ -700,6 +708,7 @@ function App() {
                   columns={["id", "name", "kind", "danger_tier"]}
                   onChoose={(r) => chooseAction("world.region", r.id)}
                 />
+                <WorldEvents busy={busy} rooms={data.rooms} events={data.scheduled_events??[]} canManage={session?.permissions?.includes("world.manage")} preview={async body=>run(async()=>{setPreview(await request("/operations/preview",body));})} cancel={id=>chooseAction("world.event_cancel",id)} />
                 <h3>Eventos persistentes</h3>
                 <Table rows={data.events} columns={["id", "kind", "payload"]} />
               </>
@@ -734,7 +743,7 @@ function App() {
                 onChange={(e) => chooseAction(e.target.value)}
               >
                 <option value="">Selecione uma operação</option>
-                {allowed.map((k) => (
+                {allowed.filter(k=>k!=="world.event_create").map((k) => (
                   <option key={k} value={k}>
                     {names[k]}
                   </option>

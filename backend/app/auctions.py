@@ -86,13 +86,15 @@ def payload(db, a):
         kind=definition.kind,
         attributes={"power": definition.power},
         protected=not definition.death_transferable or definition.id == "sword",
-        accepts_bids=a.status == "OPEN"
+        accepts_bids=not a.hidden and not a.archived and a.status == "OPEN"
         and definition.death_transferable
         and definition.id != "sword"
         and a.ends_at > utc_now(),
         minimum_increment="1",
         next_bid=str(max(a.opening_price, a.highest_bid + 1)),
-        origin="expedition_death",
+        origin=a.origin,
+        assessed_value=str(a.assessed_value),
+        hidden=a.hidden, archived=a.archived,
         death_event_id=a.death_event_id,
         delivery="Same item/stack, unequipped, on settlement",
         former_owner_id=a.former_owner_id,
@@ -203,7 +205,7 @@ def listing(db, offset=0):
     return [
         payload(db, a)
         for a in db.scalars(
-            select(Auction).order_by(Auction.id.desc()).offset(offset).limit(100)
+            select(Auction).where(Auction.hidden == False, Auction.archived == False).order_by(Auction.id.desc()).offset(offset).limit(100)
         )
     ]
 
@@ -226,6 +228,8 @@ def bid(db, account, auction_id, amount, request_id):
     if not a:
         game.fail("Leilão inexistente", 404)
     transferable(db, a)
+    if a.hidden or a.archived:
+        game.fail("Leilão indisponível", 404)
     if a.status != "OPEN" or a.ends_at <= utc_now():
         game.fail("Leilão encerrado")
     if amount < a.opening_price or amount <= a.highest_bid:
@@ -302,11 +306,11 @@ def transferable(db, a):
         )
 
 
-def detail(db, auction_id):
+def detail(db, auction_id, administrative=False):
     from .game import fail
 
     a = db.get(Auction, auction_id)
-    if not a:
+    if not a or ((a.hidden or a.archived) and not administrative):
         fail("Leilão inexistente", 404)
     return {
         **payload(db, a),
