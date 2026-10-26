@@ -25,6 +25,8 @@ function App() {
       "Bem-vindo ao Alvorecer. Sua história está apenas começando.",
     ),
     [busy, setBusy] = useState(false),
+    [connection,setConnection]=useState("Conectando…"),
+    [connectionEpoch,setConnectionEpoch]=useState(0),
     [rewards, setRewards] = useState<Battle[]>([]),
     [rewardSummary, setRewardSummary] = useState<{
       count: number;
@@ -48,6 +50,7 @@ function App() {
   const gate = useRef(false),
     live = useRef<State | null>(null);
   const sequence = useRef(0);
+  const freshness=useRef(0), refreshGate=useRef(false), failures=useRef(0);
   const lastEvent = useRef(0);
   useEffect(() => {
     if (!state?.events.length) return;
@@ -65,24 +68,37 @@ function App() {
     live.current = s;
     setState(s);
   }
-  async function refresh() {
+  async function refresh(force=false):Promise<void> {
+    if(refreshGate.current){if(force){await wait(30);return refresh(true);}return;}
+    refreshGate.current=true;
+    const revision=freshness.current,session=sessionStorage.getItem("token");
     try {
-      apply(await api("/state"));
-      setNeedsCharacter(false);
-      setRewards(await api("/rewards"));
-      setRewardSummary(await api("/guild/rewards"));
-      setFastDestinations(await api("/fast-travel"));
-    } catch (e) {
-      const message = (e as Error).message;
-      if (message.includes("Crie seu")) setNeedsCharacter(true);
-      else setNotice(message);
-    }
+      const current=await api("/state") as State;
+      if(revision!==freshness.current||session!==sessionStorage.getItem("token"))return;
+      apply(current);setNeedsCharacter(false);
+      setRewards(current.reward_records);setRewardSummary(current.guild_rewards);setFastDestinations(current.fast_destinations);
+      failures.current=0;setConnection("Conectado");
+    }catch(e){
+      const message=(e as Error).message;
+      if(message.includes("Crie seu"))setNeedsCharacter(true);
+      else {failures.current++;setNotice(message);setConnection(failures.current>=3?"Atualização pausada após 3 falhas":"Conexão interrompida");}
+    }finally{refreshGate.current=false;}
   }
+  function clearSession(){
+    freshness.current++;sessionStorage.removeItem("token");setToken(null);setState(null);live.current=null;setPeers([]);
+  }
+  useEffect(()=>{
+    const expired=()=>{clearSession();setNotice("Sessão expirada ou revogada. Entre novamente.")};
+    const reconnect=()=>{failures.current=0;setConnectionEpoch(v=>v+1);if(sessionStorage.getItem("token"))void refresh()};
+    const escape=(e:KeyboardEvent)=>{if(e.key==="Escape")setTab("")};
+    window.addEventListener("dungeon:session-expired",expired);window.addEventListener("online",reconnect);window.addEventListener("keydown",escape);
+    return()=>{window.removeEventListener("dungeon:session-expired",expired);window.removeEventListener("online",reconnect);window.removeEventListener("keydown",escape)};
+  },[]);
   useEffect(() => {
     if (!token) return;
     void refresh();
     const timer = setInterval(() => {
-      if (!gate.current) void refresh();
+      if (!gate.current && failures.current<3 && document.visibilityState!=="hidden") void refresh();
     }, 1500);
     return () => clearInterval(timer);
   }, [token]);
@@ -90,7 +106,7 @@ function App() {
     if (!token || !state) return;
     let disposed = false,
       socket: WebSocket | undefined,
-      reconnect: ReturnType<typeof setTimeout>;
+      reconnect: ReturnType<typeof setTimeout>, attempts=0;
     const heartbeat = setInterval(() => {
       if (socket?.readyState === 1) socket.send("ping");
     }, 1000);
@@ -100,13 +116,16 @@ function App() {
       );
       socket.onopen = () => socket?.send(JSON.stringify({ token }));
       socket.onmessage = (e) => {
-        const data = JSON.parse(e.data);
+        let data;try{data=JSON.parse(e.data)}catch{return;}
+        attempts=0;
         if (data.room_id === live.current?.room.id) setPeers(data.players);
         else setPeers([]);
       };
-      socket.onclose = () => {
+      socket.onclose = (e) => {
         setPeers([]);
-        if (!disposed) reconnect = setTimeout(connect, 2000);
+        if(e.code===4401){window.dispatchEvent(new Event("dungeon:session-expired"));return;}
+        if(!disposed && attempts<5){attempts++;reconnect=setTimeout(connect,Math.min(16000,1000*2**attempts));}
+        else if(!disposed)setConnection("Presença desconectada; use Atualizar. Progresso salvo no servidor.");
       };
     }
     connect();
@@ -116,10 +135,11 @@ function App() {
       clearTimeout(reconnect);
       socket?.close();
     };
-  }, [token, !!state]);
+  }, [token, !!state,connectionEpoch]);
   async function execute(fn: () => Promise<unknown>) {
     if (gate.current) return;
     gate.current = true;
+    freshness.current++;
     setBusy(true);
     try {
       const r = (await fn()) as any;
@@ -143,7 +163,7 @@ function App() {
               : "Turno concluído.",
         );
       }
-      await refresh();
+      if(sessionStorage.getItem("token"))await refresh(true);
     } catch (e) {
       setNotice((e as Error).message);
     } finally {
@@ -251,13 +271,7 @@ function App() {
         {token && (
           <button
             className="quiet"
-            onClick={() => {
-              sessionStorage.removeItem("token");
-              setToken(null);
-              setState(null);
-              live.current = null;
-              setPeers([]);
-            }}
+            onClick={()=>void execute(async()=>{try{await api("/auth/logout",{})}finally{clearSession();}})}
           >
             Sair
           </button>
@@ -329,11 +343,15 @@ function App() {
         </form>
       ) : state && c ? (
         <>
+          <div className="connection-bar" role="status">
+            <span>{connection} · Progresso persistente</span>
+            <button disabled={busy} onClick={()=>{failures.current=0;setConnectionEpoch(v=>v+1);void refresh()}}>Atualizar</button>
+          </div>
           <div className="room-heading">
             <div>
               <p className="eyebrow">
                 ANDAR {c.floor} /{" "}
-                {state.room.safe ? "PORTO SEGURO" : "TERRAS DE EXPLORAÇÃO"}
+                {state.room.kind==="PROCEDURAL"?"EXPEDIÇÃO COM COMPROMISSO":state.room.safe ? "PORTO SEGURO" : "SALA COMUM · EXPLORAÇÃO LIVRE"}
               </p>
               <h1>{state.room.name}</h1>
             </div>
@@ -575,6 +593,7 @@ function App() {
               ["guild", "⚑ Guilda"],
               ["auction", "⚖ Leilão"],
               ["recovery", "♜ Recuperação"],
+              ["history", "◷ Histórico"],
               ["raid", "♧ Raid"],
             ].map(([id, label]) => (
               <button
@@ -860,8 +879,7 @@ function App() {
                     RESGATAR RECOMPENSAS
                   </button>
                   <p>
-                    Contratos ainda indisponíveis. Não há moedas criadas pela
-                    vitória: o pagamento utiliza o orçamento existente.
+                    Tesouro disponível da Guilda: {state.guild_treasury} moedas. Recompensas usam orçamento existente, sem emissão automática.
                   </p>
                   <p>
                     O pátio de treinamento é acessível pela porta da Guilda.
@@ -875,6 +893,7 @@ function App() {
               {tab === "recovery" && (
                 <PersonalRecovery state={state} busy={busy} action={action} />
               )}
+              {tab==="history"&&<><h2>Histórico e notificações</h2><p>Últimas operações do seu personagem. Registros financeiros completos permanecem auditados.</p><ol>{state.events.slice(-20).reverse().map(e=><li key={e.id}>{({ITEM_ADDED:"Item recebido",GUILD_REWARD_CLAIMED:"Recompensa paga",EXPEDITION_STARTED:"Expedição iniciada",EXPEDITION_COMPLETED:"Expedição concluída",EXPEDITION_FLED:"Fuga confirmada",PLAYER_DIED_IN_EXPEDITION:"Resgate após morte",PERSONAL_ITEM_RECOVERED:"Item recuperado",GUILD_DEBT_COLLECTION:"Cobrança da Guilda",ATTRIBUTE_POINT_SPENT:"Atributos distribuídos",FAST_TRAVEL:"Viagem rápida"} as Record<string,string>)[e.kind]??"Progresso registrado"}{e.payload.amount!=null?" · "+String(e.payload.amount)+" moedas":""}</li>)}</ol></>}
               {tab === "raid" && (
                 <>
                   <p className="eyebrow">NINGUÉM PRECISA EXPLORAR SOZINHO</p>

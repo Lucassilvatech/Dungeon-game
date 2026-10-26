@@ -40,6 +40,10 @@ export type Enemy = {
   ai_state: string;
 };
 export type State = {
+  guild_rewards:{count:number;total:number;groups:Record<string,number>};
+  reward_records:Battle[];
+  fast_destinations:{id:string;name:string;danger_tier:number}[];
+  guild_treasury:string;
   attributes: Record<
     string,
     { base: number; equipment: number; temporary: number; effective: number }
@@ -122,22 +126,29 @@ export type State = {
     portal: number[] | null;
   };
 };
-export async function api(path: string, body?: unknown) {
-  const token = sessionStorage.getItem("token");
-  const r = await fetch("/api" + path, {
-    method: body === undefined ? "GET" : "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: "Bearer " + token } : {}),
-    },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-  const data = await r.json();
-  if (!r.ok)
-    throw new Error(
-      typeof data.detail === "string"
-        ? data.detail
-        : "Revise os dados informados",
-    );
-  return data;
+export class APIError extends Error {
+  constructor(message:string,public status:number){super(message);this.name="APIError";}
+}
+export async function api(path:string,body?:unknown) {
+  const token=sessionStorage.getItem("token");
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),15000);
+  try {
+    const r=await fetch("/api"+path,{
+      method:body===undefined?"GET":"POST", signal:controller.signal,
+      headers:{"Content-Type":"application/json",...(token&&!["/auth/login","/auth/register"].includes(path)?{Authorization:"Bearer "+token}:{})},
+      body:body===undefined?undefined:JSON.stringify(body)
+    });
+    const data=await r.json().catch(()=>({detail:"Resposta inválida do servidor."}));
+    if(!r.ok){
+      if(r.status===401&&!path.startsWith("/auth/")){
+        sessionStorage.removeItem("token");window.dispatchEvent(new Event("dungeon:session-expired"));
+      }
+      throw new APIError(typeof data.detail==="string"?data.detail:"Revise os dados informados",r.status);
+    }
+    return data;
+  }catch(e){
+    if(e instanceof APIError)throw e;
+    throw new APIError((e as Error).name==="AbortError"?"Tempo limite excedido. Tente atualizar novamente.":"Falha de conexão com o servidor. Confira a rede e tente novamente.",0);
+  }finally{clearTimeout(timer);}
 }

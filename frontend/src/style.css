@@ -924,3 +924,7 @@ footer {
     margin-bottom: 8px;
   }
 }
+
+.connection-bar {display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap;padding:.5rem .8rem;background:#192d31;border:1px solid #4d6865;color:#dbdfcf;font-size:.85rem}
+button:focus-visible,a:focus-visible,input:focus-visible {outline:3px solid #e6c573;outline-offset:3px}
+@media(max-width:600px){.tabs{display:flex;overflow-x:auto;max-width:100%;gap:.4rem}.tabs button{white-space:nowrap;min-height:44px}.connection-bar{font-size:.75rem}.combat{max-width:100%}}

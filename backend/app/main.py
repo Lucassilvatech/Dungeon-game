@@ -485,3 +485,27 @@ def recovery_item(
     from .recovery import recover
 
     return recover(db, game.character(db, a), id, str(body.request_id))
+
+
+@app.post("/auth/logout")
+def logout(
+    a=Depends(current_account),
+    auth=Depends(__import__("app.security", fromlist=["bearer"]).bearer),
+    db=Depends(get_db),
+):
+    from .models import AuthSession
+
+    row = db.get(AuthSession, digest(auth.credentials))
+    if row:
+        db.delete(row)
+    return {"revoked": True}
+
+
+@app.post("/auth/logout-all")
+def logout_all(a=Depends(current_account), db=Depends(get_db)):
+    from .models import AuthSession
+    from sqlalchemy import delete
+
+    db.scalar(select(Account).where(Account.id == a.id).with_for_update())
+    db.execute(delete(AuthSession).where(AuthSession.account_id == a.id))
+    return {"revoked": True, "all_sessions": True}

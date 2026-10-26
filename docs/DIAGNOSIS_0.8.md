@@ -36,3 +36,9 @@ A suite baseline 0.7 foi iniciada em PostgreSQL descartável; o resultado será 
 ## Registro da etapa 1
 
 A comparação de 60 mil amostras seed-idênticas confirmou: frequência do teto passou de zero para 0,55% em p=0 e 2,10% em p=1; média do slime aumentou apenas 0,0055/0,021 nível nesses extremos. Os atributos/seed continuam calculados no mesmo fluxo RNG; somente a pequena cauda promovida muda o t. Dados congelados de aventuras existentes não são atualizados. Evidência detalhada: level-distribution-0.8.json.
+
+Baseline 0.7 executada: **142 testes aprovados** (209,32s), sem falhas/skips. Correção de níveis: **34 testes direcionados aprovados** (15,65s).
+
+Etapa 2: consultas de recompensas/destinos consolidadas no snapshot, reduzindo polling de quatro requisições para uma; rotas antigas preservadas. Logout normal e de todas as sessões agora revogam no servidor. Web diferencia expedição/sala comum, mostra conexão/retentativa e histórico, ignora respostas obsoletas e limita reconexões. Build TypeScript/Vite e 13 testes PostgreSQL da etapa aprovados; smoke de navegador será executado sobre a stack atualizada antes de avançar.
+
+Smoke da etapa 2 executado e aprovado: cadastro/personagem, movimento, falha de rede com pausa após três tentativas, retentativa manual, polling consolidado e revogação real de sessão com retorno ao login. Backup 0.7 fora do Git antes da atualização; Godot sem alterações.

@@ -8,6 +8,7 @@ ELIGIBLE = {
     "city1",
     "guild",
     "auction_hall",
+    "recovery_hall",
     "training",
     "common_a",
     "common_b",

@@ -108,8 +108,16 @@ def snapshot(db, c, wander=False):
     }
     from .exploration import raid_state
 
+    from .fast_travel import destinations
+
+    records = pending(db, c)
+    summary = reward_summary_from(records)
     db.flush()
     return {
+        "guild_rewards": summary,
+        "reward_records": [battle_data(row) for row in records],
+        "fast_destinations": destinations(db, c),
+        "guild_treasury": str(db.get(Treasury, 1).balance),
         "character": {
             k: getattr(c, k)
             for k in (
@@ -492,7 +500,10 @@ def reward_value(b):
 
 
 def reward_summary(db, c):
-    rows = pending(db, c)
+    return reward_summary_from(pending(db, c))
+
+
+def reward_summary_from(rows):
     groups = {}
     for b in rows:
         name = NAMES.get(b.monster, b.monster)
