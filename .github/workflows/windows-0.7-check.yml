@@ -14,7 +14,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - name: Verify origin and scan with current Microsoft Defender
+      - id: defender
+        name: Verify origin and scan with current Microsoft Defender
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -59,9 +60,13 @@ jobs:
             if ($null -eq $state.AntivirusSignatureLastUpdated -or ((Get-Date) - $state.AntivirusSignatureLastUpdated).TotalDays -gt 1) { throw 'Defender signatures are not current' }
             $scanner = Get-ChildItem "$env:ProgramData/Microsoft/Windows Defender/Platform/*/MpCmdRun.exe" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
             if ($null -eq $scanner) { $scanner = Get-Item "$env:ProgramFiles/Windows Defender/MpCmdRun.exe" -ErrorAction Stop }
-            & $scanner.FullName -ValidateMapsConnection 2>&1 | Tee-Object -FilePath (Join-Path $reportDir 'defender-cloud-connection.log')
-            $report.cloud_connection_exit_code = $LASTEXITCODE
-            if ($LASTEXITCODE -ne 0) { throw 'Defender cloud connection validation failed; do not claim a cloud-validated result' }
+            $cloudReady = $false
+            for ($attempt = 1; $attempt -le 3; $attempt++) {
+              & $scanner.FullName -ValidateMapsConnection 2>&1 | Tee-Object -FilePath (Join-Path $reportDir 'defender-cloud-connection.log') -Append
+              $report.cloud_connection_exit_code = $LASTEXITCODE
+              if ($LASTEXITCODE -eq 0) { $cloudReady = $true; break }
+            }
+            $report.cloud_connection_validated = $cloudReady
             $scanStart = Get-Date
             & $scanner.FullName -Scan -ScanType 3 -File $scanDir 2>&1 | Tee-Object -FilePath (Join-Path $reportDir 'defender-scan.log')
             $scanExit = $LASTEXITCODE
@@ -72,6 +77,11 @@ jobs:
             if ($scanExit -ne 0 -or $detections.Count -gt 0) {
               $report.status = 'DETECTION_OR_SCAN_ERROR'
               throw "Defender detection or scan error; exit code $scanExit"
+            }
+            'clean_scan=true' | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+            if (-not $cloudReady) {
+              $report.status = 'NO_DETECTION_CLOUD_UNVERIFIED'
+              throw "Updated-signature scan had no detections, but Microsoft cloud connectivity failed (exit $($report.cloud_connection_exit_code)); cloud verification remains incomplete"
             }
             $report.status = 'NO_DETECTION_IN_THIS_SCAN'
             $result = 0
@@ -109,6 +119,7 @@ jobs:
           name: windows-defender-report
           path: security-report/
       - name: Start exported Windows client headlessly
+        if: always() && steps.defender.outputs.clean_scan == 'true'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
