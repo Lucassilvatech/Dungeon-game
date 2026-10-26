@@ -66,6 +66,9 @@ class Character(Base):
     coins: Mapped[int] = mapped_column(Gold(), default=0)
     unspent_attribute_points: Mapped[int] = mapped_column(default=0, server_default="0")
     attribute_point_debt: Mapped[int] = mapped_column(default=0, server_default="0")
+    adventure_streak: Mapped[int] = mapped_column(default=0, server_default="0")
+    debt_accrued: Mapped[int] = mapped_column(Gold(), default=0, server_default="0")
+    debt_next_collection: Mapped[int] = mapped_column(Gold(), default=0, server_default="0")
     room_id: Mapped[str] = mapped_column(
         ForeignKey("rooms.id"), default="city1", server_default="city1"
     )
@@ -87,6 +90,8 @@ class ItemDefinition(Base):
     death_transferable: Mapped[bool] = mapped_column(
         default=True, server_default="true"
     )
+    rarity: Mapped[str] = mapped_column(String(20), default="common", server_default="common")
+    unique_item: Mapped[bool] = mapped_column(default=False, server_default="false")
     stackable: Mapped[bool] = mapped_column(default=False, server_default="false")
     max_stack_size: Mapped[int] = mapped_column(default=1, server_default="1")
     description: Mapped[str] = mapped_column(String(200), default="", server_default="")
@@ -97,7 +102,7 @@ class Item(Base):
     __table_args__ = (
         CheckConstraint("quantity > 0"),
         CheckConstraint(
-            "(location != 'auction' OR (owner IS NULL AND NOT equipped)) AND (owner IS NOT NULL OR location = 'auction')",
+            "(location NOT IN ('auction','recovery','destroyed') OR (owner IS NULL AND NOT equipped)) AND (owner IS NOT NULL OR location IN ('auction','recovery','destroyed'))",
             name="item_custody",
         ),
     )
@@ -228,6 +233,7 @@ class EnemyInstance(Base):
     generation: Mapped[int] = mapped_column(default=0)
     spawn_key: Mapped[str] = mapped_column(String(40))
     species: Mapped[str] = mapped_column(String(20))
+    category: Mapped[str] = mapped_column(String(20), default="common", server_default="common")
     state: Mapped[str] = mapped_column(String(20), default="ALIVE")
     hp: Mapped[int] = mapped_column()
     max_hp: Mapped[int] = mapped_column()
@@ -259,6 +265,9 @@ class Expedition(Base):
     character_id: Mapped[int] = mapped_column(ForeignKey("characters.id"), index=True)
     room_id: Mapped[str] = mapped_column(ForeignKey("rooms.id"), unique=True)
     seed: Mapped[int] = mapped_column()
+    boss_chance: Mapped[int] = mapped_column(default=100, server_default="100")
+    boss_rolled: Mapped[bool] = mapped_column(default=False, server_default="false")
+    special_boss: Mapped[bool] = mapped_column(default=False, server_default="false")
     status: Mapped[str] = mapped_column(String(20), default="ACTIVE")
     started_at: Mapped[datetime] = mapped_column(default=utc_now)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime)
@@ -294,7 +303,11 @@ class Auction(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     item_id: Mapped[int] = mapped_column(ForeignKey("items.id"))
     quantity: Mapped[int] = mapped_column()
-    death_event_id: Mapped[int] = mapped_column(ForeignKey("death_events.id"))
+    death_event_id: Mapped[int | None] = mapped_column(ForeignKey("death_events.id"))
+    hidden: Mapped[bool] = mapped_column(default=False, server_default="false")
+    archived: Mapped[bool] = mapped_column(default=False, server_default="false")
+    origin: Mapped[str] = mapped_column(String(30), default="expedition_death", server_default="expedition_death")
+    assessed_value: Mapped[int] = mapped_column(Gold(), default=0, server_default="0")
     former_owner_id: Mapped[int] = mapped_column(ForeignKey("characters.id"))
     opening_price: Mapped[int] = mapped_column(Gold())
     highest_bid: Mapped[int] = mapped_column(Gold(), default=0)
@@ -385,8 +398,50 @@ class MonsterDefinition(Base):
         ),
     )
     id: Mapped[str] = mapped_column(String(20), primary_key=True)
+    procedural_config: Mapped[dict] = mapped_column(JSON, default=dict, server_default="{}")
     hp: Mapped[int] = mapped_column()
     attack: Mapped[int] = mapped_column()
     defense: Mapped[int] = mapped_column()
     level: Mapped[int] = mapped_column()
     xp: Mapped[int] = mapped_column()
+
+
+class RecoveryItem(Base):
+    __tablename__ = "recovery_items"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id"), index=True)
+    item_id: Mapped[int] = mapped_column(ForeignKey("items.id"))
+    death_event_id: Mapped[int] = mapped_column(ForeignKey("death_events.id"))
+    price: Mapped[int] = mapped_column(Gold())
+    recovered_at: Mapped[datetime | None] = mapped_column(DateTime)
+    request_id: Mapped[str | None] = mapped_column(String(36))
+    __table_args__ = (UniqueConstraint("death_event_id", "item_id"), CheckConstraint("price >= 0"))
+
+
+class DebtCollection(Base):
+    __tablename__ = "debt_collections"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id"), index=True)
+    accrued_checkpoint: Mapped[int] = mapped_column(Gold())
+    debt_before: Mapped[int] = mapped_column(Gold())
+    debt_after: Mapped[int] = mapped_column(Gold())
+    assessed: Mapped[int] = mapped_column(Gold())
+    surplus: Mapped[int] = mapped_column(Gold())
+    items: Mapped[list] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(default=utc_now)
+
+
+class ScheduledWorldEvent(Base):
+    __tablename__ = "scheduled_world_events"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    name: Mapped[str] = mapped_column(String(100))
+    description: Mapped[str] = mapped_column(String(500))
+    region: Mapped[str] = mapped_column(String(80))
+    floor_id: Mapped[int] = mapped_column(ForeignKey("floors.id"))
+    effect: Mapped[str] = mapped_column(String(30))
+    intensity: Mapped[int] = mapped_column()
+    conditions: Mapped[str] = mapped_column(String(200))
+    starts_at: Mapped[datetime] = mapped_column(DateTime)
+    ends_at: Mapped[datetime] = mapped_column(DateTime)
+    cancelled_at: Mapped[datetime | None] = mapped_column(DateTime)
+    operation_id: Mapped[str] = mapped_column(ForeignKey("admin_operations.id"), unique=True)
