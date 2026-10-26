@@ -131,6 +131,9 @@ class Battle(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     character_id: Mapped[int] = mapped_column(ForeignKey("characters.id"))
     enemy_id: Mapped[int | None] = mapped_column(ForeignKey("enemy_instances.id"))
+    encounter_id: Mapped[int | None] = mapped_column(
+        ForeignKey("combat_encounters.id"), index=True
+    )
     monster: Mapped[str] = mapped_column(String(20))
     hp: Mapped[int] = mapped_column()
     turn: Mapped[int] = mapped_column(default=0)
@@ -460,3 +463,32 @@ class ScheduledWorldEvent(Base):
     operation_id: Mapped[str] = mapped_column(
         ForeignKey("admin_operations.id"), unique=True
     )
+
+
+class CombatEncounter(Base):
+    __tablename__ = "combat_encounters"
+    __table_args__ = (
+        UniqueConstraint("character_id", "request_id"),
+        CheckConstraint("turn >= 0 AND size >= 2 AND size <= 3"),
+        CheckConstraint("status IN ('ACTIVE','WON','LOST','FLED')"),
+        Index(
+            "uq_active_combat_encounter",
+            "character_id",
+            unique=True,
+            postgresql_where=text("status = 'ACTIVE'"),
+        ),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id"), index=True)
+    room_id: Mapped[str] = mapped_column(ForeignKey("rooms.id"))
+    request_id: Mapped[str] = mapped_column(String(36))
+    enemy_ids: Mapped[list] = mapped_column(JSON)
+    selected_enemy_id: Mapped[int] = mapped_column()
+    size: Mapped[int] = mapped_column()
+    turn: Mapped[int] = mapped_column(default=0)
+    status: Mapped[str] = mapped_column(String(20), default="ACTIVE")
+    damage_dealt: Mapped[int] = mapped_column(default=0)
+    damage_received: Mapped[int] = mapped_column(default=0)
+    last_round: Mapped[list] = mapped_column(JSON, default=list)
+    started_at: Mapped[datetime] = mapped_column(default=utc_now)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime)

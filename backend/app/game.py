@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, case
 from .models import (
     Character,
     Battle,
@@ -46,8 +46,16 @@ def character(db, account):
 
 
 def active(db, c):
+    from .models import CombatEncounter
+
     return db.scalar(
-        select(Battle).where(Battle.character_id == c.id, Battle.status == "active")
+        select(Battle)
+        .outerjoin(CombatEncounter, Battle.encounter_id == CombatEncounter.id)
+        .where(Battle.character_id == c.id, Battle.status == "active")
+        .order_by(
+            case((CombatEncounter.selected_enemy_id == Battle.enemy_id, 0), else_=1),
+            Battle.id,
+        )
     )
 
 
@@ -150,7 +158,12 @@ def snapshot(db, c, wander=False):
         "reserved_gold": str(int(reserved)),
         "inventory": inventory(db, c),
         "expedition": expedition,
-        "battle": battle_data(b) if b else None,
+        "battle": battle_data(b, db) if b else None,
+        "encounter_rules": {
+            "max_enemies": settings.encounter_max_enemies,
+            "radius": settings.encounter_radius,
+        },
+        "encounter": __import__("app.encounters", fromlist=["state"]).state(db, c),
         "unlocked_floor": (
             2 if db.scalar(select(WorldEvent).where(WorldEvent.key == "floor:2")) else 1
         ),
@@ -172,8 +185,8 @@ def snapshot(db, c, wander=False):
     }
 
 
-def battle_data(b):
-    return {
+def battle_data(b, db=None):
+    result = {
         k: getattr(b, k)
         for k in (
             "id",
@@ -186,6 +199,15 @@ def battle_data(b):
             "reward_amount",
         )
     }
+
+    if b.encounter_id and db:
+        from .models import CombatEncounter
+
+        g = db.get(CombatEncounter, b.encounter_id)
+        result["encounter_id"] = g.id
+        if g.status == "ACTIVE":
+            result["turn"] = g.turn
+    return result
 
 
 def move(db, c, dx, dy):
@@ -304,10 +326,16 @@ def start_battle(db, c, monster):
     return battle_data(b)
 
 
-def action(db, c, battle_id, turn, action):
+def action(
+    db, c, battle_id, turn, action, *, _encounter=False, counter=True, synchronize=True
+):
     b = db.get(Battle, battle_id)
     if not b or b.character_id != c.id:
         fail("Combate inexistente", 404)
+    if b.encounter_id and not _encounter:
+        from .encounters import action as group_action
+
+        return group_action(db, c, b.encounter_id, turn, b.enemy_id, action)
     if b.status != "active" or b.turn != turn:
         fail("Turno já processado ou combate encerrado")
     if not b.enemy_id:
@@ -433,7 +461,7 @@ def action(db, c, battle_id, turn, action):
         event(
             db, DomainEvent.COMBAT_FINISHED, c, battle=b.id, result="won", enemy_id=e.id
         )
-    else:
+    elif counter:
         incoming = (
             0
             if training
@@ -469,7 +497,8 @@ def action(db, c, battle_id, turn, action):
     db.flush()
     from .expeditions import sync
 
-    sync(db, c)
+    if synchronize:
+        sync(db, c)
     return {**battle_data(b), "damage": dealt}
 
 

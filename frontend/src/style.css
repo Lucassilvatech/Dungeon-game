@@ -928,3 +928,4 @@ footer {
 .connection-bar {display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap;padding:.5rem .8rem;background:#192d31;border:1px solid #4d6865;color:#dbdfcf;font-size:.85rem}
 button:focus-visible,a:focus-visible,input:focus-visible {outline:3px solid #e6c573;outline-offset:3px}
 @media(max-width:600px){.tabs{display:flex;overflow-x:auto;max-width:100%;gap:.4rem}.tabs button{white-space:nowrap;min-height:44px}.connection-bar{font-size:.75rem}.combat{max-width:100%}}
+.encounter-panel fieldset,.group-start fieldset{display:grid;gap:.5rem;border:1px solid #708179;padding:.7rem}.encounter-panel label,.group-start label{display:flex;gap:.6rem;align-items:center;min-height:44px}.selected-target{background:#365455;outline:2px solid #f2cd80}.encounter-panel{border-color:#bc8f68}.group-start summary{cursor:pointer;min-height:44px;padding:.5rem}

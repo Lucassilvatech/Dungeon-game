@@ -509,3 +509,55 @@ def logout_all(a=Depends(current_account), db=Depends(get_db)):
     db.scalar(select(Account).where(Account.id == a.id).with_for_update())
     db.execute(delete(AuthSession).where(AuthSession.account_id == a.id))
     return {"revoked": True, "all_sessions": True}
+
+
+class EncounterStart(BaseModel):
+    model_config = {"extra": "forbid"}
+    enemy_ids: list[int] = Field(min_length=2, max_length=3)
+    request_id: UUID
+
+
+class EncounterAction(BaseModel):
+    model_config = {"extra": "forbid"}
+    turn: int = Field(ge=0, strict=True)
+    target_id: int = Field(gt=0, strict=True)
+    action: Literal["attack", "skill", "defend"]
+
+
+class EncounterTarget(BaseModel):
+    turn: int = Field(ge=0, strict=True)
+    target_id: int = Field(gt=0, strict=True)
+
+
+@app.post("/encounters")
+def encounter_start(
+    body: EncounterStart, a=Depends(current_account), db=Depends(get_db)
+):
+    from .encounters import start
+
+    return start(db, game.character(db, a), body.enemy_ids, str(body.request_id))
+
+
+@app.get("/encounters/{id}")
+def encounter_detail(id: int, a=Depends(current_account), db=Depends(get_db)):
+    from .encounters import get, payload
+
+    return payload(db, get(db, game.character(db, a), id))
+
+
+@app.post("/encounters/{id}/target")
+def encounter_target(
+    id: int, body: EncounterTarget, a=Depends(current_account), db=Depends(get_db)
+):
+    from .encounters import select_target
+
+    return select_target(db, game.character(db, a), id, body.target_id, body.turn)
+
+
+@app.post("/encounters/{id}/action")
+def encounter_action(
+    id: int, body: EncounterAction, a=Depends(current_account), db=Depends(get_db)
+):
+    from .encounters import action
+
+    return action(db, game.character(db, a), id, body.turn, body.target_id, body.action)

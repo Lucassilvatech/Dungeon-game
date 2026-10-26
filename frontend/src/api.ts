@@ -25,6 +25,7 @@ export type Battle = {
   reward_amount: number | null;
 };
 export type Enemy = {
+  category?:string;
   category_label?: string;
   name_color?: string;
   id: number;
@@ -39,7 +40,10 @@ export type Enemy = {
   state: "ALIVE" | "IN_COMBAT" | "DYING" | "DEAD";
   ai_state: string;
 };
+export type Encounter={id:number;status:string;turn:number;size:number;selected_enemy_id:number;enemies:Enemy[];last_round:{actor:string;enemy_id?:number;damage:number}[];damage_dealt:number;damage_received:number};
 export type State = {
+  encounter:Encounter|null;
+  encounter_rules:{max_enemies:number;radius:number};
   guild_rewards:{count:number;total:number;groups:Record<string,number>};
   reward_records:Battle[];
   fast_destinations:{id:string;name:string;danger_tier:number}[];

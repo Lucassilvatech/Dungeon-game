@@ -204,6 +204,9 @@ def flee(db, c, expedition_id, confirmation_token):
         b.reward_amount = after
         adjustments.append(dict(battle_id=b.id, before=before, after=after))
     c.xp = 0
+    from .encounters import close as close_encounter
+
+    close_encounter(db, c, "FLED")
     battle = active(db, c)
     if battle:
         battle.status = "fled"

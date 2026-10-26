@@ -16,6 +16,7 @@ import {
   PersonalRecovery,
 } from "./DeathEconomy";
 import "./style.css";
+import {Encounters} from "./Encounters";
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 function App() {
   const [state, setState] = useState<State | null>(null),
@@ -405,6 +406,13 @@ function App() {
               onConfirm={confirmFlee}
             />
           )}
+          <Encounters state={state} busy={busy} action={action} start={ids=>void execute(async()=>{
+            const current=live.current; if(!current)return;
+            const lead=current.map.enemies.find(e=>e.id===ids[0]);if(!lead)throw Error("Alvo indisponível");
+            const path=route(current,{kind:"monster",monster:String(lead.id),x:lead.x,y:lead.y});if(!path)throw Error("Não há caminho até o primeiro alvo");
+            for(const [dx,dy] of path){apply(await api("/move",{dx,dy}));await wait(100);}
+            return api("/encounters",{enemy_ids:ids,request_id:crypto.randomUUID()});
+          })}/>
           <section className="game-shell">
             <div className="status-bar">
               <div className="portrait">♙</div>
@@ -456,7 +464,7 @@ function App() {
               <div className="map-tip">
                 Clique no chão para caminhar · NPCs e portas são interativos
               </div>
-              {b && (
+              {b && !state.encounter && (
                 <div className="combat panel">
                   <small>COMBATE POR TURNOS · TURNO {b.turn + 1}</small>
                   <h2>
