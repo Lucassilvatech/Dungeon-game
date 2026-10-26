@@ -458,3 +458,25 @@ def unequip(item_id: int, a=Depends(current_account), db=Depends(get_db)):
     c = game.character(db, a)
     game.unequip(db, c, item_id)
     return game.snapshot(db, c)
+
+
+@app.post("/adventures/abandon-sequence")
+def abandon_sequence(a=Depends(current_account), db=Depends(get_db)):
+    from .expeditions import abandon_sequence
+    return abandon_sequence(db, game.character(db, a))
+
+
+class RecoveryConfirmation(BaseModel):
+    request_id: UUID
+
+
+@app.get("/recovery")
+def recovery_items(a=Depends(current_account), db=Depends(get_db)):
+    from .recovery import listing
+    return listing(db, game.character(db, a))
+
+
+@app.post("/recovery/{id}/recover")
+def recovery_item(id: int, body: RecoveryConfirmation, a=Depends(current_account), db=Depends(get_db)):
+    from .recovery import recover
+    return recover(db, game.character(db, a), id, str(body.request_id))

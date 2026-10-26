@@ -127,8 +127,10 @@ def snapshot(db, c, wander=False):
                 "x",
                 "y",
                 "room_id",
+                "adventure_streak",
             )
         },
+        "next_boss_chance": __import__("app.procedural", fromlist=["chance"]).chance(c.adventure_streak),
         "attributes": __import__("app.attributes", fromlist=["effective"]).effective(db, c),
         "death": latest(db, c),
         "coins_exact": str(c.coins),
@@ -202,6 +204,11 @@ def interact(db, c):
             "message": "Leiloeiro: consulte espólios, detalhes e histórico de lances.",
             "open_auctions": True,
         }
+    if current(db, c).id == "recovery_hall":
+        npc=current(db,c).data.get("npc")
+        if not npc or distance((c.x,c.y),npc)>1:
+            fail("Aproxime-se do Guardião de Recuperação")
+        return {"message":"Recuperação pessoal: adicional de 100%, total de 200% do valor-base.","open_recovery":True}
     receptionist(db, c)
     return {
         "message": "Recepcionista da Guilda: seus registros estão prontos para conferência.",
@@ -361,7 +368,7 @@ def action(db, c, battle_id, turn, action):
         else:
             b.reward_amount = (
                 runtime_setting(db, "boss_reward")
-                if e.species == "boss"
+                if e.category == "boss"
                 else runtime_setting(db, "monster_reward")
             )
             c.xp += e.xp_reward
@@ -503,6 +510,9 @@ def pay(db, c, rows):
             enemy_id=b.enemy_id,
             amount=reward_value(b),
         )
+    from .procedural_retention import prune
+    for room_id in {b.room_id for b in rows}:
+        prune(db,c,room_id)
     return {
         "paid": total,
         "message": f"Recepcionista: {total} moedas pagas por {len(rows)} registros.",

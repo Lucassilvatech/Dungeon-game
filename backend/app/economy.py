@@ -54,6 +54,7 @@ def medical_fee(db, c, assessed, death_id, expedition_id):
     after = max(-DEBT_LIMIT, before - assessed)
     charged = before - after
     c.coins = after
+    c.debt_accrued += max(0, -after) - max(0, -before)
     treasury = db.scalar(select(Treasury).where(Treasury.id == 1).with_for_update())
     treasury.balance += charged
     ledger(db, f"medical:{death_id}", f"character:{c.id}", "treasury", charged)

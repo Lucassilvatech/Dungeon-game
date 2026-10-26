@@ -7,7 +7,7 @@ from .rooms import RoomType, event, enter
 from .config import settings, runtime_setting
 from .economy import medical_fee, DEBT_LIMIT
 from .attributes import penalize_levels
-from .auctions import create_from_death
+from .recovery import lose
 
 
 def resolve(db, c, battle):
@@ -78,7 +78,10 @@ def resolve(db, c, battle):
             death_event_id=death.id,
             **penalty,
         )
-    items = create_from_death(db, c, death)
+    items = lose(db, c, death)
+    c.adventure_streak = 0
+    from .debt import collect
+    collection = collect(db, c)
     expedition.status = "FAILED"
     expedition.finished_at = utc_now()
     receipt = dict(
@@ -89,6 +92,7 @@ def resolve(db, c, battle):
         pending_lost_exact=str(lost),
         balance_after_exact=str(c.coins),
         items=items,
+        debt_collection_id=collection.id if collection else None,
         debt_limit_reached=at_limit,
         **penalty,
     )
@@ -107,6 +111,8 @@ def resolve(db, c, battle):
     c.hp = max(1, max_hp * settings.respawn_hp_percent // 100)
     c.energy = 10
     db.flush()
+    from .procedural_retention import prune
+    prune(db,c,room.id)
     return receipt
 
 
