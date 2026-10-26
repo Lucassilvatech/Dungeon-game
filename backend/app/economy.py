@@ -26,6 +26,9 @@ def credit_player_gold(db, c, amount, source, reference):
     ledger(db, reference, source, f"character:{c.id}", amount)
     repaid = min(amount, max(0, -before))
     if repaid:
+        from .observability import add
+
+        add(db, c, debt_repaid=repaid)
         event(
             db,
             "MEDICAL_DEBT_REPAID",
@@ -71,6 +74,9 @@ def medical_fee(db, c, assessed, death_id, expedition_id):
         timestamp=utc_now().isoformat() + "Z",
         newly_financed=max(0, -after) - max(0, -before),
     )
+    from .observability import add
+
+    add(db, c, medical_fees=charged, new_medical_debt=audit["newly_financed"])
     event(db, "MEDICAL_FEE", c, key=f"medical-fee:{death_id}", **audit)
     if after < 0:
         event(db, "MEDICAL_DEBT", c, key=f"medical-debt:{death_id}", **audit)

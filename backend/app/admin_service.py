@@ -493,7 +493,7 @@ def apply(db, actor, op):
             from .attributes import gain_levels
 
             c.xp += n
-            gain_levels(db, c)
+            gain_levels(db, c, source="admin")
         else:
             from .fast_travel import travel
 

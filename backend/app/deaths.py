@@ -55,6 +55,9 @@ def resolve(db, c, battle):
         amount=lost,
         adjustments=adjustments,
     )
+    from .observability import add
+
+    add(db, c, deaths=1)
     xp_lost = c.xp
     c.xp = 0
     fee = medical_fee(

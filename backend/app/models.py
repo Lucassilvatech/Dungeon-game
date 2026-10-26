@@ -1,5 +1,5 @@
 from .clock import utc_now
-from datetime import datetime
+from datetime import datetime, date
 from sqlalchemy import (
     UniqueConstraint,
     Index,
@@ -8,6 +8,7 @@ from sqlalchemy import (
     Integer,
     ForeignKey,
     DateTime,
+    Date,
     Boolean,
     CheckConstraint,
     JSON,
@@ -66,6 +67,8 @@ class Character(Base):
     coins: Mapped[int] = mapped_column(Gold(), default=0)
     unspent_attribute_points: Mapped[int] = mapped_column(default=0, server_default="0")
     attribute_point_debt: Mapped[int] = mapped_column(default=0, server_default="0")
+    created_at: Mapped[datetime | None] = mapped_column(DateTime, default=utc_now)
+    last_level_at: Mapped[datetime | None] = mapped_column(DateTime)
     adventure_streak: Mapped[int] = mapped_column(default=0, server_default="0")
     debt_accrued: Mapped[int] = mapped_column(Gold(), default=0, server_default="0")
     debt_next_collection: Mapped[int] = mapped_column(
@@ -131,6 +134,12 @@ class Battle(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     character_id: Mapped[int] = mapped_column(ForeignKey("characters.id"))
     enemy_id: Mapped[int | None] = mapped_column(ForeignKey("enemy_instances.id"))
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, default=utc_now)
+    damage_dealt: Mapped[int] = mapped_column(default=0, server_default="0")
+    damage_received: Mapped[int] = mapped_column(default=0, server_default="0")
+    metrics_recorded: Mapped[bool] = mapped_column(
+        default=False, server_default="false"
+    )
     encounter_id: Mapped[int | None] = mapped_column(
         ForeignKey("combat_encounters.id"), index=True
     )
@@ -487,8 +496,20 @@ class CombatEncounter(Base):
     size: Mapped[int] = mapped_column()
     turn: Mapped[int] = mapped_column(default=0)
     status: Mapped[str] = mapped_column(String(20), default="ACTIVE")
+    metrics_recorded: Mapped[bool] = mapped_column(
+        default=False, server_default="false"
+    )
     damage_dealt: Mapped[int] = mapped_column(default=0)
     damage_received: Mapped[int] = mapped_column(default=0)
     last_round: Mapped[list] = mapped_column(JSON, default=list)
     started_at: Mapped[datetime] = mapped_column(default=utc_now)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+
+class GameplayDay(Base):
+    __tablename__ = "gameplay_days"
+    character_id: Mapped[int] = mapped_column(
+        ForeignKey("characters.id"), primary_key=True
+    )
+    day: Mapped[date] = mapped_column(Date, primary_key=True, index=True)
+    counters: Mapped[dict] = mapped_column(JSON, default=dict)

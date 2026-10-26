@@ -36,6 +36,9 @@ def register(db, c, room):
         record = Expedition(character_id=c.id, room_id=room.id, seed=room.seed)
         db.add(record)
         db.flush()
+        from .observability import add
+
+        add(db, c, expeditions_started=1)
         event(
             db,
             "EXPEDITION_STARTED",
@@ -68,6 +71,9 @@ def sync(db, c):
     enemies = instances(db, c)
     alive = sum(e.state != EnemyState.DEAD for e in enemies)
     if not alive:
+        from .observability import add
+
+        add(db, c, expeditions_completed=1)
         c.adventure_streak += 1
         record.status = ExpeditionStatus.COMPLETED
         record.finished_at = utc_now()
@@ -225,6 +231,11 @@ def flee(db, c, expedition_id, confirmation_token):
             enemy.state = "ALIVE"
             enemy.ai_state = "IDLE"
             enemy.hp = enemy.max_hp
+    from .observability import add, finish_single
+
+    add(db, c, expeditions_fled=1)
+    if battle:
+        finish_single(db, c, battle)
     c.adventure_streak = 0
     record.status = ExpeditionStatus.FLED
     record.finished_at = utc_now()

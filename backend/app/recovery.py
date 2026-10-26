@@ -103,6 +103,19 @@ def lose(db, c, death):
         items=lost,
         units=count,
     )
+    from .observability import add
+
+    add(
+        db,
+        c,
+        items_lost_units=count,
+        items_destroyed_units=sum(
+            i["quantity"] for i in lost if i["destination"] == "destroyed"
+        ),
+        items_recovery_units=sum(
+            i["quantity"] for i in lost if i["destination"] == "recovery"
+        ),
+    )
     return lost
 
 
@@ -162,6 +175,9 @@ def recover(db, c, id, request_id):
     item.owner = c.id
     item.location = "inventory"
     item.equipped = False
+    from .observability import add
+
+    add(db, c, recovery_spent=r.price, recovered_items=item.quantity)
     r.recovered_at = utc_now()
     r.request_id = request_id
     event(

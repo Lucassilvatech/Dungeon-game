@@ -4,9 +4,17 @@ const assert=require('node:assert/strict');
  const base=process.env.BASE_URL||'http://127.0.0.1:8080';
  const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',args:['--no-sandbox']});
  const page=await browser.newPage({viewport:{width:1280,height:900}});
+ await page.addInitScript(()=>Object.defineProperty(window,'AudioContext',{value:undefined,configurable:true}));
+ const mapRequests=[];page.on('request',r=>{if(/\/assets\/Map-/.test(r.url()))mapRequests.push(r.url())});
  page.setDefaultTimeout(20000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
  try{
   await page.goto(base);
+  await page.locator('input[name=username]').waitFor();assert.equal(mapRequests.length,0,'Map/Phaser must be deferred before login');
+  await page.getByRole('button',{name:'Ativar áudio',exact:true}).click();
+  await page.getByRole('slider',{name:'Volume do jogo',exact:true}).focus();await page.keyboard.press('ArrowRight');
+  await page.waitForFunction(()=>Number(localStorage.getItem('dungeon_audio'))>35);
+  await page.getByRole('button',{name:'Silenciar',exact:true}).click();
+  await page.waitForFunction(()=>localStorage.getItem('dungeon_audio')==='0');
   await page.locator('input[name=username]').fill('web08'+Date.now());
   await page.locator('input[name=password]').fill('session-test-pass-123');
   await page.getByRole('button',{name:'Criar conta',exact:true}).click();
@@ -14,7 +22,7 @@ const assert=require('node:assert/strict');
   await page.getByRole('button',{name:'Iniciar jornada',exact:true}).click();
   await page.locator('canvas').waitFor();
   const state=()=>page.evaluate(async()=>{const r=await fetch('/api/state',{headers:{Authorization:'Bearer '+sessionStorage.getItem('token')}});return r.json()});
-  const s=await state();assert.equal(s.room.id,'city1');
+  const s=await state();assert.equal(s.room.id,'city1');assert(mapRequests.length>=1);
   await page.locator('canvas').click({position:{x:100,y:100}});
   // Allow any pointer route to finish before testing reconnection; no client position injection.
   await page.waitForFunction(()=>document.querySelector('main')?.getAttribute('aria-busy')==='false');
@@ -31,6 +39,6 @@ const assert=require('node:assert/strict');
   await page.getByRole('button',{name:'Entrar',exact:true}).waitFor();
   assert.equal(await page.evaluate(()=>sessionStorage.getItem('token')),null);
   assert.deepEqual(errors,[]);
-  console.log('PASS: web registration, movement, bounded reconnect/manual retry, consolidated polling and revoked-session logout');
+  console.log('PASS: web registration, movement, bounded reconnect/manual retry, consolidated polling, lazy map, optional audio controls without AudioContext and revoked-session logout');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exit(1)});

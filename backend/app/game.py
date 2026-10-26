@@ -363,7 +363,9 @@ def action(
             stats["strength"]["effective"], e.defense, c.level, skill=action == "skill"
         )
     )
+    before_hp = e.hp
     e.hp = max(0, e.hp - dealt)
+    b.damage_dealt += before_hp - e.hp
     b.hp = e.hp
     b.turn += 1
     event(db, "ENEMY_DAMAGED", c, enemy_id=e.id, damage=dealt, hp=e.hp, battle=b.id)
@@ -371,6 +373,7 @@ def action(
     training = e.species == "dummy"
     secret = room.kind == RoomType.SECRET_DUNGEON
     if e.hp == 0:
+        xp_before = c.xp
         # The entire DYING -> DEAD transition and all effects commit atomically.
         e.state = EnemyState.DYING
         e.death_at = utc_now()
@@ -419,7 +422,10 @@ def action(
             )
             c.xp += e.xp_reward
         from .attributes import gain_levels
+        from .observability import add
 
+        if not training:
+            add(db, c, monsters_defeated=1, xp_earned=c.xp - xp_before)
         gain_levels(db, c)
         if not training and (not secret or first):
             event(
@@ -472,6 +478,8 @@ def action(
                 guard=action == "defend",
             )
         )
+        actual_received = min(c.hp, incoming)
+        b.damage_received += actual_received
         c.hp = max(0, c.hp - incoming)
         if c.hp == 0:
             c.adventure_streak = 0
@@ -497,6 +505,9 @@ def action(
     db.flush()
     from .expeditions import sync
 
+    from .observability import finish_single
+
+    finish_single(db, c, b)
     if synchronize:
         sync(db, c)
     return {**battle_data(b), "damage": dealt}
@@ -566,6 +577,9 @@ def pay(db, c, rows):
             enemy_id=b.enemy_id,
             amount=reward_value(b),
         )
+    from .observability import add
+
+    add(db, c, rewards_claimed=total, reward_records_claimed=len(rows))
     from .procedural_retention import prune
 
     for room_id in {b.room_id for b in rows}:

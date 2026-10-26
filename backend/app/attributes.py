@@ -7,7 +7,7 @@ DEBT_LEVEL_PENALTY = 10
 MAX_ATTRIBUTE = 2147483647
 
 
-def gain_levels(db, c):
+def gain_levels(db, c, *, source="combat"):
     gained = 0
     while c.xp >= c.level * 50:
         c.xp -= c.level * 50
@@ -18,6 +18,24 @@ def gain_levels(db, c):
         else:
             c.unspent_attribute_points += 1
     if gained:
+        from .clock import utc_now
+        from .observability import add
+
+        now = utc_now()
+        baseline = c.last_level_at or c.created_at
+        if source == "combat":
+            counters = {"levels_gained": gained}
+            if baseline:
+                counters.update(
+                    level_interval_ms=max(
+                        0, int((now - baseline).total_seconds() * 1000)
+                    ),
+                    level_interval_samples=gained,
+                )
+            add(db, c, **counters)
+        else:
+            add(db, c, admin_levels_gained=gained)
+        c.last_level_at = now
         c.hp = 30 + (c.level - 1) * 5
         event(
             db,

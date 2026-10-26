@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, lazy, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { api, State, Battle } from "./api";
-import { Map } from "./Map";
+const Map=lazy(()=>import("./Map").then(module=>({default:module.Map})));
 import {
   ExpeditionPanel,
   FleeModal,
@@ -17,6 +17,7 @@ import {
 } from "./DeathEconomy";
 import "./style.css";
 import {Encounters} from "./Encounters";
+import {AudioControls,sound} from "./audio";
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 function App() {
   const [state, setState] = useState<State | null>(null),
@@ -46,6 +47,7 @@ function App() {
       seq: number;
       status: string;
       enemy_id?: number;
+      damage?:number;
     } | null>(null),
     [invite, setInvite] = useState("");
   const gate = useRef(false),
@@ -57,7 +59,7 @@ function App() {
     if (!state?.events.length) return;
     const fresh = state.events.filter((e) => e.id > lastEvent.current);
     const initialized = lastEvent.current !== 0;
-    lastEvent.current = Math.max(...state.events.map((e) => e.id));
+    lastEvent.current = Math.max(lastEvent.current,...state.events.map((e) => e.id));
     const item = fresh.find((e) => e.kind === "ITEM_ADDED");
     if (initialized && item) {
       setLootFlash("+" + item.payload.quantity + " material na mochila");
@@ -86,7 +88,7 @@ function App() {
     }finally{refreshGate.current=false;}
   }
   function clearSession(){
-    freshness.current++;sessionStorage.removeItem("token");setToken(null);setState(null);live.current=null;setPeers([]);
+    freshness.current++;lastEvent.current=0;sessionStorage.removeItem("token");setToken(null);setState(null);live.current=null;setPeers([]);
   }
   useEffect(()=>{
     const expired=()=>{clearSession();setNotice("Sessão expirada ou revogada. Entre novamente.")};
@@ -144,6 +146,8 @@ function App() {
     setBusy(true);
     try {
       const r = (await fn()) as any;
+      if(r?.status)sound(r.status==="won"?"win":r.status==="lost"?"hurt":"attack");
+      else if(r?.message)sound("interaction");
       if (r?.message) {
         setNotice(r.message);
         if (r?.rewards) setTab("guild");
@@ -155,6 +159,7 @@ function App() {
           seq: ++sequence.current,
           status: r.status,
           enemy_id: r.enemy_id,
+          damage:r.damage,
         });
         setNotice(
           r.status === "won"
@@ -259,6 +264,7 @@ function App() {
   return (
     <main aria-busy={busy}>
       <header>
+        <AudioControls/>
         <a className="brand" href="/">
           ♜{" "}
           <span>
@@ -447,6 +453,7 @@ function App() {
                   ◆ {lootFlash}
                 </div>
               )}
+              <Suspense fallback={<p role="status">Carregando mapa…</p>}>
               <Map
                 state={state}
                 peers={peers}
@@ -455,6 +462,7 @@ function App() {
                 onInteract={() => action("/interact")}
                 onTarget={target}
               />
+              </Suspense>
               <div className="stage-chip">
                 {state.room.safe
                   ? "❖ ZONA SEGURA"
@@ -543,7 +551,7 @@ function App() {
                     if (npc) target({ x: npc[0], y: npc[1], kind: "npc" });
                   }}
                 >
-                  Falar com recepcionista
+                  {state.room.id==="guild"?"Falar com recepcionista":"Falar com "+(state.map.npc_name??"NPC")}
                 </button>
               )}
               {c.floor > 1 && state.map.portal && (

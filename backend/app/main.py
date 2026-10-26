@@ -561,3 +561,10 @@ def encounter_action(
     from .encounters import action
 
     return action(db, game.character(db, a), id, body.turn, body.target_id, body.action)
+
+
+@app.get("/metrics")
+def player_metrics(a=Depends(current_account), db=Depends(get_db)):
+    from .observability import summary
+
+    return summary(db, game.character(db, a).id)

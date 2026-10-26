@@ -197,6 +197,9 @@ def close(db, c, status, death_battle_id=None):
             e.state = "ALIVE"
             e.ai_state = "IDLE"
             e.hp = e.max_hp
+    from .observability import finish_group
+
+    finish_group(db, c, g)
     event(
         db,
         "ENCOUNTER_FINISHED",

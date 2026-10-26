@@ -24,7 +24,7 @@ export function Map({
   onMove: (dx: number, dy: number) => void;
   onInteract: () => void;
   onTarget: (t: Target) => void;
-  fx: { seq: number; status: string; enemy_id?: number } | null;
+  fx: { seq: number; status: string; enemy_id?: number; damage?:number } | null;
 }) {
   const el = useRef<HTMLDivElement>(null),
     live = useRef({ state, peers, onMove, onInteract, onTarget, fx });
@@ -139,7 +139,7 @@ export function Map({
           );
           this.npcHomes.push({ x: x * 32 + 16, y: y * 32 + 12, walk: false });
           this.labels.push(
-            this.label(x * 32 + 16, y * 32 - 17, "E · Recepcionista"),
+            this.label(x * 32 + 16, y * 32 - 17, "E · "+(s.map.npc_name??"Serviço da Guilda")),
           );
         }
         for (const n of s.map.npcs || []) {
@@ -160,6 +160,7 @@ export function Map({
           this.back.fillRect(e.x * 32 + 3, e.y * 32, 26, 32);
           this.back.lineStyle(3, 0xc0a36f);
           this.back.strokeRect(e.x * 32 + 2, e.y * 32 - 4, 28, 36);
+          this.back.fillStyle(0xe9d69a,.9);this.back.fillTriangle(e.x*32+10,e.y*32+18,e.x*32+22,e.y*32+18,e.x*32+16,e.y*32+9);
           this.labels.push(
             this.label(
               e.x * 32 + 16,
@@ -178,9 +179,10 @@ export function Map({
       }
       createEnemy(e: Enemy) {
         const sprite = this.add
-          .sprite(e.x * 32 + 16, e.y * 32 + 12, e.species)
+          .sprite(e.x * 32 + 16, e.y * 32 + 12, this.textures.exists(e.species)?e.species:"boss")
           .setScale(1.5)
           .setDepth(12);
+        sprite.setTint(({rare:0x93caff,miniboss:0xca91ee,boss:0xff8c88,unique:0xffd16d} as Record<string,number>)[e.category??""]??0xffffff);
         const label = this.label(
           sprite.x,
           sprite.y - 27,
@@ -216,7 +218,9 @@ export function Map({
           this.until = time + 650;
           this.effect = fx.status;
           this.targetEnemy = fx.enemy_id || 0;
-          this.cameras.main.shake(70, 0.0015);
+          if(!matchMedia("(prefers-reduced-motion: reduce)").matches)this.cameras.main.shake(70, 0.0015);
+          const actor=this.actors.get(fx.enemy_id??0);
+          if(actor&&fx.damage){const text=this.label(actor.sprite.x,actor.sprite.y-44,"−"+fx.damage);text.setColor("#ffdc91");this.tweens.add({targets:text,y:text.y-20,alpha:0,duration:600,onComplete:()=>text.destroy()});}
         }
         const moving =
             Math.abs(this.hero.x - c.x * 32 - 16) +
@@ -337,6 +341,9 @@ export function Map({
         }
         const g = this.ambient;
         g.clear();
+        const selected=s.encounter?.selected_enemy_id??s.battle?.enemy_id;
+        const target=selected?this.actors.get(selected):undefined;
+        if(target){g.lineStyle(2,0xffd080,.95);g.strokeEllipse(target.sprite.x,target.sprite.y+15,30,14);}
         g.fillStyle(0x142b2e, 0.25);
         g.fillEllipse(this.hero.x, this.hero.y + 17, 21, 8);
         const fires = (s.map.decorations || [])

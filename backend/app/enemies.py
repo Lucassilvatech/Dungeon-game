@@ -119,6 +119,10 @@ def instances(db, c, wander=False):
         db.add(e)
         db.flush()
         existing.append(e)
+        if species != "dummy":
+            from .observability import add
+
+            add(db, c, **{f"spawn_level_{e.level}": 1})
         if old and rs.generation == 0 and old.status in ("won", "active"):
             old.enemy_id = e.id
         event(

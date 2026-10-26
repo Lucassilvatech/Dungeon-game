@@ -256,7 +256,7 @@ export function AuctionHouse({
   return (
     <>
       <p className="eyebrow">GUILDA · ESPÓLIOS DE AVENTURA</p>
-      <h2>Leilão de itens perdidos</h2>
+      <h2>Salão de Leilões</h2>
       <p>
         Apenas jogadores. Lance inicial de 20% do valor base total, arredondado
         para cima, com mínimo configurado. Não há teto de lance. O ouro vencedor
@@ -290,8 +290,7 @@ export function AuctionHouse({
               </h3>
               <p>{a.description}</p>
               <p>
-                Tipo: {a.kind} · Poder: {a.attributes?.power} · Origem: morte #
-                {a.death_event_id}
+                Tipo: {a.kind} · Poder: {a.attributes?.power} · Origem: {a.origin==="guild_debt"?"Confisco da Guilda":"Espólio histórico de morte #"+a.death_event_id}
               </p>
               <p>
                 Próximo lance: {a.next_bid} · Incremento mínimo:{" "}
@@ -331,8 +330,8 @@ export function AuctionHouse({
               )}
               <p>
                 Inicial: {a.opening_price} · Maior lance: {a.highest_bid}
-                {a.highest_bidder_id === state.character.id
-                  ? " · seu lance está reservado"
+                {a.highest_bidder_id === state.character.id && ["OPEN","CLOSED"].includes(a.status)
+                  ? " · sua reserva neste anúncio: "+a.highest_bid
                   : ""}
               </p>
               <p>
@@ -341,7 +340,7 @@ export function AuctionHouse({
                   : a.status === "SETTLED"
                     ? "FINALIZADO · entregue ao vencedor"
                     : a.status}{" "}
-                · Fim: {new Date(a.ends_at).toLocaleString()}
+                · Fim: {new Date(a.ends_at).toLocaleString()} · {new Date(a.ends_at).getTime()>Date.now()?Math.ceil((new Date(a.ends_at).getTime()-Date.now())/60000)+" minutos restantes":"prazo encerrado"}
               </p>
               {open && (
                 <form

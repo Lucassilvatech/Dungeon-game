@@ -10,7 +10,7 @@ const palette: Record<string, number[]> = {
 };
 export function drawEnvironment(g: Phaser.GameObjects.Graphics, s: State) {
   const m = s.map,
-    p = palette[m.theme] || palette.wild_ruins,
+    p = s.room.id==="common_b"?[0x526e59,0x4a6554,0x9a9d7c,0x394e46]:s.room.id==="combat"?[0x75694c,0x6b6146,0xb0a47b,0x4e523e]:palette[m.theme] || palette.wild_ruins,
     wood = m.theme === "interior" || m.theme === "abandoned_wood";
   for (let y = 0; y < m.height; y++)
     for (let x = 0; x < m.width; x++) {
