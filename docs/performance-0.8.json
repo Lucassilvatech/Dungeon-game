@@ -1,0 +1,78 @@
+{
+  "method": "TestClient HTTP + real PostgreSQL, single sequential user, no network/browser/production load claim",
+  "samples_per_endpoint": 50,
+  "results": [
+    {
+      "path": "/state",
+      "rate_limits": false,
+      "p50_ms": 20.63,
+      "p95_ms": 24.17,
+      "p99_ms": 24.34,
+      "mean_sql_queries": 36,
+      "mean_response_bytes": 7798
+    },
+    {
+      "path": "/metrics",
+      "rate_limits": false,
+      "p50_ms": 4.05,
+      "p95_ms": 4.47,
+      "p99_ms": 4.56,
+      "mean_sql_queries": 5,
+      "mean_response_bytes": 533
+    },
+    {
+      "path": "/resources",
+      "rate_limits": false,
+      "p50_ms": 4.2,
+      "p95_ms": 4.59,
+      "p99_ms": 4.65,
+      "mean_sql_queries": 5,
+      "mean_response_bytes": 2
+    },
+    {
+      "path": "/contracts",
+      "rate_limits": false,
+      "p50_ms": 4.44,
+      "p95_ms": 5.1,
+      "p99_ms": 5.64,
+      "mean_sql_queries": 6,
+      "mean_response_bytes": 32
+    },
+    {
+      "path": "/state",
+      "rate_limits": true,
+      "p50_ms": 24.14,
+      "p95_ms": 26.58,
+      "p99_ms": 28.56,
+      "mean_sql_queries": 38,
+      "mean_response_bytes": 7798
+    },
+    {
+      "path": "/metrics",
+      "rate_limits": true,
+      "p50_ms": 6.71,
+      "p95_ms": 6.98,
+      "p99_ms": 7.08,
+      "mean_sql_queries": 7,
+      "mean_response_bytes": 533
+    },
+    {
+      "path": "/resources",
+      "rate_limits": true,
+      "p50_ms": 6.0,
+      "p95_ms": 6.53,
+      "p99_ms": 7.6,
+      "mean_sql_queries": 7,
+      "mean_response_bytes": 2
+    },
+    {
+      "path": "/contracts",
+      "rate_limits": true,
+      "p50_ms": 6.38,
+      "p95_ms": 7.06,
+      "p99_ms": 7.86,
+      "mean_sql_queries": 8,
+      "mean_response_bytes": 32
+    }
+  ]
+}

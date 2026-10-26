@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     encounter_radius: int = Field(default=8, ge=1, le=12)
     collection_slots: int = Field(default=30, ge=1, le=1000)
     max_active_contracts: int = Field(default=3, ge=1, le=10)
+    rate_limits_enabled: bool = True
+    rate_limit_scale: float = Field(default=1, ge=0.01, le=10)
     discord_service_key: str = ""
     model_config = {"env_file": ".env", "extra": "ignore"}
 

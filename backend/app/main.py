@@ -46,6 +46,9 @@ async def lifespan(app):
 
 
 app = FastAPI(title="Tower RPG", version="0.6.0", lifespan=lifespan)
+from .request_controls import RequestControls
+
+app.add_middleware(RequestControls)
 
 
 @app.exception_handler(IntegrityError)
@@ -101,7 +104,10 @@ def register(body: Credentials, db=Depends(get_db)):
 @app.post("/auth/login")
 def login(body: Credentials, db=Depends(get_db)):
     a = db.scalar(select(Account).where(Account.username == body.username.lower()))
-    if not a or not password_matches(body.password, a.password):
+    valid = password_matches(
+        body.password, a.password if a else "0" * 32 + ":" + "0" * 64
+    )
+    if not a or not valid:
         raise HTTPException(401, "Credenciais inválidas")
     return issue_token(db, a)
 

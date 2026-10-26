@@ -1,0 +1,31 @@
+name: Web and authoritative backend 0.8
+on:
+  pull_request:
+    paths: ['backend/**', 'frontend/**', 'discord-bot/**', 'scripts/**', '.github/workflows/web-backend-0.8.yml']
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: tower08_test
+          POSTGRES_USER: tower
+          POSTGRES_PASSWORD: test-only-password
+        ports: ['5432:5432']
+        options: --health-cmd 'pg_isready -U tower -d tower08_test' --health-interval 3s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgresql+psycopg://tower:test-only-password@localhost:5432/tower08_test
+      TOWER_TEST_DATABASE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22', cache: npm, cache-dependency-path: frontend/package-lock.json}
+      - run: pip install -r backend/requirements-dev.txt
+      - run: alembic upgrade head && alembic check && pytest -q
+        working-directory: backend
+      - run: npm ci && npm run build
+        working-directory: frontend

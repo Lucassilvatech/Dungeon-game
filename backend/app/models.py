@@ -593,3 +593,26 @@ class DiscordOperation(Base):
     status: Mapped[str] = mapped_column(String(20), default="PREVIEW")
     result: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     __table_args__ = (CheckConstraint("status IN ('PREVIEW','APPLIED')"),)
+
+
+class RateLimitBucket(Base):
+    __tablename__ = "rate_limit_buckets"
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    window: Mapped[int] = mapped_column()
+    count: Mapped[int] = mapped_column()
+    __table_args__ = (CheckConstraint("count > 0"),)
+
+
+Index("ix_battles_character_status", Battle.character_id, Battle.status, Battle.claimed)
+Index("ix_items_owner_location", Item.owner, Item.location)
+Index(
+    "ix_world_events_character_recent",
+    WorldEvent.payload["character"].as_integer(),
+    WorldEvent.id,
+)
+Index(
+    "ix_contract_acceptance_active",
+    CharacterContract.character_id,
+    CharacterContract.status,
+    CharacterContract.contract_id,
+)

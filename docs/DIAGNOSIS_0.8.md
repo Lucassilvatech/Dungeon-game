@@ -54,3 +54,7 @@ Coleta pessoal finita em coordenadas já existentes, sem dinheiro nem respawn te
 ### Etapa 6 — Discord
 
 Quatorze comandos sem registro duplicado: vínculo, doze consultas (incluindo aliases) e equipamento confirmado. Todos usam API/estado real e respostas efêmeras. Confirmações persistentes expiram em 120s, vinculam identidade e prévia e não repetem mutação; nenhum recurso ADM. Consulta de leilões respeita mutex antes do lock de personagem. Credenciais externas ausentes: testes de integração locais e mocks são evidência de código, não de conexão ao serviço Discord. Migração `947647462008` só adiciona recibos; cópia 0.7 preserva os 1.155 hashes originais.
+
+### Etapa 7 — segurança e observação
+
+Cinco testes específicos aprovados em 12,60s: tentativas rejeitadas contam fora do rollback; limite concorrente atômico; identidade por conta apesar de rotação de tokens/proxy compartilhado; login com limite; logs sem credenciais; autenticação WebSocket malformada rejeitada; índices presentes. Fixture geral isola testes de jogo desabilitando limites, sem alterar padrão de produção habilitado. Central ADM já acompanha encontros/coleta/contratos/métricas pelas permissões existentes. Presença continua um worker, três sockets por personagem e mensagens limitadas; broker distribuído é pré-requisito de escala horizontal. Nenhum Redis obrigatório.

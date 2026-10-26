@@ -151,7 +151,7 @@ export async function api(path:string,body?:unknown) {
       if(r.status===401&&!path.startsWith("/auth/")){
         sessionStorage.removeItem("token");window.dispatchEvent(new Event("dungeon:session-expired"));
       }
-      throw new APIError(typeof data.detail==="string"?data.detail:"Revise os dados informados",r.status);
+      throw new APIError((typeof data.detail==="string"?data.detail:"Revise os dados informados")+(r.status===429&&data.retry_after?` Aguarde ${data.retry_after}s.`:""),r.status);
     }
     return data;
   }catch(e){

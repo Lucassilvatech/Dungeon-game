@@ -14,13 +14,14 @@ from app.world import WALLS, NPC, MONSTERS, distance
 @pytest.fixture(autouse=True)
 def clean(monkeypatch):
     monkeypatch.setattr(settings, "wander_interval", 100000)
+    monkeypatch.setattr(settings, "rate_limits_enabled", False)
     assert (
         os.environ.get("TOWER_TEST_DATABASE") == "1"
     ), "Use disposable PostgreSQL only"
     with Session.begin() as db:
         db.execute(
             text(
-                "TRUNCATE admin_login_attempts, central_bank, monster_definitions, game_settings, accounts, sessions, link_codes, characters, items, item_definitions, battles, treasury, ledger, world_events RESTART IDENTITY CASCADE"
+                "TRUNCATE rate_limit_buckets, admin_login_attempts, central_bank, monster_definitions, game_settings, accounts, sessions, link_codes, characters, items, item_definitions, battles, treasury, ledger, world_events RESTART IDENTITY CASCADE"
             )
         )
     seed()

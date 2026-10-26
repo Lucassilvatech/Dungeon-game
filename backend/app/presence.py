@@ -39,6 +39,9 @@ async def room_socket(ws: WebSocket):
     try:
         # Token is the first message, avoiding tokens in request URLs/access logs.
         message = await asyncio.wait_for(ws.receive_json(), timeout=5)
+        if not isinstance(message, dict):
+            await ws.close(code=4401)
+            return
         token = message.get("token", "")
         if not isinstance(token, str) or len(token) > 200:
             await ws.close(code=4401)
@@ -52,13 +55,19 @@ async def room_socket(ws: WebSocket):
                 await ws.close(code=4401)
                 return
             character_id, payload = data
+            if sum(v == character_id for k, v in connections.items() if k != key) >= 3:
+                await ws.close(code=4429)
+                return
             connections[key] = character_id
             if payload != last:
                 await ws.send_json(payload)
                 last = payload
             # Receive heartbeat to detect disconnects even when no position changes.
             try:
-                await asyncio.wait_for(ws.receive_text(), timeout=0.5)
+                heartbeat = await asyncio.wait_for(ws.receive_text(), timeout=0.5)
+                if len(heartbeat) > 256:
+                    await ws.close(code=4400)
+                    return
             except asyncio.TimeoutError:
                 pass
     except (
