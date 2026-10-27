@@ -60,7 +60,14 @@ def query(db, discord_id, section):
         rows = game.inventory(db, c)
         for item in rows:
             item["rarity"] = db.get(m.ItemDefinition, item["definition"]).rarity
-        return {section: [i for i in rows if section == "inventory" or i["equipped"]]}
+        from .lunar_resources import inventory as mineral_inventory
+
+        return {
+            section: [i for i in rows if section == "inventory" or i["equipped"]],
+            "mineral_inventory": (
+                mineral_inventory(db, c) if section == "inventory" else []
+            ),
+        }
     if section == "location":
         return {"room": room.name, "floor": c.floor, "x": c.x, "y": c.y}
     if section == "map":
@@ -196,6 +203,11 @@ def query(db, discord_id, section):
 
         return {
             **wallet(db, f"player:{c.id}"),
+            "collected_lunar_resources": db.scalar(
+                select(func.count())
+                .select_from(m.LunarResourceOccurrence)
+                .where(m.LunarResourceOccurrence.collected_by == c.id)
+            ),
             "legacy_balance": str(funds(db, c)),
             "legacy_debt": str(debt_units(db, c)),
         }

@@ -367,7 +367,12 @@ def lunar_audit(actor=Depends(principal), db=Depends(get_db)):
     require(actor, "economy.read")
     from . import finance, lunar
 
-    return finance.metrics(db) if finance.active(db) else lunar.audit(db)
+    from .lunar_resources import metrics as resource_metrics
+
+    return {
+        **(finance.metrics(db) if finance.active(db) else lunar.audit(db)),
+        **resource_metrics(db),
+    }
 
 
 @router.get("/lunar/legacy-preview")
@@ -411,3 +416,24 @@ def cutover_confirm(
     return confirm(
         db, body.fingerprint, str(body.request_id), f"admin:{actor.id}", body.reason
     )
+
+
+@router.get("/lunar/resources")
+def lunar_resources_view(offset: int = 0, actor=Depends(principal), db=Depends(get_db)):
+    require(actor, "economy.read")
+    from .lunar_resources import metrics, CONFIG
+    from .config import runtime_setting
+
+    return {
+        "metrics": metrics(db),
+        "configuration": {k: runtime_setting(db, k) for k in sorted(CONFIG)},
+        "occurrences": [
+            data(r)
+            for r in db.scalars(
+                select(m.LunarResourceOccurrence)
+                .order_by(m.LunarResourceOccurrence.id.desc())
+                .offset(max(0, offset))
+                .limit(100)
+            )
+        ],
+    }

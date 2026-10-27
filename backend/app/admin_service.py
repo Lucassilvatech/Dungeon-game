@@ -406,6 +406,15 @@ def describe(db, action, target, p):
         }
     if action == "economy.configure":
         from .config import runtime_setting
+        from .lunar_resources import CONFIG, validate_setting
+
+        if target in CONFIG:
+            validate_setting(target, p.get("value"))
+            return {
+                "key": target,
+                "value": runtime_setting(db, target),
+                "impact": "Somente novas expedições; decisões persistidas não são reroladas. Preço comercial independente da massa.",
+            }
 
         if target not in {
             "medical_fee_base",

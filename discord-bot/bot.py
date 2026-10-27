@@ -121,6 +121,10 @@ def render(section, data):
             + (" · equipado" if i["equipped"] else "")
             for i in data[section]
         ][:30] or ["Nenhum item."]
+        lines += [
+            f"Minério Lunar · Pepita {int(n['weight_mg']) // 1000}g ×{n['quantity']}"
+            for n in data.get("mineral_inventory", [])
+        ]
     elif section == "attributes":
         lines = [
             f"{k}: {v['effective']} (base {v['base']}, equipamento {v['equipment']})"
@@ -142,6 +146,7 @@ def render(section, data):
             f"{label}: {assets.get(code,{}).get('quantity','0')}"
             for code, label in zip(codes, labels)
         ]
+        lines += [f"Ocorrências coletadas: {data.get('collected_lunar_resources', 0)}"]
         weight = sum(
             int(assets.get(code, {}).get("total_weight_mg", "0")) for code in codes
         )
