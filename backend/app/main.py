@@ -3,7 +3,7 @@ import secrets
 from datetime import datetime, timedelta
 from typing import Literal
 from fastapi import FastAPI, Depends, Header, HTTPException
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, StrictInt
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from fastapi.responses import JSONResponse
@@ -698,3 +698,61 @@ def discord_equipment_confirm(
     from .discord_client import confirm
 
     return confirm(db, discord_id, str(id), body.confirmation_token)
+
+
+@app.get("/lunar/wallet")
+def lunar_wallet(a=Depends(current_account), db=Depends(get_db)):
+    from . import lunar
+
+    lunar.mutex(db)
+    c = game.character(db, a)
+    return {
+        **lunar.wallet(db, f"player:{c.id}"),
+        "legacy_balance": str(c.coins),
+        "legacy_debt": str(max(0, -c.coins)),
+    }
+
+
+class LunarComposition(BaseModel):
+    model_config = {"extra": "forbid"}
+    request_id: UUID
+    source: str
+    outputs: dict[str, StrictInt]
+
+
+@app.post("/lunar/nuggets/split")
+def lunar_split(body: LunarComposition, a=Depends(current_account), db=Depends(get_db)):
+    from . import lunar
+
+    lunar.mutex(db)
+    c = game.character(db, a)
+    game.idle(db, c)
+    id = f"player:{c.id}"
+    lunar.account(db, id, "player", c.id)
+    entry = lunar.split(
+        db, id, body.source, body.outputs, f"player:{c.id}:{body.request_id}"
+    )
+    return {"receipt": entry.id, "wallet": lunar.wallet(db, id)}
+
+
+class LunarExchange(BaseModel):
+    model_config = {"extra": "forbid"}
+    request_id: UUID
+    inputs: dict[str, StrictInt]
+    outputs: dict[str, StrictInt]
+
+
+@app.post("/lunar/coins/exchange")
+def lunar_exchange(body: LunarExchange, a=Depends(current_account), db=Depends(get_db)):
+    from . import lunar
+
+    lunar.mutex(db)
+    c = game.character(db, a)
+    game.idle(db, c)
+    game.receptionist(db, c)
+    id = f"player:{c.id}"
+    lunar.account(db, id, "player", c.id)
+    entry = lunar.exchange(
+        db, id, body.inputs, body.outputs, f"player:{c.id}:{body.request_id}"
+    )
+    return {"receipt": entry.id, "wallet": lunar.wallet(db, id)}

@@ -616,3 +616,70 @@ Index(
     CharacterContract.status,
     CharacterContract.contract_id,
 )
+
+
+class LunarAsset(Base):
+    __tablename__ = "lunar_assets"
+    code: Mapped[str] = mapped_column(String(30), primary_key=True)
+    kind: Mapped[str] = mapped_column(String(20))
+    weight_mg: Mapped[int] = mapped_column(Gold())
+    __table_args__ = (
+        CheckConstraint("kind IN ('nugget','coin')"),
+        CheckConstraint("weight_mg > 0"),
+    )
+
+
+class LunarAccount(Base):
+    __tablename__ = "lunar_accounts"
+    id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    kind: Mapped[str] = mapped_column(String(20))
+    character_id: Mapped[int | None] = mapped_column(
+        ForeignKey("characters.id"), unique=True
+    )
+    __table_args__ = (
+        CheckConstraint(
+            "kind IN ('player','npc','guild','treasury','escrow','expedition')"
+        ),
+    )
+
+
+class LunarHolding(Base):
+    __tablename__ = "lunar_holdings"
+    account_id: Mapped[str] = mapped_column(
+        ForeignKey("lunar_accounts.id"), primary_key=True
+    )
+    asset_code: Mapped[str] = mapped_column(
+        ForeignKey("lunar_assets.code"), primary_key=True
+    )
+    quantity: Mapped[int] = mapped_column(Gold(), default=0)
+    __table_args__ = (CheckConstraint("quantity >= 0"),)
+
+
+class LunarEntry(Base):
+    __tablename__ = "lunar_entries"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    key: Mapped[str] = mapped_column(String(160), unique=True)
+    kind: Mapped[str] = mapped_column(String(40), index=True)
+    actor: Mapped[str] = mapped_column(String(80))
+    reason: Mapped[str] = mapped_column(String(500))
+    fingerprint: Mapped[str] = mapped_column(String(64))
+    postings: Mapped[list] = mapped_column(JSON)
+    context: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(default=utc_now)
+
+
+class LunarSupply(Base):
+    __tablename__ = "lunar_supply"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    discovered_mg: Mapped[int] = mapped_column(Gold(), default=0)
+    legacy_backing_mg: Mapped[int] = mapped_column(Gold(), default=0)
+    destroyed_mg: Mapped[int] = mapped_column(Gold(), default=0)
+    minted_mg: Mapped[int] = mapped_column(Gold(), default=0)
+    coin_burned_mg: Mapped[int] = mapped_column(Gold(), default=0)
+    config: Mapped[dict] = mapped_column(JSON, default=dict)
+    __table_args__ = (
+        CheckConstraint("id = 1"),
+        CheckConstraint(
+            "discovered_mg >= 0 AND legacy_backing_mg >= 0 AND destroyed_mg >= 0 AND minted_mg >= 0 AND coin_burned_mg >= 0"
+        ),
+    )

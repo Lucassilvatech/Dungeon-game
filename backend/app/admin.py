@@ -344,3 +344,19 @@ def view(
             )
         ]
     raise HTTPException(404, "Módulo inexistente")
+
+
+@router.get("/lunar/audit")
+def lunar_audit(actor=Depends(principal), db=Depends(get_db)):
+    require(actor, "economy.read")
+    from .lunar import audit
+
+    return audit(db)
+
+
+@router.get("/lunar/legacy-preview")
+def lunar_legacy_preview(actor=Depends(principal), db=Depends(get_db)):
+    require(actor, "economy.read")
+    from .lunar import legacy_preview
+
+    return legacy_preview(db)
