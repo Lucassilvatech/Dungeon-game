@@ -28,4 +28,22 @@ Simulador: 15 cenários isolados, todos massa gap zero; pip check sem dependênc
 
 Somente arquivos do projeto são adicionados; backups/dumps/bancos reais/.env/segredos permanecem fora do Git. Não foram criadas credenciais reais em arquivos. Credenciais e chaves de teste nas suites são fixtures explícitas. Nenhuma alteração de schema destrutiva ou remoção de DiscordOperation. Nenhuma migração nova além da Lunar já existente. Nenhuma exportação nativa. Main não recebe commits/merge/force push.
 
-PR preparado como draft contra a **0.8 remota af9dcb5**, abrangendo tanto os cinco commits Lunares preservados quanto a política 0.9. Publicação, HEAD remoto e link real serão registrados depois do push autorizado. Relatório do escopo Lunar continua distinguindo as fundações de sistemas futuros.
+PR preparado como draft contra a **0.8 remota af9dcb5**, abrangendo tanto os cinco commits Lunares preservados quanto a política 0.9. Push autorizado executado e validado; detalhes abaixo. Relatório do escopo Lunar continua distinguindo as fundações de sistemas futuros.
+
+
+## Publicação e validação remota
+
+Branch anterior feature/web-discord-first-floor-0.8, HEAD inicial local **7ef6a1a23881fb664a73af1585013dc1e2323ec2**. Nova branch **feature/lunar-web-discord-readonly-0.9**, criada sem perder os cinco commits locais. Commits desta consolidação: d098d8d (Discord), 49898d2 (Web/CI), 686e42c (massa monetária/pepitas), df232ec (documentação). Este registro de verificação é um commit posterior, sem alterar o código testado.
+
+`git push -u origin feature/lunar-web-discord-readonly-0.9` concluiu. HEAD remoto do primeiro push: **df232ec8f0da3c03f3988ca47fb7d6698a8aab32**, igual ao local naquele momento. Conteúdo baixado pelo raw.githubusercontent.com conferido por SHA256 contra o workspace para lunar.py, migração 4a8687e5317c, discord_client.py, bot.py, GODOT_FREEZE.md e este relatório. Fundação Lunar inteira publicada por ancestralidade dos commits preservados; não houve cherry-pick parcial ou reconstrução da main.
+
+Main remoto antes/depois: **eab42d7e732befb04244e29d5e1615e821c5ea5e**, inalterado. 0.8 remoto antes/depois: **af9dcb549d60825620db3ef953cb4f1241baaeb6**, inalterado. Nenhum merge, force push, reset/clean, banco real ou segredo publicado. Worktree revisado e arquivos do Godot byte a byte iguais à referência local. Sem novo APK, EXE, ZIP Windows ou pacote nativo.
+
+Draft PR tentado com `gh pr create --draft --base feature/web-discord-first-floor-0.8 --head feature/lunar-web-discord-readonly-0.9 --body-file docs/PULL_REQUEST_0.9.md`. **Não criado**: API retornou `Post https://api.github.com/graphql: Forbidden`. Push Git funciona; acesso à API não foi contornado. Título/descrição preparados no arquivo, sem auto-merge.
+
+- [Branch publicada](https://github.com/Lucassilvatech/Dungeon-game/tree/feature/lunar-web-discord-readonly-0.9)
+- [Compare real contra 0.8](https://github.com/Lucassilvatech/Dungeon-game/compare/feature%2Fweb-discord-first-floor-0.8...feature%2Flunar-web-discord-readonly-0.9?expand=1)
+
+Resultado: backend 200/200 na suite completa + 1 teste adicional da barreira read-only; Lunar 14 incluídos na suite; Discord 16 incluídos na suite + barreira adicional; Web build/npm test/Chromium smoke e Lunar mobile passaram. Falhas finais zero, pulados zero. Dois avisos Python de depreciação e aviso de tamanho de bundle Vite. CI remoto não executado/confirmado neste ambiente (workflow preparado); Discord externo sem credenciais, sem alegação de conexão real. Segurança revisada pelo diff/nomes: nenhum .env real, token real, banco, dump privado ou backup entrou no Git. Fixtures de teste não são credenciais operacionais.
+
+**Discord cannot control the character.** Windows: FROZEN. Android: FROZEN. APK: NOT REQUIRED. Windows build: NOT REQUIRED. Godot source: PRESERVED. A economia Lunar continua uma fundação incompleta e publicada, sem ativação do cutover. Esta tarefa termina na consolidação, validação e publicação; não implementa futuros bosses/rituais.
