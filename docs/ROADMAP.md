@@ -6,7 +6,7 @@
 
 ## Prioridade ativa
 
-1. Fundações e integração da economia Lunar (consolidação atual não conclui o cutover).
+1. Cutover implementado e validado em cópia privada; ativação no ambiente operacional real ainda não executada. Recursos procedurais Lunares são a etapa atual.
 2. Backend autoritativo e testes de integridade.
 3. Web e Central ADM.
 4. NPCs/estoques/fluxo econômico.
