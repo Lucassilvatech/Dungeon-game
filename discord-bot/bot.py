@@ -28,6 +28,8 @@ class TowerBot(discord.Client):
         await super().close()
 
     async def request(self, interaction, path, body=None, defer=True):
+        if body is not None and path != "/discord/link":
+            raise ValueError("Discord cannot control the character")
         if defer:
             await interaction.response.defer(ephemeral=True)
         try:
@@ -80,12 +82,15 @@ class TowerBot(discord.Client):
             ("inventario", "inventory", "Itens reais da mochila"),
             ("equipamentos", "equipment", "Equipamentos em uso"),
             ("localizacao", "location", "Região e posição atuais"),
-            ("mapa", "location", "Andar e localização"),
+            ("mapa", "map", "Andar e localização"),
             ("expedicao", "expedition", "Expedição e grupo ativos"),
             ("recompensas", "rewards", "Direitos pendentes na recepção"),
             ("divida", "debt", "Dívida médica e saldo reservado"),
             ("leiloes", "auctions", "Leilões do backend"),
             ("contratos", "contracts", "Contratos e progresso real"),
+            ("carteira", "wallet", "Carteira Lunar e situação da transição"),
+            ("minerio", "mineral", "Pepitas do seu personagem"),
+            ("recuperacao", "recovery", "Recuperação pessoal de itens"),
         ]:
 
             def make_callback(section):
@@ -99,63 +104,6 @@ class TowerBot(discord.Client):
                     name=name, description=description, callback=make_callback(section)
                 )
             )
-
-        @self.tree.command(
-            name="equipar",
-            description="Prévia privada para equipar ou desequipar item real",
-        )
-        async def equipar(
-            interaction: discord.Interaction, item_id: int, equipado: bool = True
-        ):
-            data = await self.request(
-                interaction,
-                f"/discord/{interaction.user.id}/equipment/preview",
-                {"item_id": item_id, "equipped": equipado},
-            )
-            if data:
-                await interaction.followup.send(
-                    data["message"],
-                    view=EquipmentConfirmation(self, interaction.user.id, data),
-                    ephemeral=True,
-                )
-
-
-class EquipmentConfirmation(discord.ui.View):
-    def __init__(self, bot, owner, data):
-        super().__init__(timeout=120)
-        self.bot = bot
-        self.owner = owner
-        self.data = data
-        self.used = False
-
-    async def interaction_check(self, interaction):
-        if interaction.user.id != self.owner:
-            await interaction.response.send_message(
-                "Esta confirmação pertence a outro usuário.", ephemeral=True
-            )
-            return False
-        return True
-
-    @discord.ui.button(label="Confirmar equipamento", style=discord.ButtonStyle.primary)
-    async def confirm(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
-        # Set synchronously before the first await; backend also serializes and deduplicates.
-        if self.used:
-            await interaction.response.send_message(
-                "Confirmação já enviada. Consulte /equipamentos.", ephemeral=True
-            )
-            return
-        self.used = True
-        button.disabled = True
-        data = await self.bot.request(
-            interaction,
-            f'/discord/{self.owner}/operations/{self.data["id"]}/confirm',
-            {"confirmation_token": self.data["confirmation_token"]},
-        )
-        if data:
-            await interaction.followup.send(data["message"], ephemeral=True)
-        self.stop()
 
 
 def render(section, data):
@@ -178,6 +126,40 @@ def render(section, data):
             f"{k}: {v['effective']} (base {v['base']}, equipamento {v['equipment']})"
             for k, v in data["attributes"].items()
         ] + [f"Pontos livres: {data['points']}"]
+    elif section in ("wallet", "mineral"):
+        assets = data["assets"]
+        codes = (
+            ["coin_small", "coin_medium", "coin_large"]
+            if section == "wallet"
+            else ["nugget_small", "nugget_medium", "nugget_large"]
+        )
+        labels = (
+            ["Moeda pequena", "Moeda média", "Moeda grande"]
+            if section == "wallet"
+            else ["Pepita 100g", "Pepita 500g", "Pepita 1.000g"]
+        )
+        lines = [
+            f"{label}: {assets.get(code,{}).get('quantity','0')}"
+            for code, label in zip(codes, labels)
+        ]
+        weight = sum(
+            int(assets.get(code, {}).get("total_weight_mg", "0")) for code in codes
+        )
+        lines += [
+            f"Peso total: {weight} mg",
+            "Conversão Lunar ainda inativa; saldo legado: " + data["legacy_balance"],
+        ]
+    elif section == "recovery":
+        lines = [
+            f"#{r['id']} · item {r['item_id']} · {r['price']} moedas · "
+            + ("recuperado" if r["recovered"] else "aguardando recuperação")
+            for r in data["recovery"][:20]
+        ]
+    elif section == "map":
+        lines = [
+            f"Andar {data['floor']} · {data['room']} · ({data['x']}, {data['y']})",
+            "Salas descobertas: " + ", ".join(data["discovered_rooms"]),
+        ]
     elif section == "location":
         lines = [f"Andar {data['floor']} · {data['room']} · ({data['x']}, {data['y']})"]
     elif section == "debt":

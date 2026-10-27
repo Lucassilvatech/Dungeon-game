@@ -240,10 +240,9 @@ def link(body: Link, db=Depends(get_db)):
 
 @app.get("/discord/{discord_id}/state", dependencies=[Depends(bot_access)])
 def discord_state(discord_id: str, db=Depends(get_db)):
-    a = db.scalar(select(Account).where(Account.discord_id == discord_id))
-    if not a:
-        raise HTTPException(404, "Use /vincular primeiro")
-    return game.snapshot(db, game.character(db, a))
+    from .discord_client import query
+
+    return query(db, discord_id, "state")
 
 
 from uuid import UUID
@@ -671,33 +670,18 @@ def discord_query(discord_id: str, section: str, db=Depends(get_db)):
     return query(db, discord_id, section)
 
 
-class DiscordEquip(BaseModel):
-    model_config = {"extra": "forbid"}
-    item_id: int = Field(gt=0)
-    equipped: bool
-
-
-@app.post("/discord/{discord_id}/equipment/preview", dependencies=[Depends(bot_access)])
-def discord_equipment_preview(discord_id: str, body: DiscordEquip, db=Depends(get_db)):
-    from .discord_client import preview
-
-    return preview(db, discord_id, body.item_id, body.equipped)
-
-
-class DiscordConfirm(BaseModel):
-    model_config = {"extra": "forbid"}
-    confirmation_token: str = Field(min_length=20, max_length=100)
-
-
 @app.post(
-    "/discord/{discord_id}/operations/{id}/confirm", dependencies=[Depends(bot_access)]
+    "/discord/{discord_id}/equipment/preview",
+    dependencies=[Depends(bot_access)],
+    deprecated=True,
 )
-def discord_equipment_confirm(
-    discord_id: str, id: UUID, body: DiscordConfirm, db=Depends(get_db)
-):
-    from .discord_client import confirm
-
-    return confirm(db, discord_id, str(id), body.confirmation_token)
+@app.post(
+    "/discord/{discord_id}/operations/{id}/confirm",
+    dependencies=[Depends(bot_access)],
+    deprecated=True,
+)
+def discord_gameplay_gone():
+    raise HTTPException(410, "Discord é somente observação. Use a Web para jogar.")
 
 
 @app.get("/lunar/wallet")
