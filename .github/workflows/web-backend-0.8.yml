@@ -29,3 +29,48 @@ jobs:
         working-directory: backend
       - run: npm ci && npm run build
         working-directory: frontend
+      - run: npm test
+        working-directory: frontend
+      - run: python scripts/simulate_lunar.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lunar-simulation
+          path: docs/lunar/SIMULATION.json
+  chromium:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: tower_web
+          POSTGRES_USER: tower
+          POSTGRES_PASSWORD: test-only-password
+        ports: ['5432:5432']
+        options: --health-cmd 'pg_isready -U tower -d tower_web' --health-interval 3s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgresql+psycopg://tower:test-only-password@localhost:5432/tower_web
+      RATE_LIMIT_SCALE: '10'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22', cache: npm, cache-dependency-path: frontend/package-lock.json}
+      - run: pip install -r backend/requirements-dev.txt
+      - run: npm ci && npx playwright install --with-deps chromium
+        working-directory: frontend
+      - name: Start disposable HTTP stack
+        run: |
+          cd backend
+          alembic upgrade head
+          python -m app.seed
+          nohup uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 1 > /tmp/backend.log 2>&1 &
+          cd ../frontend
+          nohup npm run dev -- --host 127.0.0.1 --port 8080 > /tmp/frontend.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8080/api/health; then exit 0; fi
+            sleep 1
+          done
+          exit 1
+      - run: npm run test:e2e && node tests/lunar.cjs
+        working-directory: frontend

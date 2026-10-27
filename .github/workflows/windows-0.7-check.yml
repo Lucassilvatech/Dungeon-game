@@ -1,11 +1,7 @@
 name: Windows 0.7 build verification
+# Dormant native workflow: manual only during the Web-first cycle.
 on:
   workflow_dispatch:
-  push:
-    branches: [feature/procedural-economy-godot-fixes]
-    paths:
-      - '.github/workflows/windows-0.7-check.yml'
-      - 'builds/development/0.7.0-bd480e0/**'
 permissions:
   contents: read
 jobs:

@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "tsc --noEmit && vite build",
-    "test:e2e": "node tests/smoke.cjs"
+    "test:e2e": "node tests/smoke.cjs",
+    "test": "node --test tests/platform.test.cjs"
   },
   "dependencies": {
     "phaser": "3.88.2",

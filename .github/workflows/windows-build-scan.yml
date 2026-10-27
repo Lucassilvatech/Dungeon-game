@@ -1,11 +1,7 @@
 name: Windows development build security check
+# Dormant native workflow: manual only during the Web-first cycle.
 on:
   workflow_dispatch:
-  push:
-    branches: [feature/godot-admin-migration]
-    paths:
-      - '.github/workflows/windows-build-scan.yml'
-      - 'builds/development/0.6.0-424f97a/**'
 permissions:
   contents: read
 jobs:

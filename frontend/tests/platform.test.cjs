@@ -1,0 +1,2 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs');
+test('native build workflows are manual only',()=>{for(const f of ['godot-clients.yml','windows-0.7-check.yml','windows-build-scan.yml']){const s=fs.readFileSync('../.github/workflows/'+f,'utf8');const trigger=s.slice(s.indexOf('\non:'),s.indexOf('\npermissions:'));assert.match(trigger,/workflow_dispatch:/);assert.doesNotMatch(trigger,/push:|pull_request:/)}});

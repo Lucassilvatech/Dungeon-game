@@ -1,11 +1,7 @@
 name: Godot clients
+# Dormant native workflow: manual only during the Web-first cycle.
 on:
   workflow_dispatch:
-  push:
-    branches: [feature/procedural-economy-godot-fixes]
-    paths: ['godot-client/**', 'scripts/build_clients.py', '.github/workflows/godot-clients.yml']
-  pull_request:
-    paths: ['godot-client/**', '.github/workflows/godot-clients.yml']
 permissions:
   contents: read
 jobs:
