@@ -446,7 +446,7 @@ function App() {
                 className={"coins" + (c.coins < 0 ? " debt" : "")}
                 title="Pagamentos futuros da Guilda serão usados automaticamente para quitar sua dívida."
               >
-                ◈ {state.coins_exact}{state.economy_mode==='LUNAR'&&<small>g equivalentes · Lunar</small>}
+                ◈ {state.coins_exact}{state.economy_mode==='LUNAR'&&<small>g líquidos · Lunar</small>}
                 {c.coins < 0 && <small>Dívida médica ativa</small>}
               </span>
               <small className="online">{peers.length + 1} NESTA SALA</small>

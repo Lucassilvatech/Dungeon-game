@@ -9,6 +9,8 @@ export type DeathReceipt = {
   pending_lost_exact: string;
   medical_fee: number;
   charged: number;
+  paid?: number;
+  newly_financed?: number;
   waived: number;
   balance_after_exact: string;
   debt_limit_reached: boolean;
@@ -56,11 +58,12 @@ export function DeathSummary({
           <dd>{death.pending_lost_exact} moedas</dd>
           <dt>Taxa médica</dt>
           <dd>{death.medical_fee} moedas</dd>
-          <dt>Saldo atual</dt>
+          {death.paid !== undefined && <><dt>Pago ao Tesouro</dt><dd>{death.paid} g de moeda Lunar</dd><dt>Nova dívida médica</dt><dd>{death.newly_financed ?? 0} g equivalentes</dd></>}
+          <dt>{death.paid !== undefined ? "Saldo líquido após dívida" : "Saldo atual"}</dt>
           <dd
             className={death.balance_after_exact.startsWith("-") ? "debt" : ""}
           >
-            {death.balance_after_exact} moedas
+            {death.balance_after_exact} {death.paid !== undefined ? "g equivalentes" : "moedas"}
           </dd>
         </dl>
         {death.waived > 0 && (
