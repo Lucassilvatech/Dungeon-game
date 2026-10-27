@@ -90,6 +90,7 @@ export function Map({
             x = Math.floor(p.x / 32),
             y = Math.floor(p.y / 32),
             s = live.current.state;
+          const lunarResource=s.map.lunar_resources?.find(n=>n.x===x&&n.y===y);
           const resource=s.map.gather_nodes?.find(n=>n.x===x&&n.y===y&&n.enabled&&n.remaining>0);
           const exit = s.room.exits.find((e) => e.x === x && e.y === y);
           const enemy = s.map.enemies.find(
@@ -105,8 +106,8 @@ export function Map({
                 ? "monster"
                 : npc && npc[0] === x && npc[1] === y
                   ? "npc"
-                  : resource ? "resource" : "ground",
-            id: exit?.id??resource?.id,
+                  : lunarResource ? "lunar" : resource ? "resource" : "ground",
+            id: exit?.id??lunarResource?.id??resource?.id,
             monster: enemy ? String(enemy.id) : undefined,
           });
         });
@@ -203,8 +204,8 @@ export function Map({
       update(time: number) {
         const { state: s, peers, fx } = live.current;
         if (this.room !== s.room.id) this.loadRoom(s);
-        const resourceKey=s.room.id+JSON.stringify(s.map.gather_nodes);
-        if(resourceKey!==this.resourceKey){this.resourceKey=resourceKey;this.resourceLabels.forEach(l=>l.destroy());this.resourceLabels=(s.map.gather_nodes??[]).map(n=>this.label(n.x*32+16,n.y*32+7,(n.definition==='herb'?'♧':'◆')+' '+n.remaining).setColor(n.remaining&&n.enabled?'#bdf18c':'#888888').setDepth(9));}
+        const resourceKey=s.room.id+JSON.stringify([s.map.gather_nodes,s.map.lunar_resources]);
+        if(resourceKey!==this.resourceKey){this.resourceKey=resourceKey;this.resourceLabels.forEach(l=>l.destroy());this.resourceLabels=(s.map.gather_nodes??[]).map(n=>this.label(n.x*32+16,n.y*32+7,(n.definition==='herb'?'♧':'◆')+' '+n.remaining).setColor(n.remaining&&n.enabled?'#bdf18c':'#888888').setDepth(9));this.resourceLabels.push(...(s.map.lunar_resources??[]).map(n=>this.label(n.x*32+16,n.y*32+7,'☾ '+(BigInt(n.weight_mg)/1000n)+'g').setColor('#a9deff').setDepth(10)));}
         const frame = Math.floor(time / 220) % 4;
         const c = s.character,
           key = `${c.x},${c.y}`;

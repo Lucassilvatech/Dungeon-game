@@ -1,0 +1,6 @@
+import {useEffect,useState} from 'react';
+export function LunarResourcesAdmin({request,busy}:{request:(path:string)=>Promise<any>;busy:boolean}){
+ const [data,setData]=useState<any>(null),[error,setError]=useState('');
+ useEffect(()=>{let alive=true;void request('/lunar/resources').then(d=>{if(alive)setData(d)}).catch(e=>{if(alive)setError(e.message)});return()=>{alive=false}},[busy]);
+ return <section><h3>Recursos Lunares procedurais</h3><p>Spawn potencial não é massa econômica. Somente coleta legítima registra descoberta. Ajustes em Economia exigem prévia, motivo e confirmação; não há comando de spawn manual.</p>{error&&<p role="alert">{error}</p>}{data&&<><h4>Métricas e configuração</h4><pre>{JSON.stringify({metrics:data.metrics,configuration:data.configuration},null,2)}</pre><h4>Ocorrências recentes</h4><div style={{overflowX:'auto'}}><table><thead><tr>{['Expedição','Pepita mg','Estado','Coletor','Coletado em'].map(x=><th key={x}>{x}</th>)}</tr></thead><tbody>{data.occurrences.map((r:any)=><tr key={r.id}><td>{r.expedition_id}</td><td>{r.weight_mg}</td><td>{r.state}</td><td>{r.collected_by??'—'}</td><td>{r.collected_at??'—'}</td></tr>)}</tbody></table></div></>}</section>;
+}

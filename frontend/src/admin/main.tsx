@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
 import {PublishContract} from "./Contracts";
+import {LunarResourcesAdmin} from "./LunarResources";
 import {CutoverPanel} from "./Cutover";
 import { WorldEvents } from "./WorldEvents";
 
@@ -292,7 +293,7 @@ function App() {
         if (fields[k] !== undefined && fields[k] !== "") {
           p[k] = numericKeys.has(k)
             ? Number(fields[k])
-            : k === "value" && target !== "auction_proceeds_destination"
+            : k === "value" && target.startsWith("lunar_") ? JSON.parse(fields[k]) : k === "value" && target !== "auction_proceeds_destination"
               ? Number(fields[k])
               : fields[k];
         }
@@ -463,6 +464,7 @@ function App() {
         </p>
         {data && dataModule === module && (
           <section>
+            {module === "lunar"&&<LunarResourcesAdmin request={request} busy={busy}/>}
             {module === "lunar"&&<CutoverPanel data={data} busy={busy} canManage={session?.permissions?.includes("economy.manage")} request={request} run={run} refresh={load}/>}
  {module === "overview" && (
               <>
@@ -823,6 +825,7 @@ function App() {
                           "min_auction_start_price",
                           "auction_duration_hours",
                           "auction_proceeds_destination",
+                          "lunar_resource_spawn_enabled","lunar_resource_spawn_chance_ppm","lunar_resource_weight_distribution","lunar_guild_prices",
                         ].map((k) => (
                           <option key={k}>{k}</option>
                         ))}

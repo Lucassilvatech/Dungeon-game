@@ -17,6 +17,7 @@ import {
 } from "./DeathEconomy";
 import "./style.css";
 import {Shop} from "./Shop";
+import {LunarResources} from "./LunarResources";
 import {LunarWallet} from "./LunarWallet";
 import {Gathering,ContractBoard} from './CollectionContracts';
 import {Encounters} from "./Encounters";
@@ -203,6 +204,11 @@ function App() {
       if (t.kind === "exit") {
         setPeers([]);
         return api("/rooms/exits/" + t.id, {});
+      }
+      if(t.kind==="lunar"){
+        const r=s.map.lunar_resources?.find(r=>r.id===t.id);
+        if(!r)throw Error("Recurso Lunar indisponível");
+        return api(`/expeditions/${r.expedition_id}/lunar-resources/${r.id}/collect`,{request_id:crypto.randomUUID()});
       }
       if(t.kind==="resource")return api(`/resources/${t.id}/collect`,{request_id:crypto.randomUUID()});
       if (t.kind === "npc") return api("/interact", {});
@@ -687,6 +693,8 @@ function App() {
                 <>
                   <p className="eyebrow">O QUE VOCÊ CARREGA</p>
                   <h2>Inventário persistente</h2>
+                  {(state.lunar_inventory??[]).map(n=><p key={n.asset_code}>Minério Lunar · Pepita {BigInt(n.weight_mg)/1000n+''} g × {n.quantity}</p>)}
+                  <p>Slots: {state.collection_capacity.used}/{state.collection_capacity.limit}. Cada pepita ocupa um slot.</p>
                   <div className="items">
                     {state.inventory.map((i) => (
                       <div
@@ -977,6 +985,7 @@ function App() {
               )}
             </section>
           )}
+          <LunarResources state={state} busy={busy} target={target}/>
           <section className="encounters">
             {state.map.enemies
               .filter((e) => e.state === "ALIVE")
