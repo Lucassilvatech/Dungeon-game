@@ -147,7 +147,16 @@ def render(section, data):
         )
         lines += [
             f"Peso total: {weight} mg",
-            "Conversão Lunar ainda inativa; saldo legado: " + data["legacy_balance"],
+            (
+                (
+                    "Carteira Lunar operacional; dívida: "
+                    + data.get("debt_weight_mg", "0")
+                    + " mg"
+                )
+                if data["legacy_conversion_active"]
+                else "Conversão Lunar ainda inativa; saldo legado: "
+                + data["legacy_balance"]
+            ),
         ]
     elif section == "recovery":
         lines = [

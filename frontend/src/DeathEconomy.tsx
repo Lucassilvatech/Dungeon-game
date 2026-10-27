@@ -263,7 +263,7 @@ export function AuctionHouse({
         vai para a Guilda ou sink configurado, sem pagamento ao antigo dono.
       </p>
       <p>
-        Saldo disponível: <strong>{state.coins_exact}</strong> · Ouro reservado:{" "}
+        Saldo disponível: <strong>{state.coins_exact}</strong> · {state.economy_mode==='LUNAR'?'Reserva Lunar (g equivalentes)':'Ouro reservado'}:{" "}
         {state.reserved_gold}. A reserva sai do saldo disponível; quando
         superado, o lance é devolvido e compensa dívidas.
       </p>

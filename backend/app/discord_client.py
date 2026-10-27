@@ -5,6 +5,7 @@ Identity association lives separately in the authenticated link endpoints.
 
 from sqlalchemy import select, func, text
 from . import models as m, game
+from .finance import funds, debt_units
 
 
 def query(db, discord_id, section):
@@ -25,7 +26,7 @@ def query(db, discord_id, section):
         )
     )
     character = {
-        k: getattr(c, k)
+        k: (funds(db, c) if k == "coins" else getattr(c, k))
         for k in (
             "id",
             "name",
@@ -48,7 +49,7 @@ def query(db, discord_id, section):
     if section == "character":
         return {
             "character": character,
-            "coins_exact": str(c.coins),
+            "coins_exact": str(funds(db, c)),
             "reserved_gold": str(reserved),
         }
     if section == "attributes":
@@ -142,8 +143,8 @@ def query(db, discord_id, section):
         }
     if section == "debt":
         return {
-            "debt": str(max(0, -c.coins)),
-            "balance": str(c.coins),
+            "debt": str(debt_units(db, c)),
+            "balance": str(funds(db, c)),
             "reserved_gold": str(reserved),
         }
     if section == "contracts":
@@ -195,8 +196,8 @@ def query(db, discord_id, section):
 
         return {
             **wallet(db, f"player:{c.id}"),
-            "legacy_balance": str(c.coins),
-            "legacy_debt": str(max(0, -c.coins)),
+            "legacy_balance": str(funds(db, c)),
+            "legacy_debt": str(debt_units(db, c)),
         }
     if section == "recovery":
         rows = db.scalars(
@@ -220,7 +221,7 @@ def query(db, discord_id, section):
         # Legacy observation URL; safe aggregate, deliberately no live game snapshot.
         return {
             "character": character,
-            "coins_exact": str(c.coins),
+            "coins_exact": str(funds(db, c)),
             "reserved_gold": str(reserved),
             "room": {"id": room.id, "name": room.name},
             "read_only": True,

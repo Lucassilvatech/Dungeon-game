@@ -16,6 +16,7 @@ import {
   PersonalRecovery,
 } from "./DeathEconomy";
 import "./style.css";
+import {Shop} from "./Shop";
 import {LunarWallet} from "./LunarWallet";
 import {Gathering,ContractBoard} from './CollectionContracts';
 import {Encounters} from "./Encounters";
@@ -445,7 +446,7 @@ function App() {
                 className={"coins" + (c.coins < 0 ? " debt" : "")}
                 title="Pagamentos futuros da Guilda serão usados automaticamente para quitar sua dívida."
               >
-                ◈ {state.coins_exact}
+                ◈ {state.coins_exact}{state.economy_mode==='LUNAR'&&<small>g equivalentes · Lunar</small>}
                 {c.coins < 0 && <small>Dívida médica ativa</small>}
               </span>
               <small className="online">{peers.length + 1} NESTA SALA</small>
@@ -614,6 +615,7 @@ function App() {
               ["recovery", "♜ Recuperação"],
               ["history", "◷ Histórico"],
  ["lunar", "☾ Lunar"],
+ ["shop", "▤ Comércio"],
  ["collection", "♧ Coleta"], ["contracts", "▤ Contratos"],
               ["raid", "♧ Raid"],
             ].map(([id, label]) => (
@@ -900,7 +902,7 @@ function App() {
                     RESGATAR RECOMPENSAS
                   </button>
                   <p>
-                    Tesouro disponível da Guilda: {state.guild_treasury} moedas. Recompensas usam orçamento existente, sem emissão automática.
+                    Tesouro disponível: {state.guild_treasury} {state.economy_mode==='LUNAR'?'g equivalentes de moeda Lunar':'moedas'}. {state.economy_mode==='LUNAR'&&<>Caixa da Guilda: {state.guild_balance} g equivalentes. </>} Recompensas usam orçamento existente, sem emissão automática.
                   </p>
                   <p>
                     O pátio de treinamento é acessível pela porta da Guilda.
@@ -914,7 +916,8 @@ function App() {
               {tab === "recovery" && (
                 <PersonalRecovery state={state} busy={busy} action={action} />
               )}
-              {tab==="lunar"&&<LunarWallet busy={busy} action={action}/>}
+              {tab==="shop"&&<Shop state={state} busy={busy} action={action}/>}
+ {tab==="lunar"&&<LunarWallet busy={busy} action={action}/>}
  {tab==="collection"&&<Gathering state={state} busy={busy} target={target}/>}
  {tab==="contracts"&&<ContractBoard state={state} busy={busy} action={action}/>}
  {tab==="history"&&<><h2>Histórico e notificações</h2><p>Últimas operações do seu personagem. Registros financeiros completos permanecem auditados.</p><ol>{state.events.slice(-20).reverse().map(e=><li key={e.id}>{({ITEM_ADDED:"Item recebido",GUILD_REWARD_CLAIMED:"Recompensa paga",EXPEDITION_STARTED:"Expedição iniciada",EXPEDITION_COMPLETED:"Expedição concluída",EXPEDITION_FLED:"Fuga confirmada",PLAYER_DIED_IN_EXPEDITION:"Resgate após morte",PERSONAL_ITEM_RECOVERED:"Item recuperado",GUILD_DEBT_COLLECTION:"Cobrança da Guilda",ATTRIBUTE_POINT_SPENT:"Atributos distribuídos",FAST_TRAVEL:"Viagem rápida"} as Record<string,string>)[e.kind]??"Progresso registrado"}{e.payload.amount!=null?" · "+String(e.payload.amount)+" moedas":""}</li>)}</ol></>}

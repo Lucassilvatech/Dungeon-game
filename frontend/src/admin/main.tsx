@@ -2,12 +2,14 @@ import React, { useEffect, useState, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
 import {PublishContract} from "./Contracts";
+import {CutoverPanel} from "./Cutover";
 import { WorldEvents } from "./WorldEvents";
 
 type Row = Record<string, any>;
 const modules = [
   ["overview", "Visão geral"],
   ["bank", "Banco Central"],
+ ["lunar", "Cutover Lunar"],
   ["economy", "Economia"],
   ["guilds", "Guildas"],
   ["players", "Jogadores"],
@@ -19,6 +21,7 @@ const modules = [
  ["encounters","Encontros"],["collection","Coleta"],["contracts","Contratos"],["metrics","Métricas de jogo"],
 ];
 const names: Record<string, string> = {
+ "npc.stock":"Transferir item para estoque comercial finito",
  "contracts.publish":"Publicar contrato (formulário guiado)","contracts.cancel":"Retirar publicação preservando direitos", "collection.refill":"Repor estoque pessoal auditado", "collection.disable":"Suspender ponto de coleta",
   "bank.issue": "Emitir moeda oficial",
   "bank.burn": "Retirar moeda de circulação",
@@ -44,6 +47,7 @@ const names: Record<string, string> = {
   "auctions.cancel": "Suspender leilão e devolver reservas",
 };
 const targetLabels: Record<string, string> = {
+ "npc.stock":"ID do item para custódia NPC",
  "contracts.cancel":"ID da publicação","collection.refill":"ID do ponto pessoal","collection.disable":"ID do ponto pessoal",
   "items.protect": "ID da definição",
   "items.transfer": "ID do item",
@@ -60,6 +64,7 @@ const targetLabels: Record<string, string> = {
   "economy.configure": "Parâmetro econômico",
 };
 const params: Record<string, Record<string, string>> = {
+ "npc.stock":{account_id:"Conta NPC (npc:ID) ou guild",price_weight_mg:"Preço total da pilha em mg (múltiplo de 1.000)"},
   "bank.issue": {
     amount: "Quantidade de moedas",
     destination: "Conta de destino",
@@ -412,7 +417,7 @@ function App() {
           {modules
             .filter(([id]) =>
               session?.permissions?.includes(
-                (id === "bank" ? "economy" : id) + ".read",
+                (["bank","lunar"].includes(id) ? "economy" : id) + ".read",
               ),
             )
             .map(([id, title]) => (
@@ -458,7 +463,8 @@ function App() {
         </p>
         {data && dataModule === module && (
           <section>
-            {module === "overview" && (
+            {module === "lunar"&&<CutoverPanel data={data} busy={busy} canManage={session?.permissions?.includes("economy.manage")} request={request} run={run} refresh={load}/>}
+ {module === "overview" && (
               <>
                 <p>
                   {data.players} personagens · {data.active_expeditions}{" "}

@@ -43,6 +43,7 @@ export type Enemy = {
 export type Encounter={id:number;status:string;turn:number;size:number;selected_enemy_id:number;enemies:Enemy[];last_round:{actor:string;enemy_id?:number;damage:number}[];damage_dealt:number;damage_received:number};
 export type ResourceNode={id:number;name:string;definition:string;x:number;y:number;remaining:number;capacity:number;enabled:boolean};
 export type State = {
+ economy_mode?:"LUNAR"|"LEGACY";guild_balance?:string;
  collection_capacity:{used:number;limit:number};
   encounter:Encounter|null;
   encounter_rules:{max_enemies:number;radius:number};
