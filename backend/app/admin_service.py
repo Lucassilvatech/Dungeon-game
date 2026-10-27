@@ -12,6 +12,7 @@ from .admin_economy import amount, account, balance
 from .rooms import event
 
 ACTIONS = {
+    "npc.stock": "items.manage",
     "bank.issue": "economy.manage",
     "bank.burn": "economy.manage",
     "bank.transfer": "economy.manage",
@@ -40,6 +41,7 @@ ACTIONS = {
     "contracts.cancel": "contracts.manage",
 }
 PARAMS = {
+    "npc.stock": {"account_id", "price_weight_mg"},
     "bank.issue": {"amount", "destination"},
     "bank.burn": {"amount", "source"},
     "bank.transfer": {"amount", "source", "destination"},
@@ -95,6 +97,22 @@ def data(row):
         if col.name in ("password", "token", "confirmation_hash"):
             continue
         v = getattr(row, col.name)
+        if col.name in ("coins", "balance") and isinstance(
+            row, (m.Character, m.Treasury, m.CentralBank)
+        ):
+            from sqlalchemy.orm import object_session
+            from . import finance
+
+            session = object_session(row)
+            if session and finance.active(session):
+                v = (
+                    finance.funds(session, row)
+                    if isinstance(row, m.Character)
+                    else finance.institution(
+                        session,
+                        "treasury" if isinstance(row, m.Treasury) else "central_bank",
+                    )
+                )
         if col.name in (
             "coins",
             "balance",
@@ -138,6 +156,10 @@ def lock_resources(db, action, target, p):
     ids = set()
     item = None
     auction = None
+    if action == "npc.stock":
+        item = get(db, m.Item, target)
+        if item.owner:
+            ids.add(item.owner)
     if action.startswith("players.") or action in ("items.create",):
         ids.add(int(target))
     if action in ("items.transfer",):
@@ -212,6 +234,34 @@ def lock_resources(db, action, target, p):
 
 
 def describe(db, action, target, p):
+    from .finance import active
+
+    if action in ("bank.issue", "bank.burn") and active(db):
+        fail("Emissão abstrata e burn comum desativados após o cutover")
+    if action == "npc.stock":
+        from .finance import active
+
+        if not active(db):
+            fail("Cutover necessário")
+        item = get(db, m.Item, target)
+        d = db.get(m.ItemDefinition, item.definition)
+        price = amount(p["price_weight_mg"])
+        owner = p["account_id"]
+        if (
+            not isinstance(owner, str)
+            or not (owner == "guild" or owner.startswith("npc:"))
+            or len(owner) > 80
+        ):
+            fail("Conta comercial inválida", 422)
+        if (
+            price % 1000
+            or d.id == "sword"
+            or not d.death_transferable
+            or item.equipped
+            or item.location not in ("inventory", "npc")
+        ):
+            fail("Estoque/preço protegido ou inválido")
+        return {"item": data(item), "npc_account": owner, "price_weight_mg": str(price)}
     if action.startswith("collection."):
         return {"node": data(get(db, m.ResourceNode, target))}
     if action == "contracts.publish":
@@ -223,7 +273,13 @@ def describe(db, action, target, p):
         return {
             "parameters": {**values, "reward": str(values["reward"])},
             "reservation": str(values["reward"] * values["slots"]),
-            "accounts": {"treasury": str(db.get(m.Treasury, 1).balance)},
+            "accounts": {
+                "treasury": str(
+                    __import__("app.finance", fromlist=["institution"]).institution(
+                        db, "treasury"
+                    )
+                )
+            },
             "recent_contracts": [
                 payload(row)
                 for row in db.scalars(
@@ -239,7 +295,13 @@ def describe(db, action, target, p):
         d = get(db, m.GuildContract, target)
         return {
             "contract": data(d),
-            "accounts": {"treasury": str(db.get(m.Treasury, 1).balance)},
+            "accounts": {
+                "treasury": str(
+                    __import__("app.finance", fromlist=["institution"]).institution(
+                        db, "treasury"
+                    )
+                )
+            },
             **cancellation_plan(db, d),
         }
     if action == "world.event_create":
@@ -543,7 +605,22 @@ def apply(db, actor, op):
 
     p = op.params
     action = op.action
-    if action == "contracts.publish":
+    if action == "npc.stock":
+        from .finance import ensure
+
+        item = get(db, m.Item, op.target)
+        owner = ensure(db, p["account_id"])
+        item.owner = None
+        item.location = "npc"
+        item.equipped = False
+        db.add(
+            m.NPCStock(
+                item_id=item.id,
+                account_id=owner,
+                sale_weight_mg=amount(p["price_weight_mg"]),
+            )
+        )
+    elif action == "contracts.publish":
         from .contracts import publish
 
         publish(db, p, op.id)

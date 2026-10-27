@@ -15,6 +15,10 @@ from .game import fail, reward_value
 
 
 def metrics(db):
+    from . import finance
+
+    if finance.active(db):
+        return finance.metrics(db)
     players = db.scalars(select(Character)).all()
     treasury = db.get(Treasury, 1).balance
     bank = db.get(CentralBank, 1).balance
@@ -125,6 +129,15 @@ def amount(value):
 
 
 def account(db, name):
+    from . import finance
+
+    if finance.active(db) and (name == "guild" or name.startswith("npc:")):
+        row = db.get(
+            __import__("app.models", fromlist=["LunarAccount"]).LunarAccount, name
+        )
+        if row:
+            return row
+        fail("Conta comercial inexistente", 422)
     if name == "central_bank":
         return db.get(CentralBank, 1)
     if name == "treasury":
@@ -137,6 +150,22 @@ def account(db, name):
 
 
 def balance(row):
+    from sqlalchemy.orm import object_session
+    from . import finance
+
+    db = object_session(row)
+    if db and isinstance(
+        row, __import__("app.models", fromlist=["LunarAccount"]).LunarAccount
+    ):
+        return finance.coin_mg(db, row.id) // 1000
+    if db and finance.active(db):
+        return (
+            finance.funds(db, row)
+            if isinstance(row, Character)
+            else finance.institution(
+                db, "treasury" if isinstance(row, Treasury) else "central_bank"
+            )
+        )
     return row.coins if isinstance(row, Character) else row.balance
 
 
@@ -148,6 +177,28 @@ def assign(row, value):
 
 
 def execute(db, op):
+    from . import finance
+
+    if finance.active(db):
+        if op.action != "bank.transfer":
+            fail("Emissão abstrata e burn comum desativados; use cunhagem lastreada")
+        for name in (
+            op.params.get("source", "central_bank"),
+            op.params.get("destination", "central_bank"),
+        ):
+            if name not in ("guild",) and not name.startswith("npc:"):
+                account(db, name)
+            elif not db.get(
+                __import__("app.models", fromlist=["LunarAccount"]).LunarAccount, name
+            ):
+                fail("Conta comercial inexistente")
+        return finance.move(
+            db,
+            op.params.get("source", "central_bank"),
+            op.params.get("destination", "central_bank"),
+            amount(op.params["amount"]),
+            f"admin:{op.id}",
+        )
     p = op.params
     n = amount(p["amount"])
     source = p.get("source", "central_bank")

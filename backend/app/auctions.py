@@ -14,7 +14,9 @@ from .economy import credit_player_gold, reserve_gold, ledger
 def mutex(db):
     # All bids and settlements share this transaction lock, including background sweeps.
     # Death creates NEW listings only and never takes this lock under a player lock.
-    db.execute(text("SELECT pg_advisory_xact_lock(7312027)"))
+    from .lunar import mutex as financial_mutex
+
+    financial_mutex(db)
 
 
 def create_from_death(db, c, death):
@@ -103,6 +105,8 @@ def payload(db, a):
         former_owner_id=a.former_owner_id,
         opening_price=str(a.opening_price),
         highest_bid=str(a.highest_bid),
+        highest_bid_weight_mg=str(a.highest_bid * 1000),
+        opening_price_weight_mg=str(a.opening_price * 1000),
         highest_bidder_id=a.highest_bidder_id,
         status=a.status,
         started_at=a.started_at.isoformat() + "Z",
@@ -140,7 +144,10 @@ def settle_locked(db, a):
             treasury = db.scalar(
                 select(Treasury).where(Treasury.id == 1).with_for_update()
             )
-            treasury.balance += a.highest_bid
+            from .finance import active
+
+            if not active(db):
+                treasury.balance += a.highest_bid
         ledger(
             db,
             f"auction-settle:{a.id}",

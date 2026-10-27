@@ -10,6 +10,7 @@ from .models import (
     WorldEvent,
 )
 from .clock import utc_now
+from .finance import active, institution
 from .rooms import event
 from .economy import ledger, credit_player_gold
 from .config import settings
@@ -77,14 +78,15 @@ def publish(db, p, operation_id=None):
     data = validate(db, p)
     budget = data["reward"] * data["slots"]
     treasury = db.scalar(select(Treasury).where(Treasury.id == 1).with_for_update())
-    if treasury.balance < budget:
+    if institution(db, "treasury") < budget:
         fail("Tesouro sem orçamento para garantir todas as vagas")
     contract = GuildContract(
         **data, reserved=budget, taken=0, operation_id=operation_id
     )
     db.add(contract)
     db.flush()
-    treasury.balance -= budget
+    if not active(db):
+        treasury.balance -= budget
     ledger(
         db,
         f"contract-reserve:{contract.id}",
@@ -400,7 +402,8 @@ def cancel_publication(db, id, operation_id):
     if refund < 0:
         fail("Reserva inconsistente; investigue antes de cancelar")
     treasury = db.scalar(select(Treasury).where(Treasury.id == 1).with_for_update())
-    treasury.balance += refund
+    if not active(db):
+        treasury.balance += refund
     d.reserved -= refund
     d.status = "CANCELLED"
     ledger(

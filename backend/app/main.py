@@ -692,8 +692,12 @@ def lunar_wallet(a=Depends(current_account), db=Depends(get_db)):
     c = game.character(db, a)
     return {
         **lunar.wallet(db, f"player:{c.id}"),
-        "legacy_balance": str(c.coins),
-        "legacy_debt": str(max(0, -c.coins)),
+        "legacy_balance": str(
+            __import__("app.finance", fromlist=["funds"]).funds(db, c)
+        ),
+        "legacy_debt": str(
+            __import__("app.finance", fromlist=["debt_units"]).debt_units(db, c)
+        ),
     }
 
 
@@ -740,3 +744,120 @@ def lunar_exchange(body: LunarExchange, a=Depends(current_account), db=Depends(g
         db, id, body.inputs, body.outputs, f"player:{c.id}:{body.request_id}"
     )
     return {"receipt": entry.id, "wallet": lunar.wallet(db, id)}
+
+
+@app.get("/economy/shop")
+def economy_shop(a=Depends(current_account), db=Depends(get_db)):
+    from . import finance, npc_economy
+    from .models import NPCStock, ItemDefinition
+
+    c = game.character(db, a)
+    rows = db.execute(
+        select(NPCStock, Item)
+        .join(Item, Item.id == NPCStock.item_id)
+        .order_by(Item.id)
+        .limit(100)
+    ).all()
+    offers = []
+    for i, d in db.execute(
+        select(Item, ItemDefinition)
+        .join(ItemDefinition, ItemDefinition.id == Item.definition)
+        .where(
+            Item.owner == c.id,
+            Item.location == "inventory",
+            Item.equipped == False,
+            ItemDefinition.death_transferable == True,
+            ItemDefinition.id != "sword",
+            ItemDefinition.base_value > 0,
+        )
+        .limit(100)
+    ):
+        price = d.base_value * i.quantity * 1000
+        offers.append(
+            {
+                "item_id": i.id,
+                "name": d.name,
+                "quantity": i.quantity,
+                "price_weight_mg": str(price),
+                "quote": npc_economy.quote(i, price, "guild"),
+            }
+        )
+    return {
+        "active": finance.active(db),
+        "guild_balance_mg": str(finance.coin_mg(db, "guild")),
+        "offers": offers,
+        "stock": [
+            {
+                "item_id": i.id,
+                "account": s.account_id,
+                "name": db.get(ItemDefinition, i.definition).name,
+                "quantity": i.quantity,
+                "price_weight_mg": str(s.sale_weight_mg),
+                "quote": npc_economy.quote(i, s.sale_weight_mg, s.account_id),
+            }
+            for s, i in rows
+            if i.location == "npc" and i.owner is None
+        ],
+    }
+
+
+class TradeRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+    request_id: UUID
+    item_id: int = Field(gt=0)
+    quote: str = Field(min_length=64, max_length=64)
+
+
+@app.post("/economy/shop/buy")
+def economy_buy(body: TradeRequest, a=Depends(current_account), db=Depends(get_db)):
+    from .npc_economy import sell_to_player
+
+    c = game.character(db, a)
+    return sell_to_player(
+        db, c, body.item_id, f"shop:{c.id}:{body.request_id}", body.quote
+    )
+
+
+@app.post("/economy/shop/sell")
+def economy_sell(body: TradeRequest, a=Depends(current_account), db=Depends(get_db)):
+    from . import npc_economy, finance
+    from .models import ItemDefinition, WorldEvent
+
+    c = game.character(db, a)
+    key = f"shop:{c.id}:{body.request_id}"
+    old = db.scalar(select(WorldEvent).where(WorldEvent.key == "npc-buy:" + key))
+    if old:
+        if old.payload["character"] != c.id or old.payload["item"] != body.item_id:
+            raise HTTPException(409, "Chave já usada")
+        return {"replayed": True}
+    item = db.get(Item, body.item_id)
+    if not item:
+        raise HTTPException(404, "Item inexistente")
+    d = db.get(ItemDefinition, item.definition)
+    if not d.base_value or d.base_value <= 0:
+        raise HTTPException(409, "Sem avaliação de compra definida")
+    price = d.base_value * item.quantity * 1000
+    if body.quote != npc_economy.quote(item, price, "guild"):
+        raise HTTPException(409, "Avaliação mudou; atualize a prévia")
+    return npc_economy.buy_from_player(db, c, item.id, "guild", price, key)
+
+
+class DebtPayment(BaseModel):
+    model_config = {"extra": "forbid"}
+    request_id: UUID
+    amount: StrictInt = Field(gt=0)
+
+
+@app.post("/economy/debt/pay")
+def economy_debt_pay(body: DebtPayment, a=Depends(current_account), db=Depends(get_db)):
+    from . import finance
+
+    c = game.character(db, a)
+    game.idle(db, c)
+    game.receptionist(db, c)
+    if not finance.active(db):
+        raise HTTPException(409, "Conversão Lunar ainda inativa")
+    if not finance.debt_mg(db, c):
+        return {"message": "Nenhuma dívida pendente."}
+    finance.settle_debt(db, c, body.amount, f"debt-pay:{c.id}:{body.request_id}")
+    return {"message": "Pagamento da dívida confirmado."}

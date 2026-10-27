@@ -140,8 +140,20 @@ def view(
 ):
     if offset < 0:
         raise HTTPException(422, "Página inválida")
-    permission = module + ".read"
+    permission = "economy.read" if module == "lunar" else module + ".read"
     require(actor, permission)
+    if module == "lunar":
+        from . import finance, lunar, cutover
+
+        return {
+            "active": finance.active(db),
+            "audit": finance.metrics(db) if finance.active(db) else lunar.audit(db),
+            "preview": (
+                cutover.preview(db)
+                if not finance.active(db) and "economy.manage" in actor.permissions
+                else None
+            ),
+        }
     if module == "encounters":
         from .encounters import payload
 
@@ -227,7 +239,11 @@ def view(
             {
                 "id": 1,
                 "name": "Guilda do primeiro andar",
-                "treasury": str(db.get(m.Treasury, 1).balance),
+                "treasury": str(
+                    __import__("app.finance", fromlist=["institution"]).institution(
+                        db, "treasury"
+                    )
+                ),
                 "pending_obligations": metrics(db)["pending_obligations"],
             }
         ]
@@ -349,9 +365,9 @@ def view(
 @router.get("/lunar/audit")
 def lunar_audit(actor=Depends(principal), db=Depends(get_db)):
     require(actor, "economy.read")
-    from .lunar import audit
+    from . import finance, lunar
 
-    return audit(db)
+    return finance.metrics(db) if finance.active(db) else lunar.audit(db)
 
 
 @router.get("/lunar/legacy-preview")
@@ -360,3 +376,38 @@ def lunar_legacy_preview(actor=Depends(principal), db=Depends(get_db)):
     from .lunar import legacy_preview
 
     return legacy_preview(db)
+
+
+@router.get("/lunar/cutover/preview")
+def cutover_preview(actor=Depends(principal), db=Depends(get_db)):
+    require(actor, "economy.manage")
+    from .cutover import preview
+
+    return preview(db)
+
+
+class CutoverConfirmation(BaseModel):
+    model_config = {"extra": "forbid"}
+    fingerprint: str = Field(min_length=64, max_length=64)
+    request_id: UUID
+    reason: str = Field(min_length=10, max_length=500)
+    confirmed: Literal[True]
+
+    @field_validator("confirmed", mode="before")
+    @classmethod
+    def explicit(cls, value):
+        if value is not True:
+            raise ValueError("Confirmação explícita obrigatória")
+        return value
+
+
+@router.post("/lunar/cutover/confirm")
+def cutover_confirm(
+    body: CutoverConfirmation, actor=Depends(principal), db=Depends(get_db)
+):
+    require(actor, "economy.manage")
+    from .cutover import confirm
+
+    return confirm(
+        db, body.fingerprint, str(body.request_id), f"admin:{actor.id}", body.reason
+    )

@@ -6,6 +6,7 @@ from .models import Item, ItemDefinition, RecoveryItem, Treasury
 from .clock import utc_now
 from .rooms import event
 from .economy import ledger
+from .finance import active, funds
 
 
 def eligible(db, c):
@@ -163,15 +164,22 @@ def recover(db, c, id, request_id):
     room = current(db, c)
     if room.id != "recovery_hall" or distance((c.x, c.y), room.data["npc"]) > 1:
         fail("Aproxime-se do Guardião de Recuperação na Guilda")
-    if c.coins < r.price or c.coins < 0:
+    if funds(db, c) < r.price or funds(db, c) < 0:
         fail("Saldo insuficiente para recuperar o item")
     item = db.get(Item, r.item_id)
     if item.location != "recovery" or item.owner is not None:
         fail("Custódia de recuperação inconsistente")
     treasury = db.scalar(select(Treasury).where(Treasury.id == 1).with_for_update())
-    c.coins -= r.price
-    treasury.balance += r.price
-    ledger(db, f"recovery:{r.id}", f"character:{c.id}", "treasury", r.price)
+    if not active(db):
+        c.coins -= r.price
+        treasury.balance += r.price
+    ledger(
+        db,
+        f"recovery:{r.id}",
+        f"character:{c.id}",
+        "npc:recovery" if active(db) else "treasury",
+        r.price,
+    )
     item.owner = c.id
     item.location = "inventory"
     item.equipped = False

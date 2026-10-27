@@ -24,6 +24,7 @@ from .models import Room, RoomState
 from .world import distance
 from .enemies import instances, target, payload, EnemyState
 from .balance import damage, ENEMIES, NAMES
+from .finance import funds, institution, active as lunar_active
 from .inventory import add_item
 from .models import EnemyInstance
 from .clock import utc_now
@@ -34,6 +35,9 @@ def fail(message, code=409):
 
 
 def character(db, account):
+    from .lunar import mutex
+
+    mutex(db)
     c = db.scalar(
         select(Character).where(Character.account_id == account.id).with_for_update()
     )
@@ -126,12 +130,14 @@ def snapshot(db, c, wander=False):
     inventory_rows = inventory(db, c)
     db.flush()
     return {
+        "economy_mode": "LUNAR" if lunar_active(db) else "LEGACY",
+        "guild_balance": str(institution(db, "guild")),
         "guild_rewards": summary,
         "reward_records": [battle_data(row) for row in records],
         "fast_destinations": destinations(db, c),
-        "guild_treasury": str(db.get(Treasury, 1).balance),
+        "guild_treasury": str(institution(db, "treasury")),
         "character": {
-            k: getattr(c, k)
+            k: (funds(db, c) if k == "coins" else getattr(c, k))
             for k in (
                 "id",
                 "name",
@@ -158,7 +164,7 @@ def snapshot(db, c, wander=False):
             db, c
         ),
         "death": latest(db, c),
-        "coins_exact": str(c.coins),
+        "coins_exact": str(funds(db, c)),
         "reserved_gold": str(int(reserved)),
         "inventory": inventory_rows,
         "collection_capacity": {
@@ -571,9 +577,10 @@ def pay(db, c, rows):
         fail("Nenhuma recompensa pendente")
     total = sum(reward_value(b) for b in rows)
     treasury = db.scalar(select(Treasury).where(Treasury.id == 1).with_for_update())
-    if total < 0 or treasury.balance < total:
+    if total < 0 or institution(db, "treasury") < total:
         fail("Tesouro sem orçamento; solicite depois")
-    treasury.balance -= total
+    if not lunar_active(db):
+        treasury.balance -= total
     for b in rows:
         b.claimed = True
         from .economy import credit_player_gold

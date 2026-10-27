@@ -61,6 +61,12 @@ def seed():
                     )
                 )
         if not db.get(Treasury, 1):
+            from .finance import active
+
+            if active(db):
+                raise RuntimeError(
+                    "Tesouro legado ausente após cutover; não recriar gênese"
+                )
             db.add(Treasury(id=1, balance=settings.initial_treasury))
             db.add(
                 Ledger(
