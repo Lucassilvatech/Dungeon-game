@@ -28,6 +28,24 @@ class Settings(BaseSettings):
     encounter_max_enemies: int = Field(default=2, ge=2, le=3)
     encounter_radius: int = Field(default=8, ge=1, le=12)
     collection_slots: int = Field(default=30, ge=1, le=1000)
+    # PROVISIONAL technical parameters; disabled until an audited explicit configuration.
+    lunar_resource_spawn_enabled: bool = False
+    lunar_resource_spawn_chance_ppm: int = Field(default=1000, ge=0, le=1000000)
+    lunar_resource_weight_distribution: dict[str, int] = Field(
+        default_factory=lambda: {
+            "nugget_small": 90,
+            "nugget_medium": 9,
+            "nugget_large": 1,
+        }
+    )
+    # Zero means no purchase quote, not free mineral. Values are currency units (1g coin).
+    lunar_guild_prices: dict[str, int] = Field(
+        default_factory=lambda: {
+            "nugget_small": 0,
+            "nugget_medium": 0,
+            "nugget_large": 0,
+        }
+    )
     max_active_contracts: int = Field(default=3, ge=1, le=10)
     rate_limits_enabled: bool = True
     rate_limit_scale: float = Field(default=1, ge=0.01, le=10)

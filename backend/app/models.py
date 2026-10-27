@@ -715,3 +715,51 @@ class NPCStock(Base):
     account_id: Mapped[str] = mapped_column(ForeignKey("lunar_accounts.id"), index=True)
     sale_weight_mg: Mapped[int] = mapped_column(Gold())
     __table_args__ = (CheckConstraint("sale_weight_mg > 0"),)
+
+
+class LunarResourceGeneration(Base):
+    """Immutable decision, including no spawn. Solo eligibility never follows RaidMember."""
+
+    __tablename__ = "lunar_resource_generations"
+    expedition_id: Mapped[int] = mapped_column(
+        ForeignKey("expeditions.id"), primary_key=True
+    )
+    room_id: Mapped[str] = mapped_column(ForeignKey("rooms.id"), unique=True)
+    generation: Mapped[int] = mapped_column()
+    version: Mapped[str] = mapped_column(String(40))
+    group_snapshot: Mapped[dict] = mapped_column(JSON)
+    config_snapshot: Mapped[dict] = mapped_column(JSON)
+    decision_hash: Mapped[str] = mapped_column(String(64))
+    spawned: Mapped[bool] = mapped_column()
+    created_at: Mapped[datetime] = mapped_column(default=utc_now)
+
+
+class LunarResourceOccurrence(Base):
+    __tablename__ = "lunar_resource_occurrences"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    expedition_id: Mapped[int] = mapped_column(
+        ForeignKey("lunar_resource_generations.expedition_id"), index=True
+    )
+    room_id: Mapped[str] = mapped_column(ForeignKey("rooms.id"), index=True)
+    generation: Mapped[int] = mapped_column()
+    spawn_key: Mapped[str] = mapped_column(String(40))
+    asset_code: Mapped[str] = mapped_column(ForeignKey("lunar_assets.code"))
+    weight_mg: Mapped[int] = mapped_column(Gold())
+    x: Mapped[int] = mapped_column()
+    y: Mapped[int] = mapped_column()
+    state: Mapped[str] = mapped_column(String(20), default="AVAILABLE", index=True)
+    collected_by: Mapped[int | None] = mapped_column(
+        ForeignKey("characters.id"), index=True
+    )
+    collected_at: Mapped[datetime | None] = mapped_column(DateTime)
+    receipt_key: Mapped[str | None] = mapped_column(String(160), unique=True)
+    created_at: Mapped[datetime] = mapped_column(default=utc_now)
+    __table_args__ = (
+        UniqueConstraint("expedition_id", "generation", "spawn_key"),
+        CheckConstraint("weight_mg IN (100000,500000,1000000)"),
+        CheckConstraint("x >= 0 AND y >= 0 AND generation >= 0"),
+        CheckConstraint("state IN ('AVAILABLE','COLLECTED','EXPIRED')"),
+        CheckConstraint(
+            "(state = 'COLLECTED' AND collected_by IS NOT NULL AND collected_at IS NOT NULL AND receipt_key IS NOT NULL) OR (state <> 'COLLECTED' AND collected_by IS NULL AND collected_at IS NULL AND receipt_key IS NULL)"
+        ),
+    )
