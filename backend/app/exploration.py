@@ -133,6 +133,9 @@ def adventure(db, c, request_id):
     from .procedural import configure_room
 
     configure_room(db, c, room, record)
+    from .lunar_resources import generate as generate_lunar_resources
+
+    generate_lunar_resources(db, c, room, record)
     sync(db, c)
     return {
         "message": "Nova expedição criada. Seed e baixas são preservadas nesta instância."

@@ -113,6 +113,13 @@ def snapshot(db, c, wander=False):
     from .resources import state as resource_state
 
     data["gather_nodes"] = resource_state(db, c)
+    from .lunar_resources import (
+        state as lunar_resource_state,
+        nugget_slots,
+        inventory as lunar_inventory,
+    )
+
+    data["lunar_resources"] = lunar_resource_state(db, c)
     data["monsters"] = {
         e.spawn_key: [e.x, e.y] for e in enemies if e.state != EnemyState.DEAD
     }
@@ -167,8 +174,9 @@ def snapshot(db, c, wander=False):
         "coins_exact": str(funds(db, c)),
         "reserved_gold": str(int(reserved)),
         "inventory": inventory_rows,
+        "lunar_inventory": lunar_inventory(db, c),
         "collection_capacity": {
-            "used": len(inventory_rows),
+            "used": len(inventory_rows) + nugget_slots(db, c),
             "limit": settings.collection_slots,
         },
         "expedition": expedition,

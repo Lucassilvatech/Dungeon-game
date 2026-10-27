@@ -356,6 +356,9 @@ def reconcile(db):
     for cid in set(expected) | set(actual):
         if expected.get(cid, 0) != actual.get(cid, 0):
             errors.append(f"debt:{cid}")
+    from .lunar_resources import audit as resource_audit
+
+    errors.extend(resource_audit(db))
     if errors:
         import logging
 

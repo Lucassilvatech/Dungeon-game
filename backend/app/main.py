@@ -717,6 +717,12 @@ def lunar_split(body: LunarComposition, a=Depends(current_account), db=Depends(g
     game.idle(db, c)
     id = f"player:{c.id}"
     lunar.account(db, id, "player", c.id)
+    from .lunar_resources import capacity
+    from .models import LunarEntry
+
+    key = f"player:{c.id}:{body.request_id}"
+    if not db.scalar(select(LunarEntry.id).where(LunarEntry.key == key)):
+        capacity(db, c, max(0, sum(body.outputs.values()) - 1))
     entry = lunar.split(
         db, id, body.source, body.outputs, f"player:{c.id}:{body.request_id}"
     )
@@ -861,3 +867,54 @@ def economy_debt_pay(body: DebtPayment, a=Depends(current_account), db=Depends(g
         return {"message": "Nenhuma dívida pendente."}
     finance.settle_debt(db, c, body.amount, f"debt-pay:{c.id}:{body.request_id}")
     return {"message": "Pagamento da dívida confirmado."}
+
+
+class LunarCollectInput(BaseModel):
+    model_config = {"extra": "forbid"}
+    request_id: UUID
+
+
+@app.post("/expeditions/{expedition_id}/lunar-resources/{resource_id}/collect")
+def collect_lunar_resource(
+    expedition_id: int,
+    resource_id: int,
+    body: LunarCollectInput,
+    a=Depends(current_account),
+    db=Depends(get_db),
+):
+    from .lunar_resources import collect
+
+    return collect(
+        db, game.character(db, a), expedition_id, resource_id, str(body.request_id)
+    )
+
+
+@app.get("/lunar/guild-quotes")
+def lunar_guild_quotes(a=Depends(current_account), db=Depends(get_db)):
+    from .lunar_resources import quotes
+    from .finance import active, coin_mg
+
+    c = game.character(db, a)
+    return {
+        "active": active(db),
+        "guild_coin_mg": str(coin_mg(db, "guild")),
+        "quotes": quotes(db, c),
+    }
+
+
+class LunarSaleInput(BaseModel):
+    model_config = {"extra": "forbid"}
+    request_id: UUID
+    asset_code: Literal["nugget_small", "nugget_medium", "nugget_large"]
+    quote: str = Field(min_length=64, max_length=64)
+
+
+@app.post("/lunar/guild-sell")
+def sell_lunar_mineral(
+    body: LunarSaleInput, a=Depends(current_account), db=Depends(get_db)
+):
+    from .lunar_resources import sell
+
+    return sell(
+        db, game.character(db, a), body.asset_code, body.quote, str(body.request_id)
+    )

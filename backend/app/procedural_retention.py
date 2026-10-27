@@ -14,6 +14,9 @@ def prune(db, c, room_id):
         or expedition.status == "ACTIVE"
     ):
         return
+    from .lunar_resources import expire
+
+    expire(db, expedition.id)
     db.flush()
     common = list(
         db.scalars(

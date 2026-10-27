@@ -49,7 +49,6 @@ def add_item(db, c, definition_id, quantity, reference):
 
 def ensure_collection_capacity(db, c, definition, quantity, limit):
     """Legacy surplus is preserved; collection may fill an existing stack without growing slots."""
-    from math import ceil
     from .game import fail
 
     rows = db.scalars(
@@ -60,12 +59,13 @@ def ensure_collection_capacity(db, c, definition, quantity, limit):
         for i in rows
         if definition.stackable and i.definition == definition.id and not i.equipped
     )
-    needed = ceil(
-        max(0, quantity - free)
-        / (definition.max_stack_size if definition.stackable else 1)
-    )
-    if needed and len(rows) + needed > limit:
+    size = definition.max_stack_size if definition.stackable else 1
+    needed = (max(0, quantity - free) + size - 1) // size
+    from .lunar_resources import nugget_slots
+
+    used = len(rows) + nugget_slots(db, c)
+    if needed and used + needed > limit:
         fail(
             "Mochila sem espaço para coleta; libere um slot ou complete uma pilha existente"
         )
-    return {"used": len(rows), "limit": limit}
+    return {"used": used, "limit": limit}

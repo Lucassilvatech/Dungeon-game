@@ -37,6 +37,8 @@ def policy(path, method):
         return ("move", 240, 60)
     if path.startswith(("/battles", "/encounters")):
         return ("combat", 90, 60)
+    if "/lunar-resources/" in path or path.startswith("/lunar/") and method != "GET":
+        return ("lunar-finance", 30, 60)
     if path.startswith("/resources/"):
         return ("gather", 45, 60)
     if path.startswith("/contracts/"):

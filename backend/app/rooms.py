@@ -159,7 +159,11 @@ def seed_world(db):
         }
     recovery = db.get(Room, "recovery_hall")
     if recovery.data.get("npc_role") != "recovery":
-        recovery.data = {**recovery.data, "npc_name":"Guardião de Recuperação", "npc_role":"recovery"}
+        recovery.data = {
+            **recovery.data,
+            "npc_name": "Guardião de Recuperação",
+            "npc_role": "recovery",
+        }
     db.flush()
     for a, b, pa, pb in EDGES:
         for src, dst, p in [(a, b, pa), (b, a, pb)]:
@@ -199,6 +203,15 @@ def discover(db, c, room):
 
 
 def enter(db, c, room):
+    if room.kind == RoomType.PROCEDURAL:
+        from .models import Expedition
+        from .game import fail
+
+        if room.owner_id != c.id:
+            fail("Instância privada", 403)
+        old = db.scalar(select(Expedition).where(Expedition.room_id == room.id))
+        if old and old.status != "ACTIVE" and c.room_id != room.id:
+            fail("Instância encerrada não pode ser revisitada")
     c.room_id = room.id
     c.floor = room.floor_id
     c.x = 2
