@@ -241,6 +241,8 @@ def settle_debt(db, c, units, key):
 
 
 def metrics(db):
+    from .game import reward_value
+
     report = reconcile(db)
     groups = {kind: 0 for kind in ["player", "treasury", "guild", "npc", "escrow"]}
     for a in db.scalars(select(m.LunarAccount)):
@@ -272,7 +274,16 @@ def metrics(db):
         ),
         "guild_treasury": str(coin_mg(db, "treasury") // UNIT),
         "central_bank": str(coin_mg(db, "central_bank") // UNIT),
-        "pending_obligations": "0",
+        "pending_obligations": str(
+            sum(
+                reward_value(b)
+                for b in db.scalars(
+                    select(m.Battle).where(
+                        m.Battle.status == "won", m.Battle.claimed == False
+                    )
+                )
+            )
+        ),
         "genesis": str(supply.legacy_backing_mg // UNIT),
         "emissions": str(supply.minted_mg // UNIT),
         "retired": str(supply.destroyed_mg // UNIT),
@@ -290,7 +301,7 @@ def metrics(db):
         ],
         "daily_flows": [],
         "suggestions": [],
-        "unavailable": [],
+        "unavailable": ["Agregação diária dos fluxos Lunar ainda não disponível"],
         "lunar_genesis_backing_mg": str(supply.legacy_backing_mg),
         "lunar_discovered_mg": str(supply.discovered_mg),
         "lunar_minted_mg": str(supply.minted_mg),
