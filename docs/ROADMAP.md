@@ -1,5 +1,7 @@
 # Roadmap: primeiro andar antes de expandir a Torre
 
+> Continuação 0.9: [cutover Lunar e migração dos fluxos financeiros](lunar/CUTOVER.md) implementados na feature branch, com ativação administrativa explícita e validação em cópia privada. Não antecipa minério procedural, boss global ou ecos. Ambiente operacional preservado.
+
 > **Estratégia atual 0.9:** backend autoritativo, **Web como cliente principal**, **Discord estritamente read-only para gameplay**. Godot Windows/Android estão **FROZEN**; APK/EXE não são requisitos deste ciclo. Código/presets/builds e documentação histórica preservados. Ver [GODOT_FREEZE.md](GODOT_FREEZE.md) e [CONSOLIDATION_0.9.md](CONSOLIDATION_0.9.md). Descrições de equipamento confirmado via Discord abaixo são históricas e foram desativadas em 0.9.
 
 ## Prioridade ativa

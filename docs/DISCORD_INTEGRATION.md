@@ -1,5 +1,7 @@
 # Discord 0.9 — somente observação
 
+> Atualização da continuação 0.9: [cutover operacional, migrações e validação](lunar/CUTOVER.md). O upgrade não converte o ambiente: confirmação administrativa ativa Lunar como fonte única. As descrições financeiras legadas e de conversão inativa abaixo registram a etapa anterior; após a confirmação, holdings Lunar e obrigações separadas são autoritativos. Discord segue estritamente read-only; Godot congelado.
+
 **Discord cannot control the character.** Backend autoritativo, Web principal, Discord somente consultas privadas do personagem vinculado. Não há economia/inventário/progresso paralelo.
 
 Comandos: `/vincular`, `/personagem`, `/status`, `/atributos`, `/inventario`, `/equipamentos`, `/localizacao`, `/mapa`, `/expedicao`, `/recompensas`, `/divida`, `/leiloes`, `/contratos`, `/carteira`, `/minerio`, `/recuperacao`. Total 16 sem duplicações. Respostas e erros efêmeros, menções escapadas/desativadas, sem botões ou tokens. Saldo/massa Lunar exatos; conversão continua inativa e explicitamente identificada. Somente salas conhecidas do personagem; leilões relacionados e próprios holds, não identidade financeira de terceiros.

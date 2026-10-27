@@ -121,3 +121,9 @@ Tabela gerada por AST e busca de todos os termos solicitados; linhas classificad
 | rooms.py:106 | seed_world | LEGACY, READ/DERIVED | hall = db.get(Room, "auction_hall"); if hall.data.get("npc_name") != "Leiloeiro da Guilda":; "npc_name": "Leiloeiro da Guilda",; "npc_role": "auctioneer", |
 | rooms.py:218 | room_payload | LEGACY, READ/DERIVED | "safe": room.kind in (RoomType.CITY, RoomType.GUILD), |
 | seed.py:7 | seed | LEGACY, READ/DERIVED | from .balance import ENEMIES; db.add(CentralBank(id=1, balance=0)); if not db.get(Treasury, 1):; db.add(Treasury(id=1, balance=settings.initial_treasury)) |
+
+## Resultado da migração operacional
+
+Todos os writers críticos listados acima delegam a `finance`/`lunar` após `LunarCutover.id=1`. `economy.ledger` conserva recibos legados de compatibilidade, mas o dinheiro somente se move em `LunarEntry`/`LunarHolding`. `Character.coins`, `Treasury.balance` e `CentralBank.balance` ficam congelados e não são espelhados. Leituras Web/Discord/ADM usam projeções Lunar; colunas antigas permanecem auditáveis. Campos `highest_bid`, `reserved`, `reward_amount`, `price` e checkpoints médicos são DERIVED/metadata de direitos/preços, não carteiras paralelas. Seeds não abastecem instituições convertidas.
+
+Novos writers: `cutover.confirm` (ADMIN/LUNAR: gênese histórica uma vez); `finance.move/fee/settle_debt` (LUNAR: transferência/obrigação sem criação); `npc_economy.sell_to_player/buy_from_player` (WRITE/LUNAR: custódia física contra pagamento); `admin_service.apply npc.stock` (ADMIN: item preexistente → estoque, caixa inicial zero). `finance.metrics/reconcile`, `cutover.preview` e `discord_client.query` são READ/DERIVED; queries Discord têm barreira SQL READ ONLY. Ações financeiras abstratas ADM são rejeitadas depois da conversão. Testes TEST usam somente bancos descartáveis. Ver [CUTOVER.md](CUTOVER.md) para fluxo, blockers explícitos, conservação e evidências.

@@ -1,0 +1,46 @@
+{
+  "backend": {
+    "command": "python -m pytest tests -q",
+    "passed": 216,
+    "failed": 0,
+    "skipped": 0,
+    "warnings": 2,
+    "duration_seconds": "458.65"
+  },
+  "frontend": {
+    "npm_test": {
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0
+    },
+    "build": "PASS; Vite chunk size warning",
+    "chromium_cutover_wallet_debt_shop_mobile": "PASS",
+    "chromium_full_exploration_after_cutover": "PASS"
+  },
+  "alembic": {
+    "head": "59d047e53dc8",
+    "upgrade": "PASS (private copies only)",
+    "check": "No new upgrade operations detected"
+  },
+  "private_real_copy": {
+    "historical_tables": 39,
+    "row_hashes_preserved": 1554,
+    "genesis_backing_mg": "100450000",
+    "debt_mg": "450000",
+    "receivable_mg": "450000",
+    "discovered_mg": "0",
+    "destroyed_mg": "0",
+    "audit_gap_mg": "0",
+    "ledger_mismatches": [],
+    "metadata_mismatches": []
+  },
+  "preexisting_escrow_conversion": {
+    "auction_hold_mg": "50000",
+    "contract_reserve_mg": "40000",
+    "gap_mg": "0"
+  },
+  "operational_database": "UNTOUCHED",
+  "discord": "READ_ONLY",
+  "godot": "PRESERVED_FROZEN",
+  "native_builds": "NOT_REQUIRED_NOT_GENERATED"
+}
