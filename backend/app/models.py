@@ -109,7 +109,7 @@ class Item(Base):
     __table_args__ = (
         CheckConstraint("quantity > 0"),
         CheckConstraint(
-            "(location NOT IN ('auction','recovery','destroyed') OR (owner IS NULL AND NOT equipped)) AND (owner IS NOT NULL OR location IN ('auction','recovery','destroyed'))",
+            "(location NOT IN ('auction','recovery','destroyed') OR (owner IS NULL AND NOT equipped)) AND (owner IS NOT NULL OR location IN ('auction','recovery','destroyed','npc'))",
             name="item_custody",
         ),
     )
@@ -683,3 +683,35 @@ class LunarSupply(Base):
             "discovered_mg >= 0 AND legacy_backing_mg >= 0 AND destroyed_mg >= 0 AND minted_mg >= 0 AND coin_burned_mg >= 0"
         ),
     )
+
+
+class LunarCutover(Base):
+    __tablename__ = "lunar_cutovers"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    request_id: Mapped[str] = mapped_column(String(36), unique=True)
+    fingerprint: Mapped[str] = mapped_column(String(64))
+    actor: Mapped[str] = mapped_column(String(80))
+    reason: Mapped[str] = mapped_column(String(500))
+    converted_at: Mapped[datetime] = mapped_column(default=utc_now)
+    report: Mapped[dict] = mapped_column(JSON)
+    __table_args__ = (CheckConstraint("id = 1"),)
+
+
+class LunarDebt(Base):
+    __tablename__ = "lunar_debts"
+    character_id: Mapped[int] = mapped_column(
+        ForeignKey("characters.id"), primary_key=True
+    )
+    creditor: Mapped[str] = mapped_column(
+        ForeignKey("lunar_accounts.id"), default="treasury"
+    )
+    weight_mg: Mapped[int] = mapped_column(Gold(), default=0)
+    __table_args__ = (CheckConstraint("weight_mg >= 0"),)
+
+
+class NPCStock(Base):
+    __tablename__ = "npc_stocks"
+    item_id: Mapped[int] = mapped_column(ForeignKey("items.id"), primary_key=True)
+    account_id: Mapped[str] = mapped_column(ForeignKey("lunar_accounts.id"), index=True)
+    sale_weight_mg: Mapped[int] = mapped_column(Gold())
+    __table_args__ = (CheckConstraint("sale_weight_mg > 0"),)

@@ -8,7 +8,12 @@ from math import gcd
 import hashlib, json, logging
 from sqlalchemy import select, text
 from .models import LunarAccount, LunarAsset, LunarHolding, LunarEntry, LunarSupply
-from .game import fail
+from fastapi import HTTPException
+
+
+def fail(message, code=409):
+    raise HTTPException(code, message)
+
 
 ASSETS = {
     "nugget_small": ("nugget", 100000),
@@ -27,6 +32,7 @@ def integer(value, positive=False):
 
 
 def mutex(db):
+    db.execute(text("SELECT pg_advisory_xact_lock(7312027)"))
     db.execute(text("SELECT pg_advisory_xact_lock(7312030)"))
 
 
@@ -104,7 +110,13 @@ def post(db, key, kind, actor, reason, postings, context=None, source=None):
         if previous.fingerprint != digest:
             fail("Chave já utilizada com outra operação")
         return previous
-    if not rows:
+    if not rows and kind not in (
+        "DEBT_SETTLEMENT",
+        "MEDICAL_OBLIGATION",
+        "GENESIS_BACKING",
+        "ZERO_TRANSFER",
+        "DEBT_REPAYMENT",
+    ):
         fail("Operação vazia", 422)
     supply = db.get(LunarSupply, 1)
     if not supply:
@@ -126,7 +138,9 @@ def post(db, key, kind, actor, reason, postings, context=None, source=None):
         fail("Operação criaria massa sem origem")
     if total < 0 and source != "destruction":
         fail("Operação destruiria massa sem destino")
-    if source in ("discovery", "legacy_backing") and total <= 0:
+    if (source == "discovery" and total <= 0) or (
+        source == "legacy_backing" and total < 0
+    ):
         fail("Entrada sem massa positiva")
     if source == "destruction" and total >= 0:
         fail("Destruição sem massa negativa")
@@ -266,7 +280,20 @@ def transfer(db, source, target, coins, key, kind="COIN_TRANSFER"):
 def wallet(db, id):
     assets = {a.code: a for a in db.scalars(select(LunarAsset))}
     held = balances(db, id)
+    from . import finance
+    from .models import LunarDebt
+
+    owner = db.get(LunarAccount, id)
+    # A player can incur a fee before receiving their first physical coin/account.
+    character_id = owner.character_id if owner else None
+    if not character_id and id.startswith("player:") and id[7:].isdigit():
+        character_id = int(id[7:])
+    obligation = (
+        db.get(LunarDebt, character_id) if character_id and finance.active(db) else None
+    )
     return {
+        "migration_status": "CONVERTED" if finance.active(db) else "LEGACY",
+        "debt_weight_mg": str(obligation.weight_mg if obligation else 0),
         "account": id,
         "assets": {
             code: {
@@ -278,7 +305,7 @@ def wallet(db, id):
             for code, a in assets.items()
         },
         "weight_mg": str(sum(q * assets[code].weight_mg for code, q in held.items())),
-        "legacy_conversion_active": False,
+        "legacy_conversion_active": finance.active(db),
     }
 
 
