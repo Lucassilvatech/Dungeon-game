@@ -5,6 +5,7 @@ from sqlalchemy import select
 from .models import DebtCollection, Auction, Treasury
 from .recovery import eligible, detach_units
 from .economy import credit_player_gold
+from .finance import active, funds, institution, debt_units
 from .rooms import event
 from .clock import utc_now
 from .config import runtime_setting
@@ -59,12 +60,12 @@ def select_units(rows, debt):
 
 
 def collect(db, c):
-    debt = max(0, -c.coins)
+    debt = debt_units(db, c)
     if debt < 1000 or c.debt_accrued < c.debt_next_collection:
         return None
     rows, total = select_units(eligible(db, c), debt)
     treasury = db.scalar(select(Treasury).where(Treasury.id == 1).with_for_update())
-    if total > treasury.balance:
+    if total > institution(db, "treasury"):
         event(
             db,
             "DEBT_COLLECTION_DEFERRED",
@@ -114,7 +115,8 @@ def collect(db, c):
                 "auction_id": a.id,
             }
         )
-    treasury.balance -= total
+    if not active(db):
+        treasury.balance -= total
     credit_player_gold(db, c, total, "treasury", f"debt-collection:{record.id}")
     record.items = items
     event(

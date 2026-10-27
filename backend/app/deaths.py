@@ -6,6 +6,7 @@ from .clock import utc_now
 from .rooms import RoomType, event, enter
 from .config import settings, runtime_setting
 from .economy import medical_fee, DEBT_LIMIT
+from .finance import funds, debt_units
 from .attributes import penalize_levels
 from .recovery import lose
 
@@ -70,7 +71,7 @@ def resolve(db, c, battle):
         unspent_consumed=0,
         attribute_debt_added=0,
     )
-    at_limit = c.coins == -DEBT_LIMIT
+    at_limit = debt_units(db, c) == DEBT_LIMIT
     if at_limit:
         penalty = penalize_levels(c)
         event(
@@ -94,7 +95,7 @@ def resolve(db, c, battle):
         xp_lost=xp_lost,
         pending_lost=lost,
         pending_lost_exact=str(lost),
-        balance_after_exact=str(c.coins),
+        balance_after_exact=str(funds(db, c)),
         items=items,
         debt_collection_id=collection.id if collection else None,
         debt_limit_reached=at_limit,
