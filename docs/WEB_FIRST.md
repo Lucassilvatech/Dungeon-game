@@ -1,6 +1,8 @@
 # Web First — 0.8
 
-Backend autoritativo → navegador principal → Discord complementar. Godot permanece preservado. Sem reescrita do React/TypeScript/Phaser, nem exigência de executáveis Windows/APK nesta entrega.
+> **Estratégia atual 0.9:** backend autoritativo, **Web como cliente principal**, **Discord estritamente read-only para gameplay**. Godot Windows/Android estão **FROZEN**; APK/EXE não são requisitos deste ciclo. Código/presets/builds e documentação histórica preservados. Ver [GODOT_FREEZE.md](GODOT_FREEZE.md) e [CONSOLIDATION_0.9.md](CONSOLIDATION_0.9.md). Descrições de equipamento confirmado via Discord abaixo são históricas e foram desativadas em 0.9.
+
+Backend autoritativo → navegador principal → Discord somente observação. Godot permanece preservado. Sem reescrita do React/TypeScript/Phaser, nem exigência de executáveis Windows/APK nesta entrega.
 
 Web implementa exploração por teclado/clique/toque, caminhos de grade, saídas, destinos permanentes descobertos, combate individual/grupos, atributos, equipamentos, inventário, expedições, Guilda, recuperação, leilões, histórico, coleta e contratos. Restrições/custos são validados no backend; interfaces não concedem moedas, dano, teleporte ou direitos de outro jogador.
 

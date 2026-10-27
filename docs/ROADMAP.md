@@ -1,5 +1,21 @@
 # Roadmap: primeiro andar antes de expandir a Torre
 
+> **Estratégia atual 0.9:** backend autoritativo, **Web como cliente principal**, **Discord estritamente read-only para gameplay**. Godot Windows/Android estão **FROZEN**; APK/EXE não são requisitos deste ciclo. Código/presets/builds e documentação histórica preservados. Ver [GODOT_FREEZE.md](GODOT_FREEZE.md) e [CONSOLIDATION_0.9.md](CONSOLIDATION_0.9.md). Descrições de equipamento confirmado via Discord abaixo são históricas e foram desativadas em 0.9.
+
+## Prioridade ativa
+
+1. Fundações e integração da economia Lunar (consolidação atual não conclui o cutover).
+2. Backend autoritativo e testes de integridade.
+3. Web e Central ADM.
+4. NPCs/estoques/fluxo econômico.
+5. Procedural/recursos/anti-reroll.
+6. Bosses globais.
+7. Ecos e rituais.
+8. Balanceamento por evidência.
+9. Observabilidade e desempenho.
+
+Depois: retomar Godot, portar sistemas consolidados, melhorar arte e gerar Windows/Android. Discord permanece observacional, inclusive para novos sistemas. Não planejar mais mutações confirmadas no Discord. Histórico a seguir preservado; propostas anteriores de mutações Discord não são mais prioridades.
+
 Entregue em 0.3: inimigos persistentes sem respawn indevido, golpe final idempotente, morte/fade/remoção visual, wandering autoritativo de baixa frequência, fórmula de dano, materiais empilháveis com limite, recompensa em lote pela recepcionista, ausência de curadora nas salas, salas amplas e novos temas/layouts por seed. Treino e persistência foram preservados.
 
 Entregue em 0.4: ciclo de expedição com compromisso, fuga transacional com perda global de pendências/XP atual, retomada após reconexão, conclusão da sala e tiers de perigo regionais. A prioridade complementar escolhida foi a sinalização/feedback da exploração, alinhada aos itens 1 e 2 abaixo; combate multi-alvo não foi antecipado.
@@ -15,7 +31,7 @@ Implementado em 0.8: Web como cliente principal, máximo procedural raro/alcanç
 Próximos passos 0.9, sem marcar como entregues:
 
 1. Sessões reais com iniciantes para avaliar tempo de combate, dívida e risco dos grupos. Simulação mostrou dificuldade alta para iniciantes; não alterar estatísticas individuais arbitrariamente.
-2. Validar bot em servidor Discord com credenciais seguras; depois ampliar operações confirmadas conforme regras do backend.
+2. Validar bot em servidor Discord com credenciais seguras; manter somente consultas privadas, sem operações de gameplay.
 3. Perfilar snapshot com volume representativo, agrupar consultas e medir contenção financeira. Bundle Phaser ainda grande, embora carregado após login.
 4. Broker de presença antes de múltiplos workers, teste de carga e implantação TLS protegida. Rate limits e revogação já existem, mas não substituem controles de borda.
 5. Refinar acessibilidade e apresentação com feedback de jogadores. Expandir poucos recursos/contratos somente com dados de economia real.

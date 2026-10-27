@@ -1,5 +1,7 @@
 # Desenvolvimento e validação
 
+> **Estratégia atual 0.9:** backend autoritativo, **Web como cliente principal**, **Discord estritamente read-only para gameplay**. Godot Windows/Android estão **FROZEN**; APK/EXE não são requisitos deste ciclo. Código/presets/builds e documentação histórica preservados. Ver [GODOT_FREEZE.md](GODOT_FREEZE.md) e [CONSOLIDATION_0.9.md](CONSOLIDATION_0.9.md). Descrições de equipamento confirmado via Discord abaixo são históricas e foram desativadas em 0.9.
+
 ## Fluxo atual 0.8
 
 Use branch `feature/web-discord-first-floor-0.8`; preserve main e `godot-client`. Suba PostgreSQL e serviços com os comandos abaixo. Runtime mantém um worker até presença ter broker. Execute apenas suites sequenciais por banco: as fixtures fazem TRUNCATE; paralelismo entre suites exige bancos separados.
@@ -142,3 +144,9 @@ Godot: `tests/play_first_floor.gd` passou com 42 verificações contra backend i
 `python scripts/build_clients.py /diretório/saída` exporta ambos os clientes e gera ZIP/instruções/hashes/manifesto. SDK/configuração e limites de validação estão em PROCEDURAL_ECONOMY_UPDATE.md. Workflows foram realmente executados: exportação remota aprovada e Windows/Defender/nuvem/inicialização headless aprovados. Não confundir inicialização headless com jogo gráfico ou execução em Android.
 
 Smoke completo do cliente legado também passou após atualizar as expectativas de morte. Comparação de reinício manteve registros de gameplay/economia/novas tabelas exatamente iguais; zero papéis ADM temporários ao encerrar. Simulação reproduzível: `scripts/simulate_procedural.py` grava estatísticas e combates isolados em docs/procedural-combat-simulation.json.
+
+## Consolidar e testar 0.9
+
+Branch feature/lunar-web-discord-readonly-0.9 contém a base 0.8 e o trabalho Lunar local. No backend: requirements-dev, upgrade head (4a8687e5317c), alembic check, pytest somente em PostgreSQL descartável. Em frontend: npm ci, npm run build, npm test, Chromium smoke e tests/lunar.cjs. O job Chromium usa banco separado e API/Vite HTTP locais; não exporta nativos. scripts/simulate_lunar.py mantém cenários fictícios isolados, não altera banco.
+
+A consulta read-only Discord inclui testes de snapshot completo e bloqueio PostgreSQL de escrita. Rate counters são excluídos do snapshot por serem metadados de segurança. Testes API podem desabilitar limites na fixture; produção os mantém habilitados. O CI preparado não é evidência de execução remota: conferir Actions após PR/manual.

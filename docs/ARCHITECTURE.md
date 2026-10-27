@@ -1,6 +1,14 @@
 # Arquitetura
 
-## Estado atual 0.8
+> **Estratégia atual 0.9:** backend autoritativo, **Web como cliente principal**, **Discord estritamente read-only para gameplay**. Godot Windows/Android estão **FROZEN**; APK/EXE não são requisitos deste ciclo. Código/presets/builds e documentação histórica preservados. Ver [GODOT_FREEZE.md](GODOT_FREEZE.md) e [CONSOLIDATION_0.9.md](CONSOLIDATION_0.9.md). Descrições de equipamento confirmado via Discord abaixo são históricas e foram desativadas em 0.9.
+
+## Adaptador Discord 0.9
+
+`discord_client.query` utiliza projeções SELECT e transação PostgreSQL REPEATABLE READ/READ ONLY. Não chama game.character/snapshot, expeditions.sync, enemies.instances ou auctions.listing. Portanto não retoma/move personagens, gera recursos, encerra expedições nem liquida leilões. Somente identidade é mutável fora desse adaptador. Segurança de rate limiting grava metadados em transação separada; não é gameplay. `/discord/{id}/state` agora é projeção segura reduzida, mantendo o personagem do usuário. Nenhuma API Web/Godot de gameplay foi removida.
+
+`DiscordOperation` e revisão 947647462008 permanecem para preservar recibos antigos. Nenhuma migração destrutiva: rotas de preview/confirm sempre retornam 410 após validação da chave do bot, inclusive recibos que ainda não expiraram. Bot registra apenas consultas e vinculação; nenhum botão de controle. Leilões observados são relativos ao próprio personagem e nunca liquidados pelo Discord. O worker/fluxo Web continua responsável por transições.
+
+## Histórico de implementação 0.8
 
 Backend autoritativo → Web React/TypeScript/Phaser principal → Discord complementar; Godot preservado. Esta seção e os documentos 0.8 prevalecem sobre descrições históricas das entregas abaixo.
 
@@ -69,7 +77,7 @@ UI `DeathEconomy.tsx`: resumo persistente com perdas reais, formulário de distr
 
 ## Migração incremental 0.6
 
-Godot é o novo cliente principal; React/Phaser permanece durante a validação de plataforma. `godot-client/scripts/api.gd` comunica por HTTP com sessão persistida; `main.gd` coordena menus/comandos e reconexão; `map_view.gd` renderiza pixel art original/câmera/entrada. Presença usa o WebSocket existente. Não há cálculo econômico/combate ou acesso SQL no cliente. Android tem controles maiores e presets; exportações Windows/Android são separadas do teste de execução em Linux.
+Na entrega 0.6 Godot foi tratado como cliente principal; essa decisão foi substituída pela Web principal na 0.8 e pelo freeze nativo na 0.9. `godot-client/scripts/api.gd` comunica por HTTP com sessão persistida; `main.gd` coordena menus/comandos e reconexão; `map_view.gd` renderiza pixel art original/câmera/entrada. Presença usa o WebSocket existente. Não há cálculo econômico/combate ou acesso SQL no cliente. Android tem controles maiores e presets; exportações Windows/Android são separadas do teste de execução em Linux.
 
 `fast_travel.py` consulta RoomState de locais permanentes visitados e preserva as guardas de expedição/combate. Nova sala auction_hall e conexão são criadas pelo seed idempotente, sem substituir mapas/saldos existentes. Interact diferencia recepcionista e leiloeiro pelo ID/serviço.
 

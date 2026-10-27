@@ -1,6 +1,6 @@
 # Implementação lunar — progresso verificável
 
-**Escopo integral ainda em implementação. Não é release concluída.** A ordem do documento exige concluir a fundação e a transição financeira antes de conectar recursos, bosses e ecos. Código permanece local na feature 0.8; main e ambiente operacional preservados.
+**Escopo integral ainda em implementação. Não é release concluída.** A ordem do documento exige concluir a fundação e a transição financeira antes de conectar recursos, bosses e ecos. Fundações preservadas na branch de consolidação feature/lunar-web-discord-readonly-0.9; main e ambiente operacional preservados. Ver CONSOLIDATION_0.9.md para publicação e validações atuais.
 
 ## Decisão aprovada
 
@@ -43,4 +43,4 @@ Simulador `scripts/simulate_lunar.py`: 15 cenários determinísticos isolados (1
 5. Escrow e contribuição coletiva, confirmação exata, cancelamento/timeout/reembolso, unlock permanente, combate de eco sem farm, first victory/recompensa sem inventar loot.
 6. Integrações Godot/Web/Discord/ADM, leilões/dívidas/contratos/recuperação físicas, observabilidade completa, simulador comercial completo e política observe-only; só depois avaliar automatização do rei.
 
-Nenhum build novo ou publicação executada nesta etapa. Não há link de download novo. Godot/Discord/Web não receberam telas lunares e ainda não foram testados para essa experiência. Execução externa Discord e exportações nativas continuam fora da evidência atual. O simulador isolado não significa entrega antecipada da Fase K operacional.
+Histórico da etapa inicial de fundação: nenhum build novo ou publicação executada naquela etapa; a consolidação/publicação posterior é registrada em ../CONSOLIDATION_0.9.md. Não há link de download novo. Na etapa inicial não houve telas lunares; a consolidação 0.9 adiciona painel Web e consultas Discord. Godot permanece sem telas Lunares, agora congelado. Execução externa Discord e exportações nativas continuam fora da evidência atual. O simulador isolado não significa entrega antecipada da Fase K operacional.

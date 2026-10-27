@@ -1,12 +1,16 @@
-# Dungeon Game — Web First · primeiro andar · 0.8
+# Dungeon Game — Web First · consolidação 0.9
+
+**Backend autoritativo → Web principal → Discord somente observação.** Windows/Android Godot estão congelados; APK/EXE não são requisitos. [Freeze nativo](docs/GODOT_FREEZE.md) · [Consolidação 0.9](docs/CONSOLIDATION_0.9.md) · [Estado real Lunar](docs/lunar/IMPLEMENTATION.md).
+
+Nova branch `feature/lunar-web-discord-readonly-0.9` inclui os cinco commits Lunares antes locais. A conversão de 1 moeda antiga = 1g continua em dry-run: não há ativação operacional, drops Lunares ou ecos novos nesta consolidação. A Web oferece painel Lunar com saldo físico/pepitas e divisão para estoque elegível, sem contabilizar o legado duas vezes. `/equipar` foi removido do bot, endpoints antigos retornam 410; consultas Discord não executam movimentação, geração ou liquidação financeira. Identidade/vinculação permanece.
 
 > O build Windows 0.6 de desenvolvimento recebeu relato de bloqueio “vírus detectado” e está em investigação. Não desative o antivírus ou crie exclusão. [Status e verificações](docs/security/WINDOWS_BUILD_TRIAGE.md).
 
-RPG persistente com backend autoritativo FastAPI/PostgreSQL, **React/TypeScript/Phaser como cliente principal Web**, Discord complementar e Central Administrativa Web. Godot Windows/Android permanece preservado, sem novos builds nesta etapa. Esta versão aperfeiçoa exclusivamente o **primeiro andar**. Não expande andares superiores nem raids. Arte e sprites originais gerados pelo projeto, sem assets das referências comerciais.
+RPG persistente com backend autoritativo FastAPI/PostgreSQL, **React/TypeScript/Phaser como cliente principal Web**, Discord observacional e Central Administrativa Web. Godot Windows/Android permanece preservado, sem novos builds nesta etapa. Esta versão aperfeiçoa exclusivamente o **primeiro andar**. Não expande andares superiores nem raids. Arte e sprites originais gerados pelo projeto, sem assets das referências comerciais.
 
 ## Evolução 0.8
 
-Encontros opcionais com dois inimigos e seleção de alvo, coleta finita, contratos com orçamento reservado no Tesouro, consultas privadas/ações confirmadas de equipamento no Discord, métricas/simulações, reconexão e áudio opcional. O máximo procedural agora é raro e alcançável sem refazer inimigos persistidos. [Entrega e validações](docs/DELIVERY_0.8.md) · [Web First](docs/WEB_FIRST.md) · [Grupos](docs/COMBAT_ENCOUNTERS.md) · [Coleta/contratos](docs/COLLECTION_AND_CONTRACTS.md) · [Discord](docs/DISCORD_INTEGRATION.md) · [Balanceamento](docs/BALANCE_REPORT_0.8.md).
+Encontros opcionais com dois inimigos e seleção de alvo, coleta finita, contratos com orçamento reservado no Tesouro, consultas privadas no Discord (equipamento confirmado da 0.8 desativado na 0.9), métricas/simulações, reconexão e áudio opcional. O máximo procedural agora é raro e alcançável sem refazer inimigos persistidos. [Entrega e validações](docs/DELIVERY_0.8.md) · [Web First](docs/WEB_FIRST.md) · [Grupos](docs/COMBAT_ENCOUNTERS.md) · [Coleta/contratos](docs/COLLECTION_AND_CONTRACTS.md) · [Discord](docs/DISCORD_INTEGRATION.md) · [Balanceamento](docs/BALANCE_REPORT_0.8.md).
 
 Build Web de desenvolvimento: [baixar ZIP](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/3863c2c930502453fb02bee54a6cdad13e757906/builds/development/0.8.0-web-b3a3a51/DungeonGame-Web-0.8.zip) · [SHA256](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/3863c2c930502453fb02bee54a6cdad13e757906/builds/development/0.8.0-web-b3a3a51/SHA256SUMS). Contém frontend estático e requer backend 0.8/proxy; não é executável Windows/APK nem jogo offline.
 
@@ -20,11 +24,11 @@ Builds históricos **0.7**, sem exportação nova em 0.8: [Windows x64](https://
 
 ## Revisar esta evolução sem alterar a main
 
-Esta implementação está em **feature/web-discord-first-floor-0.8**, baseada em `feature/procedural-economy-godot-fixes`, para revisão por PR; a main permanece estável e não houve merge automático. Guarde alterações locais antes de trocar de branch. Para testar o código desta entrega:
+Esta consolidação está em **feature/lunar-web-discord-readonly-0.9**, continuação da `feature/web-discord-first-floor-0.8`, baseada em `feature/procedural-economy-godot-fixes`, para revisão por PR; a main permanece estável e não houve merge automático. Guarde alterações locais antes de trocar de branch. Para testar o código desta entrega:
 
 ```powershell
 git fetch origin
-git switch feature/web-discord-first-floor-0.8
+git switch feature/lunar-web-discord-readonly-0.9
 ```
 
 Use os comandos de execução abaixo na branch selecionada. Não use reset/force push ou apague volumes para atualizar.
@@ -99,7 +103,7 @@ docker compose logs backend
 docker compose down
 ```
 
-`down` conserva o volume. Migração atual: **4cee57744ea1** (0.8: grupos, métricas, coleta/contratos, recibos Discord e limites/índices; todas aditivas). A base 0.7 é **d0fc148417a5** (sequência, recuperação pessoal, confisco e eventos; dados anteriores preservados). A anterior é **b3057d8109ee**, que protege a espada inicial, cria sessões/papéis/auditoria administrativa, Banco Central inicialmente zerado, configurações e perfis persistentes de monstros, preservando os inimigos existentes e seu XP. A anterior, 039105b3ae1a, adicionou morte, dívida, custódia/leilões, pontos de atributo e NUMERIC. A anterior, 904ca715f282, adicionou expedições persistentes e perigo regional. A migração anterior de stacks/inimigos é 11ac6a18a976. Aventuras antigas ocupadas são adotadas como ativas; histórico abandonado é arquivado sem aplicar penalidade retroativa. Contas, inventário, equipamentos, saldos, XP, inimigos mortos e batalhas em andamento são preservados. Faça backup dos dados importantes antes de atualizar.
+`down` conserva o volume. Migração atual: **4a8687e5317c** (fundação Lunar sem gênese/conversão implícita); base 0.8: **4cee57744ea1** (0.8: grupos, métricas, coleta/contratos, recibos Discord e limites/índices; todas aditivas). A base 0.7 é **d0fc148417a5** (sequência, recuperação pessoal, confisco e eventos; dados anteriores preservados). A anterior é **b3057d8109ee**, que protege a espada inicial, cria sessões/papéis/auditoria administrativa, Banco Central inicialmente zerado, configurações e perfis persistentes de monstros, preservando os inimigos existentes e seu XP. A anterior, 039105b3ae1a, adicionou morte, dívida, custódia/leilões, pontos de atributo e NUMERIC. A anterior, 904ca715f282, adicionou expedições persistentes e perigo regional. A migração anterior de stacks/inimigos é 11ac6a18a976. Aventuras antigas ocupadas são adotadas como ativas; histórico abandonado é arquivado sem aplicar penalidade retroativa. Contas, inventário, equipamentos, saldos, XP, inimigos mortos e batalhas em andamento são preservados. Faça backup dos dados importantes antes de atualizar.
 
 ## Discord e limites atuais
 
