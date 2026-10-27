@@ -149,6 +149,11 @@ Smoke completo do cliente legado também passou após atualizar as expectativas 
 
 ## Consolidar e testar 0.9
 
-Branch feature/lunar-web-discord-readonly-0.9 contém a base 0.8 e o trabalho Lunar local. No backend: requirements-dev, upgrade head (59d047e53dc8 nesta continuação; 4a8687e5317c era o head da fundação), alembic check, pytest somente em PostgreSQL descartável. Em frontend: npm ci, npm run build, npm test, Chromium smoke e tests/lunar.cjs. O job Chromium usa banco separado e API/Vite HTTP locais; não exporta nativos. scripts/simulate_lunar.py mantém cenários fictícios isolados, não altera banco.
+Branch feature/lunar-web-discord-readonly-0.9 contém a base 0.8 e o trabalho Lunar local. No backend: requirements-dev, upgrade head (7f422c075115 recursos; 59d047e53dc8 cutover; 4a8687e5317c fundação), alembic check, pytest somente em PostgreSQL descartável. Em frontend: npm ci, npm run build, npm test, Chromium smoke e tests/lunar.cjs. O job Chromium usa banco separado e API/Vite HTTP locais; não exporta nativos. scripts/simulate_lunar.py mantém cenários fictícios isolados, não altera banco.
 
 A consulta read-only Discord inclui testes de snapshot completo e bloqueio PostgreSQL de escrita. Rate counters são excluídos do snapshot por serem metadados de segurança. Testes API podem desabilitar limites na fixture; produção os mantém habilitados. O CI preparado não é evidência de execução remota: conferir Actions após PR/manual.
+
+
+## Continuação procedural Lunar 0.9
+
+Head procedural 7f422c075115. Testes de recursos usam PostgreSQL descartável e Chromium; flags 100% e preços de fixture são TEST_DEFAULT, nunca produção. Ver [recursos Lunares](lunar/PROCEDURAL_RESOURCES.md).

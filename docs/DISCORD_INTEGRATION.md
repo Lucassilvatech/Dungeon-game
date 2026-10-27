@@ -13,3 +13,8 @@ Queries executam em transação PostgreSQL REPEATABLE READ/READ ONLY e não cham
 Identidade é a única exceção: código Web de uso único e expiração 5min via `/vincular`; vínculo exclusivo, serviço autenticado, ID de interaction.user. POST /discord/unlink exige sessão Web do proprietário. Nenhuma chave/token deve ir em mensagem. Segredos reais ficam nas configurações do ambiente.
 
 Testes devem comparar todas as tabelas antes/depois, incluindo leilão vencido, e rejeitar explicitamente equipamento, movimento, ataque, compras/vendas, contratos, lances e divisão Lunar. Testes locais/mocks não validam sincronização/entrega no Discord externo: faltam credenciais reais; não declarar essa conexão executada.
+
+
+## Continuação procedural Lunar 0.9
+
+Consultas de inventário/mineral incluem holdings de pepitas e coletas próprias. Não revelam ocorrências disponíveis ou coordenadas; não adicionam comandos mutáveis. Ver [recursos Lunares](lunar/PROCEDURAL_RESOURCES.md).

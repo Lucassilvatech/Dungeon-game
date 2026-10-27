@@ -15,3 +15,8 @@ Mapa/Phaser só é carregado depois do login; cores regionais, nome do NPC, saí
 Layout adaptável desktop/mobile; testes Chromium em 390px verificam coleta e contratos. Isso não substitui testes em aparelhos reais ou auditoria completa de acessibilidade. Phaser ainda é grande e o snapshot faz muitas consultas; relatório técnico em [BALANCE_REPORT_0.8.md](BALANCE_REPORT_0.8.md).
 
 Godot não foi reexportado/retestado nesta etapa. Diretório inteiro preservado; campos/rotas antigos continuam. Sua UI não apresenta todos os sistemas novos, e um encontro iniciado na Web deve preferencialmente ser concluído nela; ação legada delega ao coordenador de grupo, sem ignorar regras. Não há declaração de compatibilidade gráfica nativa para recursos 0.8 ausentes de suas telas.
+
+
+## Continuação procedural Lunar 0.9
+
+A Web mostra marcador☾, peso, coleta com pending, inventário de pepitas e cotação/venda à Guilda; suporta 390px sem hover. Ver [recursos Lunares](lunar/PROCEDURAL_RESOURCES.md).

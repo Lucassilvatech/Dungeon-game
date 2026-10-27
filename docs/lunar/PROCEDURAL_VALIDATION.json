@@ -1,0 +1,74 @@
+{
+  "base_head": "bf2ea7a52d090cae7d9260c573bd1e8d24354c6d",
+  "migration": "7f422c075115",
+  "backend_complete_suite": {
+    "passed": 234,
+    "failed": 0,
+    "skipped": 0,
+    "warnings": 2,
+    "duration_seconds": "669.46",
+    "command": "python -m pytest tests -q"
+  },
+  "frontend": {
+    "npm_test_passed": 1,
+    "npm_test_failed": 0,
+    "build": "PASS",
+    "build_seconds": "4.96",
+    "build_warning": "Existing Phaser chunk exceeds 500kB",
+    "chromium_390px_procedural_collection_sale": "PASS",
+    "chromium_legacy_exploration_after_cutover": "PASS"
+  },
+  "discord_post_collection_observation": {
+    "result": "PASS",
+    "queries": 5,
+    "unchanged_domain_snapshots": 6,
+    "mutation_commands": "BLOCKED"
+  },
+  "converted_private_real_copy": {
+    "historical_tables": 47,
+    "preserved_row_hashes": 1638,
+    "existing_cutover_receipt": "UNCHANGED",
+    "genesis_backing_mg": "100450000",
+    "added_discovery_mg": "100000",
+    "audit_gap_mg": "0",
+    "old_operational_database": "UNTOUCHED"
+  },
+  "fresh_operational_backup_private_validation": {
+    "historical_tables": 39,
+    "preserved_row_hashes": 1554,
+    "upgrade_cutover_audit": "PASS",
+    "operational_database": "UNTOUCHED"
+  },
+  "simulation": {
+    "preserved_foundation_scenarios": 15,
+    "procedural_scenarios": 9,
+    "expeditions_per_procedural_scenario": 10000,
+    "all_gap_mg": "0",
+    "balance_status": "TEST_DEFAULT / PROVISIONAL"
+  },
+  "persisted_resource_read_check": {
+    "queries": 100,
+    "reads": 100,
+    "generation_calls": 0,
+    "writes": 0
+  },
+  "defaults": {
+    "spawn_enabled": false,
+    "commercial_prices": "UNCONFIGURED_ZERO_OFFERS"
+  },
+  "group_model": "SOLO; raids do not share procedural exploration",
+  "godot": {
+    "windows": "FROZEN",
+    "android": "FROZEN",
+    "source": "PRESERVED",
+    "native_builds": "NOT_REQUIRED_NOT_GENERATED"
+  },
+  "not_implemented": [
+    "global boss",
+    "Echo",
+    "automatic King policy",
+    "NPC production chain",
+    "final balance",
+    "real deployment"
+  ]
+}

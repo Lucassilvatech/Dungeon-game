@@ -2,7 +2,7 @@
 
 > Atualização da continuação 0.9: [cutover operacional, migrações e validação](CUTOVER.md). O upgrade não converte o ambiente: confirmação administrativa ativa Lunar como fonte única. As descrições financeiras legadas e de conversão inativa abaixo registram a etapa anterior; após a confirmação, holdings Lunar e obrigações separadas são autoritativos. Discord segue estritamente read-only; Godot congelado.
 
-**Escopo integral ainda em implementação. Não é release concluída.** A ordem do documento exige concluir a fundação e a transição financeira antes de conectar recursos, bosses e ecos. Fundações preservadas na branch de consolidação feature/lunar-web-discord-readonly-0.9; main e ambiente operacional preservados. Ver CONSOLIDATION_0.9.md para publicação e validações atuais.
+**Registro histórico da fundação.** O cutover está implementado e validado em cópia privada; ativação no ambiente operacional real ainda não executada. A continuação procedural está em [PROCEDURAL_RESOURCES.md](PROCEDURAL_RESOURCES.md). A ordem do documento exige concluir a fundação e a transição financeira antes de conectar recursos, bosses e ecos. Fundações preservadas na branch de consolidação feature/lunar-web-discord-readonly-0.9; main e ambiente operacional preservados. Ver CONSOLIDATION_0.9.md para publicação e validações atuais.
 
 ## Decisão aprovada
 
@@ -22,13 +22,13 @@ Ledger persistente com chave idempotente vinculada a parâmetros, ator, justific
 
 ### Endpoints
 
-- `GET /lunar/wallet`: somente personagem autenticado; composição/massa em strings exatas; legado identificado separadamente, conversão ainda inativa.
+- `GET /lunar/wallet`: somente personagem autenticado; composição/massa em strings exatas; legado identificado separadamente, status LEGACY/LUNAR, sem duplicar carteira.
 - `POST /lunar/nuggets/split`: corpo estrito, UUID, fonte e composição; propriedade implícita do personagem, fora de combate, recibo persistente.
 - `POST /lunar/coins/exchange`: mesma autorização, exige recepcionista e ausência de combate.
 - `GET /admin/lunar/audit`: permissão economy.read.
 - `GET /admin/lunar/legacy-preview`: permissão economy.read; dry-run sem conversão.
 
-Cunhagem/transferência são serviços internos; não foi criada rota mutável administrativa que ignore prévia/justificativa/confirmação. Ainda não há ações lunares ADM integradas ao workflow existente.
+Cunhagem/transferência são serviços internos; não foi criada rota mutável administrativa que ignore prévia/justificativa/confirmação. Cutover, configuração econômica e financiamento já exigem workflow administrativo explícito; ver CUTOVER.md.
 
 ## Validação executada
 
@@ -36,13 +36,12 @@ Cunhagem/transferência são serviços internos; não foi criada rota mutável a
 
 Simulador `scripts/simulate_lunar.py`: 15 cenários determinísticos isolados (10/100/1.000 jogadores × raridade/excesso/entesouramento/rituais/escassez de Tesouro), todos com diferença de massa zero. Em cada cenário 10kg iniciais são descoberta fictícia explícita; NPC começa sem dinheiro e com 50 produtos finitos de teste. Relatório SIMULATION.json discrimina descoberto/cunhado/destruído e recusas por falta de caixa por cenário. Não são probabilidades, estoques ou custos finais do jogo; não mede inflação/equilíbrio ou todas as mecânicas ainda não conectadas.
 
-## Próximas etapas obrigatórias, não entregues
+## Planejamento histórico e status atualizado
 
-1. Conversão operacional única com preview/confirm auditados, fingerprint e reserva de lastro; adaptar **todos** os fluxos legados ao mesmo estado físico antes de ativar. Taxa médica hoje credita Tesouro mesmo quando gera dívida; no modelo lunar a parcela financiada é recebível, e só pagamento efetivo transfere moedas. Não espelhar esse crédito abstrato como criação de massa.
-2. Inventário lunar integrado a capacidade/custódia/morte/recuperação e NPCs com estoque físico; venda à Guilda, comércio e financiamento legítimo. Não desativar o jogo legado até esse cutover estar testado.
-3. Ocorrências únicas em expedições, geração configurável sem defaults finais, ciclo fechado e anti-reroll, snapshots de grupo e reconexão.
-4. Boss único global/first kill histórico concorrente e compatibilidade com boss já derrotado; marca de eco e unlock de andar sem construir outro andar.
-5. Escrow e contribuição coletiva, confirmação exata, cancelamento/timeout/reembolso, unlock permanente, combate de eco sem farm, first victory/recompensa sem inventar loot.
-6. Integrações Godot/Web/Discord/ADM, leilões/dívidas/contratos/recuperação físicas, observabilidade completa, simulador comercial completo e política observe-only; só depois avaliar automatização do rei.
+1. Cutover operacional, gênese e taxa médica: implementados e validados em cópia privada; ver CUTOVER.md. Ativação real ainda não executada.
+2. Writers, Guilda/NPC, leilões, contratos e recuperação físicos: implementados na etapa de cutover, sem segunda economia.
+3. Recursos procedurais persistentes, anti-reroll, coleta e venda de pepitas: implementação desta continuação, com validação em PROCEDURAL_RESOURCES.md. Não gera moeda na coleta.
+4. Boss global e Echo: futuros, não implementados nesta etapa.
+5. Cooperação avançada, cadeia produtiva NPC, automação monetária e evolução Godot: futuros. Discord permanece read-only; Godot congelado.
 
 Histórico da etapa inicial de fundação: nenhum build novo ou publicação executada naquela etapa; a consolidação/publicação posterior é registrada em ../CONSOLIDATION_0.9.md. Não há link de download novo. Na etapa inicial não houve telas lunares; a consolidação 0.9 adiciona painel Web e consultas Discord. Godot permanece sem telas Lunares, agora congelado. Execução externa Discord e exportações nativas continuam fora da evidência atual. O simulador isolado não significa entrega antecipada da Fase K operacional.

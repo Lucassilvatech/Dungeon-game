@@ -47,3 +47,8 @@ Novas leituras: encontros, pontos pessoais de coleta, publicações/aceitações
 Em Contratos, formulário guiado apresenta objetivo/alvo/quantidade/vagas/recompensa e justificativa. Publicar exige prévia e confirmação; reserva `recompensa × vagas` do Tesouro, sem emissão. Retirada mostra aceitações e valores retidos/devolvidos: quem já concluiu mantém pagamento garantido. Alteração de progresso depois da prévia impede confirmação até recalcular. Cancelamento pessoal incompleto libera vaga sem destruir orçamento. Nunca alterar reservas por SQL para contornar auditoria.
 
 Coleta mostra estoque por personagem/região/geração, não um estoque global. Reposição/desativação usa ID do ponto pessoal, permissão, motivo, prévia, confirmação e recibo. Não é reposição automática por timer nem criação direta de moedas. Métricas iniciam na instrumentação 0.8; não tratar ausência de amostras antigas como zero mortes/tempo.
+
+
+## Continuação procedural Lunar 0.9
+
+economy.configure admite lunar_resource_spawn_enabled, lunar_resource_spawn_chance_ppm, lunar_resource_weight_distribution e lunar_guild_prices; prévia/motivo/confirmação/auditoria continuam obrigatórios. Painel Lunar inclui ocorrências e métricas, sem spawn manual. Ver [recursos Lunares](lunar/PROCEDURAL_RESOURCES.md).

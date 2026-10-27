@@ -26,3 +26,8 @@ Sessões normais podem ser revogadas individualmente ou em conjunto. Presença r
 Central ADM continua ligada apenas à interface local padrão do Compose, sem conta padrão. Publicação externa exige TLS, proxy com limites e controles de acesso. Discord não concede papéis nem aceita comandos administrativos. Dependências/testes do bot separados do runtime backend em `requirements-dev.txt`.
 
 Auditoria npm executada ao fechar 0.8 encontrou avisos altos no Vite 6.4.1 de desenvolvimento. Atualização mínima exata para **6.4.5**, com lockfile renovado e `npm audit --json` final: zero vulnerabilidades reportadas. Build TypeScript/Vite passou; hashes dos bundles de jogo/mapa/client/ADM coincidiram com os já validados após a correção do rótulo ADM. Isso é auditoria de dependências conhecidas nessa execução, não certificação contra todo malware. `pip check` não apontou dependências inconsistentes; não equivale a auditoria CVE Python.
+
+
+## Continuação procedural Lunar 0.9
+
+Coleta usa sessão, snapshot SOLO, room/generation, proximidade, capacidade, UUID e locks transacionais. Identidade/decisão e estados terminais são protegidos por triggers; massa/recibos reconciliados. Rate limit financeiro também cobre coleta/venda/split Lunar. Ver [recursos Lunares](lunar/PROCEDURAL_RESOURCES.md).

@@ -162,3 +162,8 @@ Exploração acrescenta viagem rápida a locais permanentes visitados, sem comba
 Godot joga o mesmo primeiro andar por API: mapa/teclado/toque, combate, inventário, pontos, NPCs, expedição/fuga/morte, leilões e reconexão. Web legada e Discord preservados. Exportações de desenvolvimento Windows/Android foram geradas; hardware Windows/Android e experiência visual móvel ainda precisam de validação nativa antes de descontinuar Phaser.
 
 Administração não é um poder do personagem: operações financeiras/oficiais usam contexto separado, permissões, antes/depois, UUID e justificativa. Taxa/recompensa e perfil regional podem ser ajustados de modo auditado; saldo já recebido, direito já registrado, leilão existente e inimigo já instanciado não são recalculados retroativamente. Sem segundo andar, combate coletivo ou habilidades novas.
+
+
+## Continuação procedural Lunar 0.9
+
+Expedições novas podem conter Minério Lunar raro configurável; coletar não dá moedas. Disponibilidade é decidida uma vez, com mapa privado e slots compartilhados. Ver [recursos Lunares](lunar/PROCEDURAL_RESOURCES.md).

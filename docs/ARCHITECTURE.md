@@ -93,3 +93,8 @@ Migração b3057d8109ee é aditiva: protege somente definição sword, cria os m
 
 
 0.7: `attributes.effective` projeta base/bônus/resultado sem mutar bases. `procedural.py` fornece distribuição universal e BFS de conexões; Expedition congela sorteio. `procedural_retention.py` elimina estado transitório ao encerrar, mantendo pendências/recibos e bosses. `recovery.py` separa perda de unidades e recuperação pessoal; `debt.py` executa avaliação/compra de custódia com ledger e marcos acumulados. `world_events.py` valida agenda e aplica multiplicador somente a novos encontros. Operações administrativas reaproveitam mutex, permissões, prévia, confirmação e auditoria. Migração d0fc148417a5 é aditiva; downgrade destrutivo é recusado.
+
+
+## Continuação procedural Lunar 0.9
+
+Decisões imutáveis por expedição e ocorrências Lunar são gravadas na criação; snapshots só leem, coleta introduz massa via ledger e encerramento expira recursos potenciais. Ver [recursos Lunares](lunar/PROCEDURAL_RESOURCES.md).

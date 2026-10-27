@@ -40,3 +40,8 @@ A fuga reduz direitos monetários ainda não resgatados, não moeda em circulaç
 ## Reservas de contratos — 0.8
 
 Oferta líquida oficial agora inclui carteira assinada dos personagens + Tesouro + Banco Central + reservas de lances + reservas de contratos. Publicação transfere Tesouro → `contract:ID`; pagamento transfere pool → carteira, amortizando dívida pelo mecanismo normal; retirada devolve só orçamento livre. Direitos já concluídos mantêm reserva até pagamento. Ledger registra referências únicas de reserva/pagamento/cancelamento; nenhum contrato cria moedas implicitamente. Materiais coletados são itens finitos, sem conversão direta em moeda. Ver [COLLECTION_AND_CONTRACTS.md](COLLECTION_AND_CONTRACTS.md).
+
+
+## Recursos Lunares procedurais 0.9
+
+Ocorrência no mapa é potencial. Coleta válida registra DISCOVERED_MINERAL e aumenta Supply/holding na mesma massa, sem moedas. Gênese histórica continua segregada; Guilda compra pepitas com caixa existente e preço configurável independente do peso. Não cunha nem envia automaticamente ao Tesouro. Ver [lifecycle e auditoria](lunar/PROCEDURAL_RESOURCES.md).
