@@ -13,17 +13,7 @@ Expedições pertencem a personagem, não grupo; Raid é apenas lobby. Seed/esta
 | Seção | Requisito | Diagnóstico inicial |
 |---|---|---|
 | 0 | REGRAS GERAIS DE EXECUÇÃO | parcialmente implementado; reaproveitar base 0.8 |
-| 1 | Analise completamente a arquitetura atual. | ausente; necessita migration |
-| 2 | Identifique: | parcialmente implementado; reaproveitar base 0.8 |
-| 3 | Produza um relatório inicial classificando cada requisito como: | ausente; necessita migration |
-| 4 | Monte um plano incremental. | ausente; necessita migration |
-| 5 | Só depois execute as mudanças. | ausente; necessita migration |
 | 1 | PRINCÍPIO CENTRAL DA ECONOMIA | ausente; necessita migration |
-| 1 | Pepita. | ausente; necessita migration |
-| 2 | Reserva do Tesouro. | parcialmente implementado; reaproveitar base 0.8 |
-| 3 | Moeda Lunar cunhada. | ausente; necessita migration |
-| 4 | Material incorporado futuramente em objetos. | ausente; necessita migration |
-| 5 | Material consumido/destruído por ritual. | ausente; necessita migration |
 | 2 | UNIDADE CANÔNICA DE CONTABILIDADE | parcialmente implementado; reaproveitar base 0.8 |
 | 3 | MINÉRIO LUNAR | ausente; necessita migration |
 | 4 | DIVISÃO DE PEPITAS | ausente; necessita migration |
@@ -39,10 +29,6 @@ Expedições pertencem a personagem, não grupo; Raid é apenas lobby. Seed/esta
 | 14 | CARTEIRAS ECONÔMICAS | ausente; necessita migration |
 | 15 | TROCA DE DENOMINAÇÕES | ausente; necessita migration |
 | 16 | SELEÇÃO AUTOMÁTICA DE MOEDAS | ausente; necessita migration |
-| 1 | atingir valor/peso solicitado; | ausente; necessita migration |
-| 2 | evitar sobrepagamento; | parcialmente implementado; reaproveitar base 0.8 |
-| 3 | preferir menor número de moedas quando possível; | ausente; necessita migration |
-| 4 | permitir ao jogador escolher manualmente se a interface oferecer essa opção. | ausente; necessita migration |
 | 17 | CUNHAGEM | ausente; necessita migration |
 | 18 | COMPOSIÇÃO DA CUNHAGEM | ausente; necessita migration |
 | 19 | INVARIANTE GLOBAL DO MINÉRIO | ausente; necessita migration |
@@ -76,13 +62,6 @@ Expedições pertencem a personagem, não grupo; Raid é apenas lobby. Seed/esta
 | 47 | RECOMPENSA DO BOSS ORIGINAL | ausente; necessita migration |
 | 48 | INTEGRAÇÃO COM ECONOMIA EXISTENTE | parcial/incompatível; requer adaptação e testes |
 | 49 | MIGRAÇÃO DA MOEDA ANTIGA | parcial/incompatível; requer adaptação e testes |
-| 1 | relatório dos saldos existentes; | ausente; necessita migration |
-| 2 | dry-run; | parcialmente implementado; reaproveitar base 0.8 |
-| 3 | conversão; | ausente; necessita migration |
-| 4 | verificação de soma; | ausente; necessita migration |
-| 5 | migration; | ausente; necessita migration |
-| 6 | testes; | parcial/incompatível; requer adaptação e testes |
-| 7 | só depois deprecar campo antigo. | parcial/incompatível; requer adaptação e testes |
 | 50 | PREÇOS | ausente; necessita migration |
 | 51 | LEILÕES | parcial/incompatível; requer adaptação e testes |
 | 52 | DÍVIDAS DA GUILDA | parcial/incompatível; requer adaptação e testes |
@@ -117,82 +96,6 @@ Expedições pertencem a personagem, não grupo; Raid é apenas lobby. Seed/esta
 | 81 | OBSERVABILIDADE | ausente; necessita migration |
 | 82 | ALERTAS DE INVARIANTE | ausente; necessita migration |
 | 83 | ORDEM DE IMPLEMENTAÇÃO | ausente; necessita migration |
-| 1 | Ler repositório. | ausente; necessita migration |
-| 2 | Mapear arquitetura. | parcialmente implementado; reaproveitar base 0.8 |
-| 3 | Mapear economia. | ausente; necessita migration |
-| 4 | Mapear migrations. | ausente; necessita migration |
-| 5 | Mapear Godot. | ausente; necessita migration |
-| 6 | Mapear boss. | parcial/incompatível; requer adaptação e testes |
-| 7 | Mapear procedural. | parcial/incompatível; requer adaptação e testes |
-| 8 | Mapear testes. | parcial/incompatível; requer adaptação e testes |
-| 9 | Gerar relatório. | ausente; necessita migration |
-| 10 | Criar unidade canônica de peso. | ausente; necessita migration |
-| 11 | Criar configurações. | ausente; necessita migration |
-| 12 | Criar denominações. | ausente; necessita migration |
-| 13 | Criar contas econômicas. | ausente; necessita migration |
-| 14 | Criar ledger. | ausente; necessita migration |
-| 15 | Criar migrations. | ausente; necessita migration |
-| 16 | Criar invariantes. | ausente; necessita migration |
-| 17 | Criar pepitas. | ausente; necessita migration |
-| 18 | Migrar/adaptar inventário. | ausente; necessita migration |
-| 19 | Implementar divisão. | ausente; necessita migration |
-| 20 | Testar conservação. | ausente; necessita migration |
-| 21 | Criar três denominações. | ausente; necessita migration |
-| 22 | Criar wallets. | ausente; necessita migration |
-| 23 | Criar seleção de moedas. | ausente; necessita migration |
-| 24 | Criar troca de denominação. | ausente; necessita migration |
-| 25 | Criar transferências. | ausente; necessita migration |
-| 26 | Testar. | ausente; necessita migration |
-| 27 | Reservas. | ausente; necessita migration |
-| 28 | Cunhagem. | ausente; necessita migration |
-| 29 | Emissão. | ausente; necessita migration |
-| 30 | Distribuição de denominações. | parcial/incompatível; requer adaptação e testes |
-| 31 | Auditoria. | parcial/incompatível; requer adaptação e testes |
-| 32 | Integrar Guilda. | parcial/incompatível; requer adaptação e testes |
-| 33 | Remover geração artificial de dinheiro. | parcial/incompatível; requer adaptação e testes |
-| 34 | NPC wallet. | ausente; necessita migration |
-| 35 | NPC inventory. | ausente; necessita migration |
-| 36 | Compra/venda. | ausente; necessita migration |
-| 37 | Garantir zero saldo inicial dos comerciantes. | ausente; necessita migration |
-| 38 | Preservar estoques iniciais. | ausente; necessita migration |
-| 39 | Instâncias exclusivas. | ausente; necessita migration |
-| 40 | Seeds. | ausente; necessita migration |
-| 41 | lifecycle. | ausente; necessita migration |
-| 42 | reconexão. | ausente; necessita migration |
-| 43 | recursos raros. | ausente; necessita migration |
-| 44 | anti-reroll. | ausente; necessita migration |
-| 45 | coleta atômica. | ausente; necessita migration |
-| 46 | Estado global. | ausente; necessita migration |
-| 47 | encounter existente. | ausente; necessita migration |
-| 48 | first kill. | parcial/incompatível; requer adaptação e testes |
-| 49 | unlock global. | parcial/incompatível; requer adaptação e testes |
-| 50 | persistência histórica. | ausente; necessita migration |
-| 51 | marca. | parcial/incompatível; requer adaptação e testes |
-| 52 | definição de ritual. | parcial/incompatível; requer adaptação e testes |
-| 53 | escrow. | parcial/incompatível; requer adaptação e testes |
-| 54 | contribuição. | parcialmente implementado; reaproveitar base 0.8 |
-| 55 | consumo. | parcial/incompatível; requer adaptação e testes |
-| 56 | desbloqueio. | parcial/incompatível; requer adaptação e testes |
-| 57 | repetição. | parcial/incompatível; requer adaptação e testes |
-| 58 | first reward. | parcial/incompatível; requer adaptação e testes |
-| 59 | leilão. | parcial/incompatível; requer adaptação e testes |
-| 60 | dívidas. | parcial/incompatível; requer adaptação e testes |
-| 61 | recuperação de itens. | parcialmente implementado; reaproveitar base 0.8 |
-| 62 | Central ADM. | restrição/critério; preservar e verificar |
-| 63 | Discord. | ausente; necessita migration |
-| 64 | Godot. | ausente; necessita migration |
-| 65 | simulador. | ausente; necessita migration |
-| 66 | telemetria. | ausente; necessita migration |
-| 67 | observe-only. | ausente; necessita migration |
-| 68 | validação. | ausente; necessita migration |
-| 69 | somente depois política ativa do rei. | ausente; necessita migration |
-| 70 | testes unitários. | ausente; necessita migration |
-| 71 | testes integração. | ausente; necessita migration |
-| 72 | concorrência. | ausente; necessita migration |
-| 73 | migrations. | ausente; necessita migration |
-| 74 | first-floor end-to-end. | ausente; necessita migration |
-| 75 | reconexão. | ausente; necessita migration |
-| 76 | economia. | ausente; necessita migration |
 | 84 | NÃO DEFINIR AGORA | restrição/critério; preservar e verificar |
 | 86 | PUBLICAÇÃO | restrição/critério; preservar e verificar |
 | 87 | RELATÓRIO FINAL | restrição/critério; preservar e verificar |
