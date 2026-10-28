@@ -117,6 +117,9 @@ def create(body: CharacterInput, a=Depends(current_account), db=Depends(get_db))
     c = Character(account_id=a.id, name=body.name)
     db.add(c)
     db.flush()
+    from .finance import ensure
+
+    ensure(db, f"player:{c.id}")
     db.add(Item(owner=c.id, definition="sword", quantity=1))
     db.flush()
     from .rooms import discover, current
@@ -905,7 +908,7 @@ def lunar_guild_quotes(a=Depends(current_account), db=Depends(get_db)):
 class LunarSaleInput(BaseModel):
     model_config = {"extra": "forbid"}
     request_id: UUID
-    asset_code: Literal["nugget_small", "nugget_medium", "nugget_large"]
+    lot_id: StrictInt = Field(gt=0)
     quote: str = Field(min_length=64, max_length=64)
 
 
@@ -916,5 +919,29 @@ def sell_lunar_mineral(
     from .lunar_resources import sell
 
     return sell(
-        db, game.character(db, a), body.asset_code, body.quote, str(body.request_id)
+        db, game.character(db, a), body.lot_id, body.quote, str(body.request_id)
     )
+
+
+class LotSplitInput(BaseModel):
+    model_config = {"extra": "forbid"}
+    request_id: UUID
+    fragments_g: list[StrictInt] = Field(min_length=2, max_length=1000)
+
+
+@app.post("/lunar/lots/{lot_id}/split")
+def split_lot(
+    lot_id: int, body: LotSplitInput, a=Depends(current_account), db=Depends(get_db)
+):
+    from . import mineral_lots as lots
+
+    c = game.character(db, a)
+    game.idle(db, c)
+    e = lots.split(
+        db,
+        f"player:{c.id}",
+        lot_id,
+        body.fragments_g,
+        f"lot-split:{c.id}:{body.request_id}",
+    )
+    return {"receipt": e.id, "message": "Pepita dividida sem taxa e sem perda."}

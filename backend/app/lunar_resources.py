@@ -7,16 +7,19 @@ from sqlalchemy import select, func
 from fastapi import HTTPException
 from . import models as m, lunar, finance
 from .clock import utc_now
+from . import mineral_lots as lots
 from .config import runtime_setting, settings
 
-VERSION = "lunar-resource-v1"
+VERSION = "lunar-resource-v2-variable"
 WEIGHTS = {"nugget_small": 100000, "nugget_medium": 500000, "nugget_large": 1000000}
 CONFIG = {
     "lunar_resource_spawn_enabled",
     "lunar_resource_spawn_chance_ppm",
-    "lunar_resource_weight_distribution",
-    "lunar_guild_prices",
+    "lunar_resource_weight_bands",
+    "lunar_guild_buy_rate_milliunits_per_gram",
+    "royal_admin_extraordinary_controls_enabled",
 }
+
 log = logging.getLogger("dungeon.lunar_resources")
 log.setLevel(logging.INFO)
 
@@ -26,25 +29,51 @@ def fail(message, status=409):
 
 
 def validate_setting(name, value):
-    if name == "lunar_resource_spawn_enabled":
+    if name in (
+        "lunar_resource_spawn_enabled",
+        "royal_admin_extraordinary_controls_enabled",
+    ):
         valid = type(value) is bool
     elif name == "lunar_resource_spawn_chance_ppm":
         valid = type(value) is int and 0 <= value <= 1000000
+    elif name == "lunar_guild_buy_rate_milliunits_per_gram":
+        valid = type(value) is int and 0 <= value <= 1000000000
+    elif name == "lunar_resource_weight_bands":
+        valid = isinstance(value, list) and len(value) == 3
+        previous = 99
+        if valid:
+            for band in value:
+                if (
+                    not isinstance(band, dict)
+                    or set(band) != {"min_g", "max_g", "percent"}
+                    or any(type(v) is not int for v in band.values())
+                    or band["min_g"] != previous + 1
+                    or not 100 <= band["min_g"] <= band["max_g"] <= 1000
+                    or not 0 <= band["percent"] <= 100
+                ):
+                    valid = False
+                    break
+                previous = band["max_g"]
+            valid = (
+                valid and previous == 1000 and sum(x["percent"] for x in value) == 100
+            )
     else:
-        valid = (
-            isinstance(value, dict)
-            and set(value) == set(WEIGHTS)
-            and all(type(v) is int and 0 <= v <= 1000000000 for v in value.values())
-        )
-        if name == "lunar_resource_weight_distribution":
-            valid = valid and sum(value.values()) > 0
+        valid = False
     if not valid:
-        fail("Configuração Lunar inválida; use inteiros e tamanhos definidos", 422)
+        fail(
+            "Configuração Lunar inválida: inteiros, faixas contíguas100..1000g e probabilidades somando100",
+            422,
+        )
 
 
 def policy(db):
     result = {
-        k: runtime_setting(db, k) for k in sorted(CONFIG) if k != "lunar_guild_prices"
+        k: runtime_setting(db, k)
+        for k in [
+            "lunar_resource_spawn_enabled",
+            "lunar_resource_spawn_chance_ppm",
+            "lunar_resource_weight_bands",
+        ]
     }
     for k, v in result.items():
         validate_setting(k, v)
@@ -52,7 +81,6 @@ def policy(db):
 
 
 def roll(expedition_id, room_id, seed, generation, config):
-    """No fresh RNG or secret in a request. Room UUID/seed are server-created."""
     digest = hashlib.sha256(
         f"{VERSION}:{expedition_id}:{room_id}:{seed}:{generation}".encode()
     ).hexdigest()
@@ -61,13 +89,15 @@ def roll(expedition_id, room_id, seed, generation, config):
         or int(digest[:16], 16) % 1000000 >= config["lunar_resource_spawn_chance_ppm"]
     ):
         return digest, None
-    distribution = config["lunar_resource_weight_distribution"]
-    ticket = int(digest[16:32], 16) % sum(distribution.values())
-    for code in sorted(WEIGHTS):
-        ticket -= distribution[code]
+    ticket = int(digest[16:32], 16) % 100
+    for band in config["lunar_resource_weight_bands"]:
+        ticket -= band["percent"]
         if ticket < 0:
-            return digest, code
-    raise AssertionError("Distribution exhausted")
+            grams = band["min_g"] + int(digest[32:48], 16) % (
+                band["max_g"] - band["min_g"] + 1
+            )
+            return digest, grams * 1000
+    raise AssertionError("Faixas inválidas")
 
 
 def reachable_points(room):
@@ -107,7 +137,7 @@ def generate(db, c, room, expedition):
     config = policy(db)
     config["lunar_resource_spawn_enabled"] &= finance.active(db)
     generation = db.get(m.RoomState, (c.id, room.id)).generation
-    digest, code = roll(expedition.id, room.id, room.seed, generation, config)
+    digest, weight = roll(expedition.id, room.id, room.seed, generation, config)
     points = reachable_points(room)
     record = m.LunarResourceGeneration(
         expedition_id=expedition.id,
@@ -115,16 +145,24 @@ def generate(db, c, room, expedition):
         generation=generation,
         version=VERSION,
         group_snapshot={"mode": "SOLO", "member_ids": [c.id]},
-        config_snapshot=config,
+        config_snapshot={
+            **config,
+            "selected_weight_mg": str(weight) if weight else None,
+            "selected_band": next(
+                (
+                    [b["min_g"], b["max_g"]]
+                    for b in config["lunar_resource_weight_bands"]
+                    if weight and b["min_g"] * 1000 <= weight <= b["max_g"] * 1000
+                ),
+                None,
+            ),
+        },
         decision_hash=digest,
-        spawned=bool(code and points),
+        spawned=bool(weight and points),
     )
     db.add(record)
     db.flush()
     if record.spawned:
-        asset = db.get(m.LunarAsset, code)
-        if not asset or asset.kind != "nugget" or asset.weight_mg != WEIGHTS[code]:
-            fail("Definição de pepita incompatível")
         x, y = points[int(digest[32:48], 16) % len(points)]
         db.add(
             m.LunarResourceOccurrence(
@@ -132,8 +170,8 @@ def generate(db, c, room, expedition):
                 room_id=room.id,
                 generation=generation,
                 spawn_key="lunar:0",
-                asset_code=code,
-                weight_mg=asset.weight_mg,
+                asset_code=None,
+                weight_mg=weight,
                 x=x,
                 y=y,
             )
@@ -142,7 +180,7 @@ def generate(db, c, room, expedition):
         log.info(
             "resource_spawned expedition=%s weight_mg=%s",
             expedition.id,
-            asset.weight_mg,
+            weight,
         )
     return record
 
@@ -177,11 +215,11 @@ def state(db, c):
 def nugget_slots(db, c):
     return int(
         db.scalar(
-            select(func.coalesce(func.sum(m.LunarHolding.quantity), 0))
-            .join(m.LunarAsset, m.LunarAsset.code == m.LunarHolding.asset_code)
+            select(func.count())
+            .select_from(m.LunarMineralLot)
             .where(
-                m.LunarHolding.account_id == f"player:{c.id}",
-                m.LunarAsset.kind == "nugget",
+                m.LunarMineralLot.owner_account_id == f"player:{c.id}",
+                m.LunarMineralLot.state == "HELD",
             )
         )
     )
@@ -271,13 +309,21 @@ def collect(db, c, expedition_id, occurrence_id, request_id):
         "DISCOVERED_MINERAL",
         f"player:{c.id}",
         "Coleta de ocorrência procedural persistente",
-        [(f"player:{c.id}", r.asset_code, 1)],
+        [(f"player:{c.id}", lots.ASSET, r.weight_mg)],
         source="discovery",
         context={
             "occurrence_id": r.id,
             "expedition_id": e.id,
             "weight_mg": str(r.weight_mg),
         },
+    )
+    lot = lots.create(
+        db,
+        f"player:{c.id}",
+        r.weight_mg,
+        receipt,
+        occurrence=r.id,
+        details={"origin": "DISCOVERED_MINERAL"},
     )
     r.state = "COLLECTED"
     r.collected_by = c.id
@@ -296,6 +342,7 @@ def collect(db, c, expedition_id, occurrence_id, request_id):
         "replayed": False,
         "message": f"Minério Lunar coletado: {r.weight_mg//1000} g.",
         "weight_mg": str(r.weight_mg),
+        "lot_id": lot.id,
     }
 
 
@@ -312,81 +359,102 @@ def expire(db, expedition_id):
         log.info("resource_expired occurrence=%s", r.id)
 
 
+def price(weight_mg, rate):
+    return (weight_mg // 1000) * rate // 1000
+
+
 def quotes(db, c):
-    prices = runtime_setting(db, "lunar_guild_prices")
-    validate_setting("lunar_guild_prices", prices)
-    held = lunar.balances(db, f"player:{c.id}")
+    rate = runtime_setting(db, "lunar_guild_buy_rate_milliunits_per_gram")
+    validate_setting("lunar_guild_buy_rate_milliunits_per_gram", rate)
+    setting = db.get(m.GameSetting, "lunar_guild_buy_rate_milliunits_per_gram")
+    revision = setting.value.get("revision", "initial") if setting else "initial"
     return [
         {
-            "asset_code": a,
-            "weight_mg": str(w),
-            "quantity": str(held.get(a, 0)),
-            "price_units": str(prices[a]),
-            "quote": lunar.fingerprint([a, prices[a]]),
+            **lots.payload(r),
+            "rate": rate,
+            "price_units": str(price(r.weight_mg, rate)),
+            "guild_balance": str(finance.coin_mg(db, "guild") // 1000),
+            "quote_hash": lunar.fingerprint(
+                [r.id, r.weight_mg, r.owner_account_id, r.state, rate, revision]
+            ),
         }
-        for a, w in WEIGHTS.items()
-        if prices[a] > 0
+        for r in lots.held(db, f"player:{c.id}")
     ]
 
 
-def sell(db, c, asset, quote, request_id):
+def sell(db, c, lot_id, quote, request_id):
     lunar.mutex(db)
     key = f"lunar-sale:{c.id}:{request_id}"
-    old = db.scalar(select(m.LunarEntry).where(m.LunarEntry.key == key))
+    params = [lot_id, quote]
+    old = lots.replay(db, key, params)
     if old:
-        if old.context.get("parameters") != [asset, quote]:
-            fail("Chave já usada em outra venda")
-        return {
-            "receipt": old.id,
-            "replayed": True,
-            "message": "Venda de minério já confirmada.",
-        }
+        return {"receipt": old.id, "replayed": True, "message": "Venda já confirmada."}
     from .game import idle, receptionist
 
     idle(db, c)
     receptionist(db, c)
     if not finance.active(db):
-        fail("Cutover Lunar ainda inativo")
-    offer = next((o for o in quotes(db, c) if o["asset_code"] == asset), None)
-    if not offer or quote != offer["quote"]:
-        fail("Preço mudou ou compra de minério desativada")
-    if int(offer["quantity"]) < 1:
-        fail("Pepita inexistente na sua carteira")
+        fail("Cutover Lunar inativo")
+    offer = next((o for o in quotes(db, c) if o["lot_id"] == lot_id), None)
+    if not offer or offer["quote_hash"] != quote:
+        fail("Pepita inexistente ou cotação alterada")
+    if int(offer["price_units"]) <= 0:
+        fail("Oferta sem pagamento; não há venda gratuita")
     finance.ensure(db, "guild")
-    # Real coins only; automatic debt amortization remains in the existing facade.
     finance.move(
         db, "guild", f"player:{c.id}", int(offer["price_units"]), key + ":coins"
     )
-    receipt = lunar.post(
+    r = lots.get(db, lot_id, f"player:{c.id}")
+    e = lunar.post(
         db,
         key,
         "MINERAL_SALE",
         f"player:{c.id}",
-        "Venda física de uma pepita à Guilda",
-        [(f"player:{c.id}", asset, -1), ("guild", asset, 1)],
+        "Venda de pepita por preço comercial por grama",
+        [
+            (f"player:{c.id}", lots.ASSET, -r.weight_mg),
+            ("guild", lots.ASSET, r.weight_mg),
+        ],
         context={
-            "parameters": [asset, quote],
-            "weight_mg": str(WEIGHTS[asset]),
+            "parameters": params,
+            "lot_ids": [lot_id],
+            "weight_mg": str(r.weight_mg),
+            "rate": offer["rate"],
             "price_units": offer["price_units"],
         },
     )
+    r.owner_account_id = "guild"
+    r.updated_at = utc_now()
     assert_audit(db)
-    log.info("resource_sale character=%s weight_mg=%s", c.id, WEIGHTS[asset])
+    log.info("resource_sale lot=%s weight_mg=%s", r.id, r.weight_mg)
     return {
-        "receipt": receipt.id,
+        "receipt": e.id,
         "replayed": False,
-        "message": "Pepita vendida à Guilda; pagamento físico confirmado.",
+        "message": "Pepita vendida à Guilda com moedas físicas.",
     }
 
 
 def origin_totals(db):
     weights = {a.code: a.weight_mg for a in db.scalars(select(m.LunarAsset))}
-    totals = {"genesis_mg": 0, "discovered_mg": 0, "burned_mg": 0}
+    totals = {
+        "genesis_mg": 0,
+        "discovered_mg": 0,
+        "burned_mg": 0,
+        "admin_injection_mg": 0,
+    }
     for entry in db.scalars(select(m.LunarEntry)):
         net = sum(p["quantity"] * weights[p["asset"]] for p in entry.postings)
         if net > 0:
             totals[
-                "genesis_mg" if entry.kind == "GENESIS_BACKING" else "discovered_mg"
+                (
+                    "genesis_mg"
+                    if entry.kind == "GENESIS_BACKING"
+                    else (
+                        "admin_injection_mg"
+                        if entry.kind == "ADMIN_INJECTION"
+                        else "discovered_mg"
+                    )
+                )
             ] += net
         elif net < 0:
             totals["burned_mg"] -= net
@@ -401,7 +469,13 @@ def audit(db):
         totals["genesis_mg"],
         totals["discovered_mg"],
         totals["burned_mg"],
-    ) != (supply.legacy_backing_mg, supply.discovered_mg, supply.destroyed_mg):
+        totals["admin_injection_mg"],
+    ) != (
+        supply.legacy_backing_mg,
+        supply.discovered_mg,
+        supply.destroyed_mg,
+        supply.admin_injected_mg,
+    ):
         errors.append("lunar-supply-origins")
     receipts = {
         e.key: e
@@ -420,16 +494,30 @@ def audit(db):
             or e.context.get("occurrence_id") != r.id
             or e.context.get("weight_mg") != str(r.weight_mg)
             or e.postings
-            != [
-                {
-                    "account": f"player:{r.collected_by}",
-                    "asset": r.asset_code,
-                    "quantity": 1,
-                }
-            ]
+            not in (
+                [
+                    {
+                        "account": f"player:{r.collected_by}",
+                        "asset": lots.ASSET,
+                        "quantity": r.weight_mg,
+                    }
+                ],
+                (
+                    [
+                        {
+                            "account": f"player:{r.collected_by}",
+                            "asset": r.asset_code,
+                            "quantity": 1,
+                        }
+                    ]
+                    if r.asset_code
+                    else []
+                ),
+            )
         ):
             errors.append(f"lunar-occurrence:{r.id}")
     errors += [f"lunar-unbound-discovery:{e.id}" for e in receipts.values()]
+    errors.extend(lots.audit(db))
     return errors
 
 
@@ -453,18 +541,9 @@ def metrics(db):
         )
     )
     mineral = {}
-    for kind, total in db.execute(
-        select(
-            m.LunarAccount.kind,
-            func.sum(m.LunarHolding.quantity * m.LunarAsset.weight_mg),
-        )
-        .select_from(m.LunarHolding)
-        .join(m.LunarAccount, m.LunarAccount.id == m.LunarHolding.account_id)
-        .join(m.LunarAsset, m.LunarAsset.code == m.LunarHolding.asset_code)
-        .where(m.LunarAsset.kind == "nugget")
-        .group_by(m.LunarAccount.kind)
-    ):
-        mineral[kind] = str(int(total))
+    for r in lots.held(db):
+        kind = db.get(m.LunarAccount, r.owner_account_id).kind
+        mineral[kind] = str(int(mineral.get(kind, 0)) + r.weight_mg)
     return {
         "lunar_resource_occurrences_generated": sum(n for n, w in by_state.values()),
         "lunar_resource_occurrences_collected": by_state.get("COLLECTED", (0, 0))[0],
@@ -480,20 +559,4 @@ def metrics(db):
 
 
 def inventory(db, c):
-    return [
-        {
-            "asset_code": h.asset_code,
-            "quantity": str(h.quantity),
-            "weight_mg": str(a.weight_mg),
-        }
-        for h, a in db.execute(
-            select(m.LunarHolding, m.LunarAsset)
-            .join(m.LunarAsset, m.LunarAsset.code == m.LunarHolding.asset_code)
-            .where(
-                m.LunarHolding.account_id == f"player:{c.id}",
-                m.LunarHolding.quantity > 0,
-                m.LunarAsset.kind == "nugget",
-            )
-            .order_by(m.LunarHolding.asset_code)
-        )
-    ]
+    return [lots.payload(r) for r in lots.held(db, f"player:{c.id}")]

@@ -28,9 +28,20 @@ class Settings(BaseSettings):
     encounter_max_enemies: int = Field(default=2, ge=2, le=3)
     encounter_radius: int = Field(default=8, ge=1, le=12)
     collection_slots: int = Field(default=30, ge=1, le=1000)
-    # PROVISIONAL technical parameters; disabled until an audited explicit configuration.
-    lunar_resource_spawn_enabled: bool = False
-    lunar_resource_spawn_chance_ppm: int = Field(default=1000, ge=0, le=1000000)
+    lunar_resource_spawn_enabled: bool = True
+    lunar_resource_spawn_chance_ppm: int = Field(default=20000, ge=0, le=1000000)
+    lunar_resource_weight_bands: list[dict[str, int]] = Field(
+        default_factory=lambda: [
+            {"min_g": 100, "max_g": 200, "percent": 80},
+            {"min_g": 201, "max_g": 700, "percent": 15},
+            {"min_g": 701, "max_g": 1000, "percent": 5},
+        ]
+    )
+    lunar_guild_buy_rate_milliunits_per_gram: int = Field(
+        default=800, ge=0, le=1000000000
+    )
+    royal_admin_extraordinary_controls_enabled: bool = True
+    # Legacy configuration keys are compatibility only, never current pricing/generation.
     lunar_resource_weight_distribution: dict[str, int] = Field(
         default_factory=lambda: {
             "nugget_small": 90,
@@ -38,7 +49,6 @@ class Settings(BaseSettings):
             "nugget_large": 1,
         }
     )
-    # Zero means no purchase quote, not free mineral. Values are currency units (1g coin).
     lunar_guild_prices: dict[str, int] = Field(
         default_factory=lambda: {
             "nugget_small": 0,
