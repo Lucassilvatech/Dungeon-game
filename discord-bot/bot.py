@@ -122,7 +122,7 @@ def render(section, data):
             for i in data[section]
         ][:30] or ["Nenhum item."]
         lines += [
-            f"Minério Lunar · Pepita {int(n['weight_mg']) // 1000}g ×{n['quantity']}"
+            f"Pepita #{n['lot_id']} · {int(n['weight_mg']) // 1000}g"
             for n in data.get("mineral_inventory", [])
         ]
     elif section == "attributes":
@@ -131,38 +131,23 @@ def render(section, data):
             for k, v in data["attributes"].items()
         ] + [f"Pontos livres: {data['points']}"]
     elif section in ("wallet", "mineral"):
-        assets = data["assets"]
-        codes = (
-            ["coin_small", "coin_medium", "coin_large"]
-            if section == "wallet"
-            else ["nugget_small", "nugget_medium", "nugget_large"]
-        )
-        labels = (
-            ["Moeda pequena", "Moeda média", "Moeda grande"]
-            if section == "wallet"
-            else ["Pepita 100g", "Pepita 500g", "Pepita 1.000g"]
-        )
-        lines = [
-            f"{label}: {assets.get(code,{}).get('quantity','0')}"
-            for code, label in zip(codes, labels)
-        ]
-        lines += [f"Ocorrências coletadas: {data.get('collected_lunar_resources', 0)}"]
-        weight = sum(
-            int(assets.get(code, {}).get("total_weight_mg", "0")) for code in codes
-        )
-        lines += [
-            f"Peso total: {weight} mg",
-            (
-                (
-                    "Carteira Lunar operacional; dívida: "
-                    + data.get("debt_weight_mg", "0")
-                    + " mg"
-                )
-                if data["legacy_conversion_active"]
-                else "Conversão Lunar ainda inativa; saldo legado: "
-                + data["legacy_balance"]
-            ),
-        ]
+        if section == "mineral":
+            lines = [
+                f"Pepita #{r['lot_id']} · {r['weight_g']}g"
+                for r in data.get("lots", [])
+            ][:30]
+            lines += [f"Massa total de minério: {data.get('mineral_weight_mg','0')} mg"]
+        else:
+            lines = [
+                f"{name}: {data['assets'].get(code,{}).get('quantity','0')}"
+                for code, name in [
+                    ("coin_small", "Pequenas"),
+                    ("coin_medium", "Médias"),
+                    ("coin_large", "Grandes"),
+                ]
+            ]
+            lines += [f"Dívida: {data.get('debt_weight_mg','0')} mg"]
+        lines += [f"Ocorrências coletadas: {data.get('collected_lunar_resources',0)}"]
     elif section == "recovery":
         lines = [
             f"#{r['id']} · item {r['item_id']} · {r['price']} moedas · "
