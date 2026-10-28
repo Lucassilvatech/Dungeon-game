@@ -16,6 +16,7 @@ def fail(message, code=409):
 
 
 ASSETS = {
+    "mineral_mg": ("nugget", 1),
     "nugget_small": ("nugget", 100000),
     "nugget_medium": ("nugget", 500000),
     "nugget_large": ("nugget", 1000000),
@@ -116,6 +117,7 @@ def post(db, key, kind, actor, reason, postings, context=None, source=None):
         "GENESIS_BACKING",
         "ZERO_TRANSFER",
         "DEBT_REPAYMENT",
+        "MINERAL_SPLIT",
     ):
         fail("Operação vazia", 422)
     supply = db.get(LunarSupply, 1)
@@ -128,17 +130,25 @@ def post(db, key, kind, actor, reason, postings, context=None, source=None):
         asset = db.get(LunarAsset, a)
         if not asset or not db.get(LunarAccount, o):
             fail("Conta ou ativo inexistente", 404)
+        if a in ("nugget_small", "nugget_medium", "nugget_large"):
+            fail("Pepitas fixas são somente histórico; use lot individual", 422)
         holding = db.get(LunarHolding, (o, a))
-        before = holding.quantity if holding else 0
+        if a == "mineral_mg":
+            from .mineral_lots import mass
+
+            before = mass(db, o)
+        else:
+            before = holding.quantity if holding else 0
         if before + q < 0:
             fail("Saldo físico insuficiente")
         total += q * asset.weight_mg
-        updates.append((holding, o, a, before + q))
-    if total > 0 and source not in ("discovery", "legacy_backing"):
+        if a != "mineral_mg":
+            updates.append((holding, o, a, before + q))
+    if total > 0 and source not in ("discovery", "legacy_backing", "admin_injection"):
         fail("Operação criaria massa sem origem")
     if total < 0 and source != "destruction":
         fail("Operação destruiria massa sem destino")
-    if (source == "discovery" and total <= 0) or (
+    if (source in ("discovery", "admin_injection") and total <= 0) or (
         source == "legacy_backing" and total < 0
     ):
         fail("Entrada sem massa positiva")
@@ -149,6 +159,8 @@ def post(db, key, kind, actor, reason, postings, context=None, source=None):
             h.quantity = q
         else:
             db.add(LunarHolding(account_id=o, asset_code=a, quantity=q))
+    if source == "admin_injection":
+        supply.admin_injected_mg += total
     if source == "discovery":
         supply.discovered_mg += total
     if source == "legacy_backing":
@@ -175,22 +187,31 @@ def post(db, key, kind, actor, reason, postings, context=None, source=None):
 
 
 def split(db, id, source, outputs, key):
-    mutex(db)
-    original = db.get(LunarAsset, source)
-    if not original or original.kind != "nugget" or source == "nugget_small":
-        fail("Pepita não pode ser dividida")
-    postings = [(id, source, -1)]
-    weight = 0
+    # Compatibility adapter for the former fixed-size endpoint; lots remain authoritative.
+    from . import mineral_lots as lots
+
+    if source not in lots.LEGACY or set(outputs) - set(lots.LEGACY):
+        fail("Pepita inválida", 422)
+    grams = []
     for code, q in outputs.items():
         integer(q, True)
-        a = db.get(LunarAsset, code)
-        if not a or a.kind != "nugget" or a.weight_mg >= original.weight_mg:
-            fail("Resultado de divisão inválido")
-        weight += a.weight_mg * q
-        postings.append((id, code, q))
-    if weight != original.weight_mg:
-        fail("Divisão deve conservar massa exatamente")
-    return post(db, key, "NUGGET_SPLIT", id, "Divisão gratuita e sem perda", postings)
+        if lots.LEGACY[code] >= lots.LEGACY[source]:
+            fail("Fragmentos devem ser menores", 422)
+        if q > 1000:
+            fail("Fragmentos demais", 422)
+        grams.extend([lots.LEGACY[code] // 1000] * q)
+    old = db.scalar(select(LunarEntry).where(LunarEntry.key == key))
+    if old:
+        owner, lotid, oldgrams = old.context["parameters"]
+        if owner != id or oldgrams != grams:
+            fail("Referência já usada")
+        return old
+    row = next(
+        (r for r in lots.held(db, id) if r.weight_mg == lots.LEGACY[source]), None
+    )
+    if not row:
+        fail("Pepita indisponível")
+    return lots.split(db, id, row.id, grams, key)
 
 
 def exchange(db, id, inputs, outputs, key):
@@ -214,28 +235,25 @@ def exchange(db, id, inputs, outputs, key):
 
 
 def mint(db, id, nuggets, coins, key):
-    mutex(db)
-    owner = db.get(LunarAccount, id)
-    if not owner or owner.kind != "treasury":
-        fail("Cunhagem exclusiva do Tesouro", 403)
-    postings = []
-    weight = 0
-    for sign, values, kind in [(-1, nuggets, "nugget"), (1, coins, "coin")]:
-        if not values:
-            fail("Cunhagem exige minério e moedas")
-        for code, q in values.items():
-            integer(q, True)
-            asset = db.get(LunarAsset, code)
-            if not asset or asset.kind != kind:
-                fail("Composição de cunhagem inválida")
-            postings.append((id, code, sign * q))
-            if sign > 0:
-                weight += q * asset.weight_mg
-    previous = db.scalar(select(LunarEntry).where(LunarEntry.key == key))
-    entry = post(db, key, "COIN_MINT", id, "Cunhagem de minério já existente", postings)
-    if not previous:
-        db.get(LunarSupply, 1).minted_mg += weight
-    return entry
+    from . import mineral_lots as lots
+
+    if not nuggets or set(nuggets) - set(lots.LEGACY):
+        fail("Pepita inválida", 422)
+    for q in nuggets.values():
+        integer(q, True)
+    required = sum(lots.LEGACY[a] * q for a, q in nuggets.items())
+    for q in coins.values():
+        integer(q)
+    if (
+        sum(
+            db.get(LunarAsset, a).weight_mg * q
+            for a, q in coins.items()
+            if a.startswith("coin_")
+        )
+        != required
+    ):
+        fail("Cunhagem deve conservar massa")
+    return lots.mint(db, coins, key, id, "Cunhagem lastreada compatível", owner=id)
 
 
 def select_coins(available, weights, required):
@@ -280,6 +298,9 @@ def transfer(db, source, target, coins, key, kind="COIN_TRANSFER"):
 def wallet(db, id):
     assets = {a.code: a for a in db.scalars(select(LunarAsset))}
     held = balances(db, id)
+    from .mineral_lots import held as held_lots, payload
+
+    lots = held_lots(db, id)
     from . import finance
     from .models import LunarDebt
 
@@ -303,8 +324,14 @@ def wallet(db, id):
                 "kind": a.kind,
             }
             for code, a in assets.items()
+            if a.kind == "coin"
         },
-        "weight_mg": str(sum(q * assets[code].weight_mg for code, q in held.items())),
+        "lots": [payload(r) for r in lots],
+        "mineral_weight_mg": str(sum(r.weight_mg for r in lots)),
+        "weight_mg": str(
+            sum(q * assets[code].weight_mg for code, q in held.items())
+            + sum(r.weight_mg for r in lots)
+        ),
         "legacy_conversion_active": finance.active(db),
     }
 
@@ -324,8 +351,15 @@ def audit(db):
         totals[assets[h.asset_code].kind] += mass
         owners[h.account_id] += mass
         counts[h.asset_code] += h.quantity
+    from .mineral_lots import held
+
+    material_lots = held(db)
+    for lot in material_lots:
+        totals["nugget"] += lot.weight_mg
+        owners[lot.owner_account_id] += lot.weight_mg
+        counts["mineral_mg"] += lot.weight_mg
     gap = sum(totals.values()) - (
-        s.discovered_mg + s.legacy_backing_mg - s.destroyed_mg
+        s.discovered_mg + s.legacy_backing_mg + s.admin_injected_mg - s.destroyed_mg
     )
     ledger_balances = defaultdict(int)
     for entry in db.scalars(select(LunarEntry)):
@@ -335,6 +369,9 @@ def audit(db):
         (h.account_id, h.asset_code): h.quantity
         for h in db.scalars(select(LunarHolding))
     }
+    for lot in material_lots:
+        k = (lot.owner_account_id, "mineral_mg")
+        physical[k] = physical.get(k, 0) + lot.weight_mg
     mismatches = [
         {
             "account": o,
@@ -356,6 +393,7 @@ def audit(db):
         "mode": "observe_only",
         "discovered_mg": str(s.discovered_mg),
         "legacy_backing_mg": str(s.legacy_backing_mg),
+        "admin_injected_mg": str(s.admin_injected_mg),
         "destroyed_mg": str(s.destroyed_mg),
         "minted_mg": str(s.minted_mg),
         "coin_burned_mg": str(s.coin_burned_mg),

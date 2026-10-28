@@ -118,7 +118,7 @@ def debt(db, c):
     return row
 
 
-def move(db, source, target, units, key, *, amortize=True):
+def move(db, source, target, units, key, *, amortize=True, actor=None, reason=None):
     lunar.mutex(db)
     lunar.integer(units)
     if source in ("mint", "initial_supply", "burn"):
@@ -129,6 +129,10 @@ def move(db, source, target, units, key, *, amortize=True):
     if old:
         if old.context.get("parameters") != parameters:
             fail("Referência financeira já usada com outros valores")
+        if (actor is not None and old.actor != actor) or (
+            reason is not None and old.reason != reason
+        ):
+            fail("Referência financeira já vinculada a outro ator ou justificativa")
         return old
     if source == target:
         fail("Origem e destino devem diferir")
@@ -160,8 +164,8 @@ def move(db, source, target, units, key, *, amortize=True):
             if repaid
             else "ZERO_TRANSFER" if units == 0 else "COIN_TRANSFER"
         ),
-        source,
-        "Pagamento físico com origem explícita",
+        actor or source,
+        reason or "Pagamento físico com origem explícita",
         postings,
         context={"parameters": parameters, "debt_repaid_mg": str(repaid)},
     )
@@ -252,7 +256,12 @@ def metrics(db):
     )
     supply = db.get(m.LunarSupply, 1)
     total = sum(int(v) for v in report["accounts"].values())
-    expected = supply.discovered_mg + supply.legacy_backing_mg - supply.destroyed_mg
+    expected = (
+        supply.discovered_mg
+        + supply.legacy_backing_mg
+        + supply.admin_injected_mg
+        - supply.destroyed_mg
+    )
     return {
         **report,
         "migration_status": "CONVERTED",

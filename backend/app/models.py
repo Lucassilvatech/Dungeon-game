@@ -671,6 +671,9 @@ class LunarEntry(Base):
 class LunarSupply(Base):
     __tablename__ = "lunar_supply"
     id: Mapped[int] = mapped_column(primary_key=True)
+    admin_injected_mg: Mapped[int] = mapped_column(
+        Gold(), default=0, server_default="0"
+    )
     discovered_mg: Mapped[int] = mapped_column(Gold(), default=0)
     legacy_backing_mg: Mapped[int] = mapped_column(Gold(), default=0)
     destroyed_mg: Mapped[int] = mapped_column(Gold(), default=0)
@@ -679,6 +682,7 @@ class LunarSupply(Base):
     config: Mapped[dict] = mapped_column(JSON, default=dict)
     __table_args__ = (
         CheckConstraint("id = 1"),
+        CheckConstraint("admin_injected_mg >= 0", name="nonnegative_admin_injection"),
         CheckConstraint(
             "discovered_mg >= 0 AND legacy_backing_mg >= 0 AND destroyed_mg >= 0 AND minted_mg >= 0 AND coin_burned_mg >= 0"
         ),
@@ -743,7 +747,7 @@ class LunarResourceOccurrence(Base):
     room_id: Mapped[str] = mapped_column(ForeignKey("rooms.id"), index=True)
     generation: Mapped[int] = mapped_column()
     spawn_key: Mapped[str] = mapped_column(String(40))
-    asset_code: Mapped[str] = mapped_column(ForeignKey("lunar_assets.code"))
+    asset_code: Mapped[str | None] = mapped_column(ForeignKey("lunar_assets.code"))
     weight_mg: Mapped[int] = mapped_column(Gold())
     x: Mapped[int] = mapped_column()
     y: Mapped[int] = mapped_column()
@@ -756,10 +760,50 @@ class LunarResourceOccurrence(Base):
     created_at: Mapped[datetime] = mapped_column(default=utc_now)
     __table_args__ = (
         UniqueConstraint("expedition_id", "generation", "spawn_key"),
-        CheckConstraint("weight_mg IN (100000,500000,1000000)"),
+        CheckConstraint(
+            "weight_mg >= 100000 AND weight_mg <= 1000000 AND mod(weight_mg,1000) = 0",
+            name="variable_resource_weight",
+        ),
         CheckConstraint("x >= 0 AND y >= 0 AND generation >= 0"),
         CheckConstraint("state IN ('AVAILABLE','COLLECTED','EXPIRED')"),
         CheckConstraint(
             "(state = 'COLLECTED' AND collected_by IS NOT NULL AND collected_at IS NOT NULL AND receipt_key IS NOT NULL) OR (state <> 'COLLECTED' AND collected_by IS NULL AND collected_at IS NULL AND receipt_key IS NULL)"
+        ),
+    )
+
+
+class LunarMineralLot(Base):
+    __tablename__ = "lunar_mineral_lots"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    weight_mg: Mapped[int] = mapped_column(Gold())
+    owner_account_id: Mapped[str] = mapped_column(
+        ForeignKey("lunar_accounts.id"), index=True
+    )
+    origin_occurrence_id: Mapped[int | None] = mapped_column(
+        ForeignKey("lunar_resource_occurrences.id"), index=True
+    )
+    parent_lot_id: Mapped[int | None] = mapped_column(
+        ForeignKey("lunar_mineral_lots.id"), index=True
+    )
+    state: Mapped[str] = mapped_column(String(20), default="HELD", index=True)
+    source_entry_id: Mapped[int | None] = mapped_column(ForeignKey("lunar_entries.id"))
+    split_operation_id: Mapped[int | None] = mapped_column(
+        ForeignKey("lunar_entries.id")
+    )
+    mint_operation_id: Mapped[int | None] = mapped_column(
+        ForeignKey("lunar_entries.id")
+    )
+    burn_operation_id: Mapped[int | None] = mapped_column(
+        ForeignKey("lunar_entries.id")
+    )
+    created_at: Mapped[datetime] = mapped_column(default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(default=utc_now)
+    consumed_at: Mapped[datetime | None] = mapped_column(DateTime)
+    details: Mapped[dict] = mapped_column(JSON, default=dict)
+    __table_args__ = (
+        CheckConstraint("weight_mg >= 1000 AND mod(weight_mg,1000) = 0"),
+        CheckConstraint("state IN ('HELD','SPLIT','MINTED','BURNED')"),
+        CheckConstraint(
+            "(state='HELD' AND consumed_at IS NULL) OR (state<>'HELD' AND consumed_at IS NOT NULL)"
         ),
     )
