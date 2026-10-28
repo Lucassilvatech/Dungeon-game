@@ -74,17 +74,17 @@ def simulate_procedural(expeditions, scenario, seed=91):
     from concurrent.futures import ThreadPoolExecutor
 
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
-    from app.lunar_resources import roll, WEIGHTS
+    from app.lunar_resources import roll
 
-    chance = 0 if scenario == "none" else 1000 if scenario == "rare" else 1000000
+    chance = 0 if scenario == "none" else 20000 if scenario == "rare" else 1000000
     config = {
         "lunar_resource_spawn_enabled": True,
         "lunar_resource_spawn_chance_ppm": chance,
-        "lunar_resource_weight_distribution": {
-            "nugget_small": 90,
-            "nugget_medium": 9,
-            "nugget_large": 1,
-        },
+        "lunar_resource_weight_bands": [
+            {"min_g": 100, "max_g": 200, "percent": 80},
+            {"min_g": 201, "max_g": 700, "percent": 15},
+            {"min_g": 701, "max_g": 1000, "percent": 5},
+        ],
     }
     decisions = {
         i: roll(i, f"sim:{seed}:{i}", seed, 0, config) for i in range(expeditions)
@@ -108,7 +108,7 @@ def simulate_procedural(expeditions, scenario, seed=91):
                 replays += 1
                 return
             states[i] = "COLLECTED"
-            mass = WEIGHTS[decisions[i][1]]
+            mass = decisions[i][1]
             discovered += mass
             player_mineral += mass
             collected += 1
@@ -134,12 +134,8 @@ def simulate_procedural(expeditions, scenario, seed=91):
         if states[i] == "AVAILABLE":
             states[i] = "EXPIRED"
         if states[i] == "COLLECTED" and scenario in ("sale", "insolvent_guild"):
-            mass = WEIGHTS[decisions[i][1]]
-            price = {
-                "nugget_small": 7000,
-                "nugget_medium": 13000,
-                "nugget_large": 19000,
-            }[decisions[i][1]]
+            mass = decisions[i][1]
+            price = (mass // 1000) * 800 // 1000 * 1000
             if guild_coins >= price:
                 guild_coins -= price
                 player_coins += price
@@ -169,6 +165,86 @@ def simulate_procedural(expeditions, scenario, seed=91):
     }
 
 
+def simulate_variable_chain(extraordinary=False):
+    genesis = 10000000
+    discovery = 684000
+    injection = 111000 if extraordinary else 0
+    destroyed = 5000 if extraordinary else 0
+    # Root684 ->500+184; sold500 keeps identity; Treasury mints437 and retains63.
+    lots = [
+        {"id": 1, "grams": 684, "state": "SPLIT", "parent": None},
+        {"id": 2, "grams": 500, "state": "SPLIT", "parent": 1},
+        {"id": 3, "grams": 184, "state": "HELD", "parent": 1, "owner": "player"},
+        {"id": 4, "grams": 437, "state": "MINTED", "parent": 2},
+        {"id": 5, "grams": 63, "state": "HELD", "parent": 2, "owner": "treasury"},
+    ]
+    if extraordinary:
+        lots.append({"id": 6, "grams": 111, "state": "HELD", "parent": None,
+                     "owner": "treasury", "origin": "ADMIN_INJECTION"})
+    mineral = (184 + 63) * 1000 + injection
+    coins = genesis + 437000 - destroyed
+    assert genesis + discovery + injection - destroyed == mineral + coins
+    return {
+        "scenario": "extraordinary" if extraordinary else "normal",
+        "genesis_mg": str(genesis),
+        "discovered_mg": str(discovery),
+        "admin_injection_mg": str(injection),
+        "destroyed_mg": str(destroyed),
+        "minted_mg": "437000",
+        "sale_500g_units": 400,
+        "lots": lots,
+        "mineral_mg": str(mineral),
+        "coins_mg": str(coins),
+        "gap_mg": "0",
+    }
+
+
+def variable_statistics(n=1000000):
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
+    from app.lunar_resources import roll
+    from app.config import Settings
+
+    settings = Settings(_env_file=None)
+    config = {
+        k: getattr(settings, k)
+        for k in [
+            "lunar_resource_spawn_enabled",
+            "lunar_resource_spawn_chance_ppm",
+            "lunar_resource_weight_bands",
+        ]
+    }
+    counts = [0, 0, 0]
+    minimum = 1000
+    maximum = 0
+    for i in range(n):
+        _, w = roll(i, f"variable:{i}", 91, 0, config)
+        if w:
+            g = w // 1000
+            assert w % 1000 == 0 and 100 <= g <= 1000
+            counts[0 if g <= 200 else 1 if g <= 700 else 2] += 1
+            minimum = min(minimum, g)
+            maximum = max(maximum, g)
+    total = sum(counts)
+    assert n * 18 // 1000 < total < n * 22 // 1000
+    assert (
+        abs(counts[0] * 10000 // total - 8000) < 250
+        and abs(counts[1] * 10000 // total - 1500) < 200
+        and abs(counts[2] * 10000 // total - 500) < 150
+    )
+    return {
+        "decisions": n,
+        "spawned": total,
+        "chance_ppm": 20000,
+        "band_counts": counts,
+        "minimum_g": minimum,
+        "maximum_g": maximum,
+        "rate_milliunits_per_g": 800,
+        "note": "Approved initial design; statistical tolerances are verification only.",
+    }
+
+
 if __name__ == "__main__":
     report = {
         "note": "Isolated integer-mass fixtures, not production configuration or equilibrium claims. Initial 10kg is explicit simulated discovery. NPC starts with zero coins and 50 finite fixture products. No economic policy tuning.",
@@ -194,6 +270,11 @@ if __name__ == "__main__":
             "reconnect",
             "concurrent",
         ]
+    ]
+    report["variable_statistics"] = variable_statistics()
+    report["variable_chains"] = [
+        simulate_variable_chain(False),
+        simulate_variable_chain(True),
     ]
     target = Path(__file__).resolve().parents[1] / "docs/lunar/SIMULATION.json"
     target.write_text(json.dumps(report, indent=2) + "\n")

@@ -295,15 +295,15 @@
       "scenario": "rare",
       "expeditions": 10000,
       "seed": 91,
-      "potential_occurrences": 6,
-      "collected": 6,
+      "potential_occurrences": 209,
+      "collected": 209,
       "expired": 0,
-      "discovered_mg": "1000000",
+      "discovered_mg": "47460000",
       "sold_to_guild_mg": "0",
       "guild_coin_mg": "10000000",
       "player_coin_mg": "0",
       "guild_mineral_mg": "0",
-      "player_mineral_mg": "1000000",
+      "player_mineral_mg": "47460000",
       "refused_insufficient_cash": 0,
       "duplicate_attempts_without_new_mass": 0,
       "gap_mg": "0"
@@ -315,12 +315,12 @@
       "potential_occurrences": 10000,
       "collected": 10000,
       "expired": 0,
-      "discovered_mg": "1442800000",
+      "discovered_mg": "2270957000",
       "sold_to_guild_mg": "0",
       "guild_coin_mg": "10000000",
       "player_coin_mg": "0",
       "guild_mineral_mg": "0",
-      "player_mineral_mg": "1442800000",
+      "player_mineral_mg": "2270957000",
       "refused_insufficient_cash": 0,
       "duplicate_attempts_without_new_mass": 0,
       "gap_mg": "0"
@@ -332,12 +332,12 @@
       "potential_occurrences": 10000,
       "collected": 5000,
       "expired": 5000,
-      "discovered_mg": "728600000",
+      "discovered_mg": "1125481000",
       "sold_to_guild_mg": "0",
       "guild_coin_mg": "10000000",
       "player_coin_mg": "0",
       "guild_mineral_mg": "0",
-      "player_mineral_mg": "728600000",
+      "player_mineral_mg": "1125481000",
       "refused_insufficient_cash": 0,
       "duplicate_attempts_without_new_mass": 0,
       "gap_mg": "0"
@@ -366,13 +366,13 @@
       "potential_occurrences": 10000,
       "collected": 10000,
       "expired": 0,
-      "discovered_mg": "1442800000",
-      "sold_to_guild_mg": "185400000",
-      "guild_coin_mg": "2000",
-      "player_coin_mg": "9998000",
-      "guild_mineral_mg": "185400000",
-      "player_mineral_mg": "1257400000",
-      "refused_insufficient_cash": 8684,
+      "discovered_mg": "2270957000",
+      "sold_to_guild_mg": "12485000",
+      "guild_coin_mg": "33000",
+      "player_coin_mg": "9967000",
+      "guild_mineral_mg": "12485000",
+      "player_mineral_mg": "2258472000",
+      "refused_insufficient_cash": 9940,
       "duplicate_attempts_without_new_mass": 0,
       "gap_mg": "0"
     },
@@ -383,12 +383,12 @@
       "potential_occurrences": 10000,
       "collected": 10000,
       "expired": 0,
-      "discovered_mg": "1442800000",
+      "discovered_mg": "2270957000",
       "sold_to_guild_mg": "0",
       "guild_coin_mg": "0",
       "player_coin_mg": "0",
       "guild_mineral_mg": "0",
-      "player_mineral_mg": "1442800000",
+      "player_mineral_mg": "2270957000",
       "refused_insufficient_cash": 10000,
       "duplicate_attempts_without_new_mass": 0,
       "gap_mg": "0"
@@ -400,12 +400,12 @@
       "potential_occurrences": 10000,
       "collected": 10000,
       "expired": 0,
-      "discovered_mg": "1442800000",
+      "discovered_mg": "2270957000",
       "sold_to_guild_mg": "0",
       "guild_coin_mg": "10000000",
       "player_coin_mg": "0",
       "guild_mineral_mg": "0",
-      "player_mineral_mg": "1442800000",
+      "player_mineral_mg": "2270957000",
       "refused_insufficient_cash": 0,
       "duplicate_attempts_without_new_mass": 0,
       "gap_mg": "0"
@@ -417,14 +417,130 @@
       "potential_occurrences": 10000,
       "collected": 10000,
       "expired": 0,
-      "discovered_mg": "1442800000",
+      "discovered_mg": "2270957000",
       "sold_to_guild_mg": "0",
       "guild_coin_mg": "10000000",
       "player_coin_mg": "0",
       "guild_mineral_mg": "0",
-      "player_mineral_mg": "1442800000",
+      "player_mineral_mg": "2270957000",
       "refused_insufficient_cash": 0,
       "duplicate_attempts_without_new_mass": 10000,
+      "gap_mg": "0"
+    }
+  ],
+  "variable_statistics": {
+    "decisions": 1000000,
+    "spawned": 19891,
+    "chance_ppm": 20000,
+    "band_counts": [
+      15994,
+      2956,
+      941
+    ],
+    "minimum_g": 100,
+    "maximum_g": 1000,
+    "rate_milliunits_per_g": 800,
+    "note": "Approved initial design; statistical tolerances are verification only."
+  },
+  "variable_chains": [
+    {
+      "scenario": "normal",
+      "genesis_mg": "10000000",
+      "discovered_mg": "684000",
+      "admin_injection_mg": "0",
+      "destroyed_mg": "0",
+      "minted_mg": "437000",
+      "sale_500g_units": 400,
+      "lots": [
+        {
+          "id": 1,
+          "grams": 684,
+          "state": "SPLIT",
+          "parent": null
+        },
+        {
+          "id": 2,
+          "grams": 500,
+          "state": "SPLIT",
+          "parent": 1
+        },
+        {
+          "id": 3,
+          "grams": 184,
+          "state": "HELD",
+          "parent": 1,
+          "owner": "player"
+        },
+        {
+          "id": 4,
+          "grams": 437,
+          "state": "MINTED",
+          "parent": 2
+        },
+        {
+          "id": 5,
+          "grams": 63,
+          "state": "HELD",
+          "parent": 2,
+          "owner": "treasury"
+        }
+      ],
+      "mineral_mg": "247000",
+      "coins_mg": "10437000",
+      "gap_mg": "0"
+    },
+    {
+      "scenario": "extraordinary",
+      "genesis_mg": "10000000",
+      "discovered_mg": "684000",
+      "admin_injection_mg": "111000",
+      "destroyed_mg": "5000",
+      "minted_mg": "437000",
+      "sale_500g_units": 400,
+      "lots": [
+        {
+          "id": 1,
+          "grams": 684,
+          "state": "SPLIT",
+          "parent": null
+        },
+        {
+          "id": 2,
+          "grams": 500,
+          "state": "SPLIT",
+          "parent": 1
+        },
+        {
+          "id": 3,
+          "grams": 184,
+          "state": "HELD",
+          "parent": 1,
+          "owner": "player"
+        },
+        {
+          "id": 4,
+          "grams": 437,
+          "state": "MINTED",
+          "parent": 2
+        },
+        {
+          "id": 5,
+          "grams": 63,
+          "state": "HELD",
+          "parent": 2,
+          "owner": "treasury"
+        },
+        {
+          "id": 6,
+          "grams": 111,
+          "state": "HELD",
+          "parent": null,
+          "owner": "treasury",
+          "origin": "ADMIN_INJECTION"
+        }
+      ],
+      "mineral_mg": "358000",
+      "coins_mg": "10432000",
       "gap_mg": "0"
     }
   ]

@@ -12,6 +12,7 @@ from test_expeditions import begin, flee
 from app import models as m, lunar_resources as resources, finance, lunar, game
 from app.database import Session, engine
 from app.config import settings
+from app import mineral_lots as lots
 
 
 @pytest.fixture(autouse=True)
@@ -33,11 +34,7 @@ def config(monkeypatch):
 def setup(client, mp, asset="nugget_small"):
     h = player(client)
     convert()
-    mp.setattr(
-        settings,
-        "lunar_resource_weight_distribution",
-        {a: int(a == asset) for a in resources.WEIGHTS},
-    )
+    mp.setattr(resources, "roll", lambda *args: ("a" * 64, resources.WEIGHTS[asset]))
     s = begin(client, h, mp)
     r = s["map"]["lunar_resources"][0]
     walk_tiles(client, h, (r["x"], r["y"]))
@@ -142,9 +139,7 @@ def test_collection_exact_mass_no_coins_and_replay(client, monkeypatch, asset, w
     assert collect(client, h, r, key).json()["replayed"]
     assert collect(client, h, r).status_code == 409
     assert state(client, h)["map"]["lunar_resources"] == []
-    assert state(client, h)["lunar_inventory"] == [
-        {"asset_code": asset, "quantity": "1", "weight_mg": str(weight)}
-    ]
+    assert state(client, h)["lunar_inventory"][0]["weight_mg"] == str(weight)
     with Session() as db:
         assert db.get(m.LunarSupply, 1).discovered_mg == weight
         assert finance.coin_mg(db, f"player:{s['character']['id']}") == 0
@@ -337,9 +332,9 @@ def sale_body(client, h, asset="nugget_medium"):
     q = next(
         q
         for q in client.get("/lunar/guild-quotes", headers=h).json()["quotes"]
-        if q["asset_code"] == asset
+        if q["weight_mg"] == str(resources.WEIGHTS[asset])
     )
-    return {"asset_code": asset, "quote": q["quote"], "request_id": str(uuid4())}
+    return {"lot_id": q["lot_id"], "quote": q["quote_hash"], "request_id": str(uuid4())}
 
 
 def test_guild_finite_cash_server_price_replay_ownership_and_conservation(
@@ -351,7 +346,7 @@ def test_guild_finite_cash_server_price_replay_ownership_and_conservation(
     body = sale_body(client, h)
     assert client.post("/lunar/guild-sell", headers=h, json=body).status_code == 409
     with Session.begin() as db:
-        finance.move(db, "treasury", "guild", 13, "fund-guild")
+        finance.move(db, "treasury", "guild", 400, "fund-guild")
     assert (
         client.post(
             "/lunar/guild-sell", headers=h, json={**body, "weight_mg": 500000}
@@ -359,14 +354,10 @@ def test_guild_finite_cash_server_price_replay_ownership_and_conservation(
         == 422
     )
     with Session() as db:
-        assert finance.coin_mg(db, "guild") == 13000
-        assert (
-            lunar.balances(db, f"player:{s['character']['id']}")["nugget_medium"] == 1
-        )
+        assert finance.coin_mg(db, "guild") == 400000
+        assert len(lots.held(db, f"player:{s['character']['id']}")) == 1
     assert client.post("/lunar/guild-sell", headers=h, json=body).status_code == 200
-    monkeypatch.setattr(
-        settings, "lunar_guild_prices", {a: 99 for a in resources.WEIGHTS}
-    )
+    monkeypatch.setattr(settings, "lunar_guild_buy_rate_milliunits_per_gram", 999)
     assert client.post("/lunar/guild-sell", headers=h, json=body).json()["replayed"]
     assert (
         client.post(
@@ -377,9 +368,9 @@ def test_guild_finite_cash_server_price_replay_ownership_and_conservation(
     with Session() as db:
         assert (
             finance.coin_mg(db, "guild") == 0
-            and finance.coin_mg(db, f"player:{s['character']['id']}") == 13000
+            and finance.coin_mg(db, f"player:{s['character']['id']}") == 400000
         )
-        assert lunar.balances(db, "guild")["nugget_medium"] == 1
+        assert len(lots.held(db, "guild")) == 1
         assert db.get(m.LunarSupply, 1).discovered_mg == 500000
         assert resources.metrics(db)["lunar_resource_sold_to_guild_mg"] == "500000"
     invariant()
@@ -390,7 +381,7 @@ def test_double_sale_and_audit_rollback(client, monkeypatch):
     assert collect(client, h, r).status_code == 200
     at_guild(client, h)
     with Session.begin() as db:
-        finance.move(db, "treasury", "guild", 14, "fund-guild")
+        finance.move(db, "treasury", "guild", 160, "fund-guild")
     body = sale_body(client, h, "nugget_small")
     with monkeypatch.context() as mp:
         mp.setattr(
@@ -401,8 +392,7 @@ def test_double_sale_and_audit_rollback(client, monkeypatch):
         assert client.post("/lunar/guild-sell", headers=h, json=body).status_code == 409
     with Session() as db:
         assert (
-            finance.coin_mg(db, "guild") == 14000
-            and lunar.balances(db, "guild").get("nugget_small", 0) == 0
+            finance.coin_mg(db, "guild") == 160000 and len(lots.held(db, "guild")) == 0
         )
 
     def run(_):
@@ -410,7 +400,7 @@ def test_double_sale_and_audit_rollback(client, monkeypatch):
             with Session.begin() as db:
                 c = game.character(db, SimpleNamespace(id=s["character"]["id"]))
                 return resources.sell(
-                    db, c, "nugget_small", body["quote"], str(uuid4())
+                    db, c, body["lot_id"], body["quote"], str(uuid4())
                 )
         except HTTPException as e:
             return e.status_code
@@ -440,7 +430,7 @@ def test_mineral_retained_on_death_and_available_expires(client, monkeypatch):
         json={"turn": b["turn"], "action": "defend"},
     )
     assert response.status_code == 200 and response.json()["status"] == "lost"
-    assert state(client, h)["lunar_inventory"][0]["quantity"] == "1"
+    assert len(state(client, h)["lunar_inventory"]) == 1
     assert state(client, h)["death"]["newly_financed"] == 100
     invariant()
 
@@ -453,12 +443,16 @@ def test_admin_config_permissions_and_strict_values(client):
         ("lunar_resource_spawn_enabled", False),
         ("lunar_resource_spawn_chance_ppm", 2345),
         (
-            "lunar_resource_weight_distribution",
-            {"nugget_small": 3, "nugget_medium": 2, "nugget_large": 1},
+            "lunar_resource_weight_bands",
+            [
+                {"min_g": 100, "max_g": 200, "percent": 80},
+                {"min_g": 201, "max_g": 700, "percent": 15},
+                {"min_g": 701, "max_g": 1000, "percent": 5},
+            ],
         ),
         (
-            "lunar_guild_prices",
-            {"nugget_small": 3, "nugget_medium": 7, "nugget_large": 11},
+            "lunar_guild_buy_rate_milliunits_per_gram",
+            800,
         ),
     ]:
         p = proposal(client, ah, "economy.configure", key, {"value": value})
@@ -480,8 +474,8 @@ def test_admin_config_permissions_and_strict_values(client):
     for key, value in [
         ("lunar_resource_spawn_enabled", 1),
         ("lunar_resource_spawn_chance_ppm", 1.1),
-        ("lunar_guild_prices", {"nugget_small": 1.2}),
-        ("lunar_resource_weight_distribution", {a: 0 for a in resources.WEIGHTS}),
+        ("lunar_guild_buy_rate_milliunits_per_gram", 1.2),
+        ("lunar_resource_weight_bands", []),
     ]:
         assert (
             proposal(client, ah, "economy.configure", key, {"value": value}).status_code
@@ -491,11 +485,7 @@ def test_admin_config_permissions_and_strict_values(client):
 
 def test_concurrent_reconnect_collection_and_invalid_sale(client, monkeypatch):
     h, s, r = setup(client, monkeypatch)
-    quote = next(
-        q
-        for q in client.get("/lunar/guild-quotes", headers=h).json()["quotes"]
-        if q["asset_code"] == "nugget_small"
-    )["quote"]
+    quote = "0" * 64
 
     def run(action):
         try:
@@ -504,7 +494,7 @@ def test_concurrent_reconnect_collection_and_invalid_sale(client, monkeypatch):
                 if action == "read":
                     return game.snapshot(db, c)
                 if action == "sale":
-                    return resources.sell(db, c, "nugget_small", quote, str(uuid4()))
+                    return resources.sell(db, c, 999999, quote, str(uuid4()))
                 return resources.collect(
                     db, c, r["expedition_id"], r["id"], str(uuid4())
                 )

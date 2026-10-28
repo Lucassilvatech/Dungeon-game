@@ -27,15 +27,25 @@ def lunar_empty(clean):
 
 
 def discover(db, owner="treasury", code="nugget_large", quantity=1, key=None):
-    return lunar.post(
+    from app import mineral_lots as lots
+
+    reference = key or str(uuid4())
+    old = db.scalar(select(m.LunarEntry).where(m.LunarEntry.key == reference))
+    if old:
+        return old
+    weight = lots.LEGACY[code]
+    e = lunar.post(
         db,
-        key or str(uuid4()),
+        reference,
         "LUNAR_MINERAL_DISCOVERED",
         "server",
         "Fixture de descoberta isolada",
-        [(owner, code, quantity)],
+        [(owner, lots.ASSET, weight * quantity)],
         source="discovery",
     )
+    for _ in range(quantity):
+        lots.create(db, owner, weight, e)
+    return e
 
 
 @pytest.mark.parametrize(
@@ -212,7 +222,10 @@ def test_denomination_configuration_freezes_and_audit_detects_state_tampering(ca
             lunar.configure_empty_denominations(
                 db, {"coin_small": 1000, "coin_medium": 5000, "coin_large": 10000}
             )
-        db.get(m.LunarHolding, ("treasury", "nugget_large")).quantity = 2
+        # Corrupt a monetary projection to verify detection; lot identity has its own trigger.
+        db.add(
+            m.LunarHolding(account_id="treasury", asset_code="coin_large", quantity=50)
+        )
         report = lunar.audit(db)
         assert report["gap_mg"] == "1000000" and report["ledger_mismatches"]
         assert "lunar_mass_invariant_failed" in caplog.text
