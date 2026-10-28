@@ -88,6 +88,11 @@ PARAMS = {
     "contracts.cancel": set(),
 }
 
+from . import royal
+
+ACTIONS.update(royal.ACTIONS)
+PARAMS.update(royal.PARAMS)
+
 
 def data(row):
     if row is None:
@@ -234,6 +239,8 @@ def lock_resources(db, action, target, p):
 
 
 def describe(db, action, target, p):
+    if action.startswith("royal."):
+        return royal.describe(db, action, target, p)
     from .finance import active
 
     if action in ("bank.issue", "bank.burn") and active(db):
@@ -609,6 +616,8 @@ def cancel_auction(db, op, restore=False):
 
 
 def apply(db, actor, op):
+    if op.action.startswith("royal."):
+        return royal.apply(db, actor, op)
     from . import game
     from .inventory import add_item
 
@@ -669,9 +678,13 @@ def apply(db, actor, op):
     elif action == "economy.configure":
         r = db.get(m.GameSetting, op.target)
         if r:
-            r.value = {"value": p["value"]}
+            r.value = {"value": p["value"], "revision": op.id}
         else:
-            db.add(m.GameSetting(key=op.target, value={"value": p["value"]}))
+            db.add(
+                m.GameSetting(
+                    key=op.target, value={"value": p["value"], "revision": op.id}
+                )
+            )
     elif action.startswith("players."):
         c = get(db, m.Character, op.target)
         game.idle(db, c)

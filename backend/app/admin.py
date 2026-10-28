@@ -138,6 +138,11 @@ def view(
     actor=Depends(principal),
     db=Depends(get_db),
 ):
+    if module == "royal":
+        require(actor, "economy.read")
+        from .royal import overview
+
+        return overview(db)
     if offset < 0:
         raise HTTPException(422, "Página inválida")
     permission = "economy.read" if module == "lunar" else module + ".read"
@@ -437,3 +442,117 @@ def lunar_resources_view(offset: int = 0, actor=Depends(principal), db=Depends(g
             )
         ],
     }
+
+
+@router.get("/lunar/lots")
+def mineral_lots_list(
+    owner: str = "",
+    kind: str = "",
+    state: str = "",
+    origin: str = "",
+    occurrence: int | None = None,
+    expedition: int | None = None,
+    min_g: int = 0,
+    max_g: int = 1000000000,
+    offset: int = 0,
+    actor=Depends(principal),
+    db=Depends(get_db),
+):
+    require(actor, "economy.read")
+    from .mineral_lots import payload
+
+    q = select(m.LunarMineralLot).join(
+        m.LunarAccount, m.LunarAccount.id == m.LunarMineralLot.owner_account_id
+    )
+    if owner:
+        q = q.where(m.LunarMineralLot.owner_account_id == owner)
+    if kind:
+        q = q.where(m.LunarAccount.kind == kind)
+    if state:
+        q = q.where(m.LunarMineralLot.state == state)
+    if occurrence:
+        q = q.where(m.LunarMineralLot.origin_occurrence_id == occurrence)
+    if expedition:
+        q = q.join(
+            m.LunarResourceOccurrence,
+            m.LunarResourceOccurrence.id == m.LunarMineralLot.origin_occurrence_id,
+        ).where(m.LunarResourceOccurrence.expedition_id == expedition)
+    if origin:
+        q = q.join(
+            m.LunarEntry, m.LunarEntry.id == m.LunarMineralLot.source_entry_id
+        ).where(m.LunarEntry.kind == origin)
+    q = q.where(
+        m.LunarMineralLot.weight_mg >= min_g * 1000,
+        m.LunarMineralLot.weight_mg <= max_g * 1000,
+    )
+    return {
+        "lots": [
+            payload(r)
+            for r in db.scalars(
+                q.order_by(m.LunarMineralLot.id).offset(max(0, offset)).limit(100)
+            )
+        ]
+    }
+
+
+@router.get("/lunar/lots/{lot_id}/lineage")
+def mineral_lineage(lot_id: int, actor=Depends(principal), db=Depends(get_db)):
+    require(actor, "economy.read")
+    from .mineral_lots import lineage
+
+    return lineage(db, lot_id)
+
+
+@router.get("/royal/accounts/{account_id}/details")
+def royal_account_details(
+    account_id: str, actor=Depends(principal), db=Depends(get_db)
+):
+    require(actor, "economy.read")
+    from . import mineral_lots as lots, finance
+
+    row = db.get(m.LunarAccount, account_id)
+    if not row:
+        raise HTTPException(404, "Conta inexistente")
+    return {
+        "account": account_id,
+        "coins": __import__("app.lunar", fromlist=["balances"]).balances(
+            db, account_id
+        ),
+        "lots": [lots.payload(r) for r in lots.held(db, account_id)],
+        "debt_mg": (
+            str(finance.debt_mg(db, db.get(m.Character, row.character_id)))
+            if row.character_id
+            else "0"
+        ),
+        "inventory": (
+            [
+                data(i)
+                for i in db.scalars(
+                    select(m.Item).where(
+                        m.Item.owner == row.character_id, m.Item.location == "inventory"
+                    )
+                )
+            ]
+            if row.character_id
+            else []
+        ),
+    }
+
+
+@router.get("/lunar/entries")
+def royal_entries(
+    owner: str = "", offset: int = 0, actor=Depends(principal), db=Depends(get_db)
+):
+    require(actor, "economy.read")
+    from sqlalchemy import cast
+    from sqlalchemy.dialects.postgresql import JSONB
+
+    q = select(m.LunarEntry)
+    if owner:
+        q = q.where(cast(m.LunarEntry.postings, JSONB).contains([{"account": owner}]))
+    return [
+        data(e)
+        for e in db.scalars(
+            q.order_by(m.LunarEntry.id.desc()).offset(max(offset, 0)).limit(100)
+        )
+    ]
