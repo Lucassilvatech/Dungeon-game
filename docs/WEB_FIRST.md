@@ -1,5 +1,10 @@
 # Web First — 0.8
 
+## Web atual: lotes variáveis e Administração Real
+
+Carteira/inventário mostram identidade e peso de cada pepita. Divisão permite fragmentos inteiros sem tarifa, com capacidade conjunta; Guilda mostra rate800 milliunits/g inicial e cotação individual/confirmada. Mapa preserva ocorrência e peso variável em F5/reconnect. Administração do Rei oferece as dez áreas com mint parcial, confisco, transferências e controles extraordinários explícitos. Fluxos principais cobertos em Chromium390px, sem hover obrigatório. [Entrega](lunar/DELIVERY_VARIABLE_NUGGETS_0.9.md) · [Tesouro Real](lunar/ROYAL_ADMINISTRATION.md).
+
+
 > Atualização da continuação 0.9: [cutover operacional, migrações e validação](lunar/CUTOVER.md). O upgrade não converte o ambiente: confirmação administrativa ativa Lunar como fonte única. As descrições financeiras legadas e de conversão inativa abaixo registram a etapa anterior; após a confirmação, holdings Lunar e obrigações separadas são autoritativos. Discord segue estritamente read-only; Godot congelado.
 
 > **Estratégia atual 0.9:** backend autoritativo, **Web como cliente principal**, **Discord estritamente read-only para gameplay**. Godot Windows/Android estão **FROZEN**; APK/EXE não são requisitos deste ciclo. Código/presets/builds e documentação histórica preservados. Ver [GODOT_FREEZE.md](GODOT_FREEZE.md) e [CONSOLIDATION_0.9.md](CONSOLIDATION_0.9.md). Descrições de equipamento confirmado via Discord abaixo são históricas e foram desativadas em 0.9.

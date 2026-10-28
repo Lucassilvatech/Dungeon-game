@@ -1,12 +1,19 @@
 # Roadmap: primeiro andar antes de expandir a Torre
 
+## Entrega atual: pepitas variáveis e Administração Real
+
+Implementados: spawn2% configurável; bandas80/15/5; lotes individuais de100..1000g; migração física; split inteiro gratuito; preço inicial800 milliunits/g; dez áreas Reais com mint manual, transferências/confisco, burn e injection excepcionais; linhagem e auditoria separando potencial e massa econômica. [Modelo e evidências](lunar/VARIABLE_NUGGETS.md) · [Entrega](lunar/DELIVERY_VARIABLE_NUGGETS_0.9.md).
+
+Cutover implementado e validado em cópia privada; ativação no ambiente operacional real ainda não executada. Nenhum recurso artificial foi inserido no operacional. Boss global, Echo, política automática do rei e produção NPC continuam futuros, sem avanço automático. Discord read-only; Godot congelado.
+
+
 > Continuação 0.9: [cutover Lunar e migração dos fluxos financeiros](lunar/CUTOVER.md) implementados na feature branch, com ativação administrativa explícita e validação em cópia privada. A continuação atual adiciona recursos Lunares procedurais, sem boss global ou ecos; ver [lifecycle e validação](lunar/PROCEDURAL_RESOURCES.md). Ambiente operacional preservado.
 
 > **Estratégia atual 0.9:** backend autoritativo, **Web como cliente principal**, **Discord estritamente read-only para gameplay**. Godot Windows/Android estão **FROZEN**; APK/EXE não são requisitos deste ciclo. Código/presets/builds e documentação histórica preservados. Ver [GODOT_FREEZE.md](GODOT_FREEZE.md) e [CONSOLIDATION_0.9.md](CONSOLIDATION_0.9.md). Descrições de equipamento confirmado via Discord abaixo são históricas e foram desativadas em 0.9.
 
 ## Prioridade ativa
 
-1. Cutover implementado e validado em cópia privada; ativação no ambiente operacional real ainda não executada. Recursos procedurais Lunares são a etapa atual.
+1. Cutover implementado e validado em cópia privada; ativação no ambiente operacional real ainda não executada. Recursos procedurais, pepitas variáveis e Administração Real implementados na feature branch; deploy real não executado.
 2. Backend autoritativo e testes de integridade.
 3. Web e Central ADM.
 4. NPCs/estoques/fluxo econômico.

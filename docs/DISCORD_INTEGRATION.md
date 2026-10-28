@@ -1,5 +1,10 @@
 # Discord 0.9 — somente observação
 
+## Observação de pepitas individuais 0.9
+
+Consultas próprias passam a listar ID, gramas e massa total de LunarMineralLot HELD, além do inventário tradicional e dívida. Não expõem ocorrência potencial nem coordenadas secretas. Mantém transações SQL READ ONLY e bloqueio das rotas de controle. **Discord remains read-only. Discord cannot control the character.** Testes comparam snapshots de domínio antes/depois de cinco consultas; conexão externa real ainda depende de credenciais e não foi declarada validada. [Modelo](lunar/VARIABLE_NUGGETS.md).
+
+
 > Atualização da continuação 0.9: [cutover operacional, migrações e validação](lunar/CUTOVER.md). O upgrade não converte o ambiente: confirmação administrativa ativa Lunar como fonte única. As descrições financeiras legadas e de conversão inativa abaixo registram a etapa anterior; após a confirmação, holdings Lunar e obrigações separadas são autoritativos. Discord segue estritamente read-only; Godot congelado.
 
 **Discord cannot control the character.** Backend autoritativo, Web principal, Discord somente consultas privadas do personagem vinculado. Não há economia/inventário/progresso paralelo.

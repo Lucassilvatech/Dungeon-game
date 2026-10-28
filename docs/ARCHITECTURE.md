@@ -1,5 +1,10 @@
 # Arquitetura
 
+## Custódia e Administração Real 0.9
+
+`mineral_lots.py` centraliza minério individual; `LunarMineralLot` HELD é material físico, `LunarHolding` guarda moedas. `mineral_mg` é ativo contábil sem holding. Split/mint/burn parcial criam filhos e encerram pai; transferência conserva identidade. Ledger permanece append-only, e auditoria inclui genealogia, owners, source e Supply.admin_injected_mg separado. Revisão aditiva ca343e37b4ca substitui projeção fungível antiga por lotes sem alterar histórico. `royal.py` integra as operações manuais ao AdminService existente, nunca a uma API financeira paralela. Frontend Royal oferece dez áreas com permissão/preview/confirm/receipt. [Detalhes](lunar/VARIABLE_NUGGETS.md).
+
+
 > Atualização da continuação 0.9: [cutover operacional, migrações e validação](lunar/CUTOVER.md). O upgrade não converte o ambiente: confirmação administrativa ativa Lunar como fonte única. As descrições financeiras legadas e de conversão inativa abaixo registram a etapa anterior; após a confirmação, holdings Lunar e obrigações separadas são autoritativos. Discord segue estritamente read-only; Godot congelado.
 
 > **Estratégia atual 0.9:** backend autoritativo, **Web como cliente principal**, **Discord estritamente read-only para gameplay**. Godot Windows/Android estão **FROZEN**; APK/EXE não são requisitos deste ciclo. Código/presets/builds e documentação histórica preservados. Ver [GODOT_FREEZE.md](GODOT_FREEZE.md) e [CONSOLIDATION_0.9.md](CONSOLIDATION_0.9.md). Descrições de equipamento confirmado via Discord abaixo são históricas e foram desativadas em 0.9.

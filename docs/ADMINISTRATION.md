@@ -1,5 +1,10 @@
 # Central Administrativa web
 
+## Administração do Rei: interface econômica principal 0.9
+
+O menu **Administração do Rei** oferece Visão geral, Minério, Moedas, Cunhagem, Jogadores, Guilda, Tesouro, Auditoria, Configuração e Histórico administrativo. O Banco Central antigo passa a **Compatibilidade legada**, somente leitura. Leituras economy.read; mutações economy.manage com razão, prévia vinculada ao estado, confirmação, recibo e auditoria. Burn/injection exigem flag e DESTRUIR/INJETAR; não são emissão automática. [Manual completo e execução Windows](lunar/ROYAL_ADMINISTRATION.md). As instruções antigas sobre emissão abstrata do Banco Central abaixo não orientam o fluxo operacional pós-cutover.
+
+
 Acesso de desenvolvimento: `http://localhost:8080/admin`. Entrada/bundle separados do jogo; Godot não possui privilégios administrativos. A navegação oferece Visão geral, Banco Central, Economia, Guildas, Jogadores, Itens, Monstros, Leilões, Mundo/eventos e Auditoria. A aplicação não tem senha padrão nem transforma a primeira conta em administrador.
 
 ## Primeiro acesso
@@ -51,4 +56,4 @@ Coleta mostra estoque por personagem/região/geração, não um estoque global. 
 
 ## Continuação procedural Lunar 0.9
 
-economy.configure admite lunar_resource_spawn_enabled, lunar_resource_spawn_chance_ppm, lunar_resource_weight_distribution e lunar_guild_prices; prévia/motivo/confirmação/auditoria continuam obrigatórios. Painel Lunar inclui ocorrências e métricas, sem spawn manual. Ver [recursos Lunares](lunar/PROCEDURAL_RESOURCES.md).
+economy.configure admite lunar_resource_spawn_enabled, lunar_resource_spawn_chance_ppm, lunar_resource_weight_bands, lunar_guild_buy_rate_milliunits_per_gram e royal_admin_extraordinary_controls_enabled; as antigas chaves por tamanho são compatibilidade histórica; prévia/motivo/confirmação/auditoria continuam obrigatórios. Painel Lunar inclui ocorrências e métricas, sem spawn manual. Ver [recursos Lunares](lunar/PROCEDURAL_RESOURCES.md).

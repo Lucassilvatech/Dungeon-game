@@ -4,7 +4,7 @@
 
 A continuação `feature/lunar-cutover-economy-0.9` implementa o [cutover financeiro auditado](docs/lunar/CUTOVER.md): 1 moeda antiga = 1g, gênese separada, carteira operacional Lunar, dívida/recebível e escrows físicos. O upgrade não ativa conversão; confirmação administrativa é obrigatória. O banco operacional foi preservado; conversão validada apenas em cópias privadas. A Web oferece painel Lunar com saldo físico/pepitas e divisão para estoque elegível, sem contabilizar o legado duas vezes. `/equipar` foi removido do bot, endpoints antigos retornam 410; consultas Discord não executam movimentação, geração ou liquidação financeira. Identidade/vinculação permanece.
 
-Branch `feature/lunar-procedural-resources-0.9`: [ocorrências persistentes, coleta e compra finita pela Guilda](docs/lunar/PROCEDURAL_RESOURCES.md), com geração desativada por padrão e preços configuráveis. Massa só entra pela coleta; Discord observa e Godot permanece congelado.
+Branch atual **`feature/lunar-variable-nuggets-royal-admin-0.9`**, baseada em `feature/lunar-procedural-resources-0.9`: [pepitas individuais variáveis](docs/lunar/VARIABLE_NUGGETS.md), spawn aprovado **2%**, faixas **80/15/5** (100–200/201–700/701–1000g), divisão livre e Guilda a **800 milliunits/g** iniciais. [Tesouro Real/Administração do Rei](docs/lunar/ROYAL_ADMINISTRATION.md) oferece dez áreas, cunhagem manual, transferências, burn/injection explícitos e auditoria. Migração **ca343e37b4ca** preserva a massa e o ledger; coleta não cria moedas. [Entrega e testes](docs/lunar/DELIVERY_VARIABLE_NUGGETS_0.9.md). Discord observa e Godot permanece congelado.
 
 > O build Windows 0.6 de desenvolvimento recebeu relato de bloqueio “vírus detectado” e está em investigação. Não desative o antivírus ou crie exclusão. [Status e verificações](docs/security/WINDOWS_BUILD_TRIAGE.md).
 
@@ -26,11 +26,11 @@ Builds históricos **0.7**, sem exportação nova em 0.8: [Windows x64](https://
 
 ## Revisar esta evolução sem alterar a main
 
-Esta consolidação está em **feature/lunar-web-discord-readonly-0.9**, continuação da `feature/web-discord-first-floor-0.8`, baseada em `feature/procedural-economy-godot-fixes`, para revisão por PR; a main permanece estável e não houve merge automático. Guarde alterações locais antes de trocar de branch. Para testar o código desta entrega:
+Esta entrega está em **feature/lunar-variable-nuggets-royal-admin-0.9**, continuação da `feature/lunar-procedural-resources-0.9`, para revisão por PR; a main permanece estável e não houve merge automático. Guarde alterações locais antes de trocar de branch. Para testar o código desta entrega:
 
 ```powershell
 git fetch origin
-git switch feature/lunar-web-discord-readonly-0.9
+git switch feature/lunar-variable-nuggets-royal-admin-0.9
 ```
 
 Use os comandos de execução abaixo na branch selecionada. Não use reset/force push ou apague volumes para atualizar.
@@ -48,6 +48,8 @@ Central ADM: `http://localhost:8080/admin`, com entrada web e sessão independen
 Implementado: viagem rápida validada somente a locais permanentes visitados, Salão de Leilões na Guilda, informações/histórico reais dos anúncios, proteção permanente da Espada de Aprendiz (`sword`), diagnóstico e recuperação individual auditada, módulos administrativos e Banco Central manual com contabilidade e créditos de teste isolados. Não foram implementados andares superiores ou habilidades futuras.
 
 ## Windows: executar ou atualizar
+
+Comandos completos para esta branch e primeiro acesso ADM em [Execução local da entrega](docs/lunar/ROYAL_ADMINISTRATION.md#execução-local-no-windows-powershell).
 
 Com Git e Docker Desktop/WSL2 instalados, dentro do checkout:
 
@@ -77,7 +79,7 @@ Não apague `.env` nem use `docker compose down -v` para atualizar. O startup ap
 10. Para sair antes, escolha **FUGIR DA AVENTURA**. A confirmação mostra valores reais: perde-se 50% do total monetário pendente na Guilda (inclusive registros de outras salas), arredondando a perda para cima; todo o XP do nível atual é zerado. **Nível, atributos conquistados, moedas já recebidas e itens permanecem.** A fuga encerra a expedição e retorna à cidade. Exemplo: 301 pendentes → 150 restantes, 151 perdidas.
 
 11. **Morrer em Aventura procedural é diferente de fugir:** encerra a expedição como FAILED, zera todo o XP atual e todas as recompensas monetárias pendentes da Guilda, e sorteia a perda de 0 a 5 unidades elegíveis. Comuns são destruídos; raros/únicos ficam no NPC de recuperação pessoal, por 200% do valor-base, sem leilão público. A **Espada de Aprendiz** e itens estruturais marcados como não transferíveis são preservados. A proteção vale para novos e antigos personagens, pela identidade estável da definição, sem proteger outras espadas. O resumo de morte persiste em F5 até você confirmar **RETORNAR À CIDADE**; o resgate já ocorreu no backend.
-12. A taxa médica padrão provisória é **100 moedas por morte** (`MEDICAL_FEE_BASE`). Ela pode deixar o saldo negativo. Saldo 50 − taxa 100 = −50. Pagamentos futuros e devoluções de lances compensam automaticamente esse mesmo saldo, sem outra moeda de dívida: −500 +300 = −200; −500 +800 = 300.
+12. A taxa médica padrão é **100 unidades por morte** (`MEDICAL_FEE_BASE`). Após o cutover Lunar, saldo 30/taxa100 transfere somente30 ao Tesouro e registra70 de dívida/recebível, sem moeda negativa nem crédito fictício. Pagamentos futuros amortizam a obrigação pela facade econômica.
 13. O saldo nunca fica abaixo de **−10.000**. Cada morte que alcance ou tente ultrapassar esse limite reduz o nível em até 10, com mínimo 1. Em mortes futuras no limite, aplica novamente uma única penalidade por morte. Normalmente, morrer só zera XP e mantém o nível. O respawn restaura toda a vida e energia; `RESPAWN_HP_PERCENT` permite ajustar a porcentagem de vida apenas para esse resgate procedural.
 14. Na aba **Leilão**, apenas personagens de contas autenticadas podem dar lances. O início é `max(MIN_AUCTION_START_PRICE, ceil(valor_base × quantidade / 5))`; espada vale 100 (início 20), cristal vale 10 por unidade (20 cristais iniciam em 40). Valores são provisórios, definidos no backend. Sem valor base confiável, usa-se o mínimo configurado, padrão 1. Duração provisória: **24 horas**, configurável em `AUCTION_DURATION_HOURS`.
 15. O maior lance fica reservado: sai do saldo disponível e aparece como ouro em custódia. Ser superado devolve a reserva; aumentar seu próprio lance cobra só a diferença. Saldo disponível ≤0 impede lance, mesmo com uma reserva anterior. Não há teto comercial de lance; PostgreSQL NUMERIC e valores decimais em texto na UI preservam inteiros grandes. Ao terminar, o vencedor recebe o mesmo item/stack; o valor vai para o Tesouro (ou sink configurado), nunca novamente para o antigo proprietário. Sem lances, fica **UNSOLD**, arquivado em custódia, sem destruição automática. Itens confiscados por dívida foram avaliados e compensados antes da venda; não há compra de leilões por NPC.
@@ -105,7 +107,7 @@ docker compose logs backend
 docker compose down
 ```
 
-`down` conserva o volume. Migração atual: **7f422c075115** (decisões/ocorrências Lunares persistentes; cutover59d047e53dc8 preservado, sem ativação implícita); base 0.8: **4cee57744ea1** (0.8: grupos, métricas, coleta/contratos, recibos Discord e limites/índices; todas aditivas). A base 0.7 é **d0fc148417a5** (sequência, recuperação pessoal, confisco e eventos; dados anteriores preservados). A anterior é **b3057d8109ee**, que protege a espada inicial, cria sessões/papéis/auditoria administrativa, Banco Central inicialmente zerado, configurações e perfis persistentes de monstros, preservando os inimigos existentes e seu XP. A anterior, 039105b3ae1a, adicionou morte, dívida, custódia/leilões, pontos de atributo e NUMERIC. A anterior, 904ca715f282, adicionou expedições persistentes e perigo regional. A migração anterior de stacks/inimigos é 11ac6a18a976. Aventuras antigas ocupadas são adotadas como ativas; histórico abandonado é arquivado sem aplicar penalidade retroativa. Contas, inventário, equipamentos, saldos, XP, inimigos mortos e batalhas em andamento são preservados. Faça backup dos dados importantes antes de atualizar.
+`down` conserva o volume. Migração atual: **ca343e37b4ca** (pepitas individuais, massa preservada, injeção administrativa segregada; decisões 7f422c075115 e cutover59d047e53dc8 preservados, sem ativação implícita); base 0.8: **4cee57744ea1** (0.8: grupos, métricas, coleta/contratos, recibos Discord e limites/índices; todas aditivas). A base 0.7 é **d0fc148417a5** (sequência, recuperação pessoal, confisco e eventos; dados anteriores preservados). A anterior é **b3057d8109ee**, que protege a espada inicial, cria sessões/papéis/auditoria administrativa, Banco Central inicialmente zerado, configurações e perfis persistentes de monstros, preservando os inimigos existentes e seu XP. A anterior, 039105b3ae1a, adicionou morte, dívida, custódia/leilões, pontos de atributo e NUMERIC. A anterior, 904ca715f282, adicionou expedições persistentes e perigo regional. A migração anterior de stacks/inimigos é 11ac6a18a976. Aventuras antigas ocupadas são adotadas como ativas; histórico abandonado é arquivado sem aplicar penalidade retroativa. Contas, inventário, equipamentos, saldos, XP, inimigos mortos e batalhas em andamento são preservados. Faça backup dos dados importantes antes de atualizar.
 
 ## Discord e limites atuais
 
@@ -132,9 +134,11 @@ Ajuste `.env` antes de subir a stack; `docker compose up --build -d` aplica sem 
 | AUCTION_PROCEEDS_DESTINATION | treasury | `treasury` ou `sink`, gravado ao criar o leilão |
 | AUCTION_SWEEP_SECONDS | 30 | Intervalo de resolução automática de vencidos |
 
-Leilões mantêm prazo/preço/destino originalmente gravados. A reserva de um lance feito antes da morte continua em custódia; não é item carregado nem saldo disponível para pagar a taxa médica. Se devolvida depois, amortiza a dívida. O custo efetivo da taxa é limitado pelo piso do saldo; a parte que excederia −10.000 é registrada como `waived`, e a penalidade de níveis ocorre uma vez. O Tesouro recebe somente o débito efetivamente aplicado ao saldo, preservando a soma contábil dos saldos assinados e reservas.
+Leilões mantêm prazo/preço/destino originalmente gravados. A reserva de um lance feito antes da morte continua em custódia; não é item carregado nem saldo disponível para pagar a taxa médica. Se devolvida depois, amortiza a dívida. O custo efetivo da taxa é limitado pelo piso do saldo; a parte que excederia −10.000 é registrada como `waived`, e a penalidade de níveis ocorre uma vez. Após o cutover, o Tesouro recebe apenas moedas realmente disponíveis; a parcela financiada vira dívida/recebível, sem criar massa. As descrições de saldo assinado são compatibilidade legada.
 
-## Administração e Banco Central
+## Administração Real e compatibilidade legada
+
+A interface econômica principal é **Tesouro Real / Administração do Rei**; o Banco Central antigo é histórico/compatibilidade, somente leitura no menu atual. Operações operacionais seguem [o fluxo Lunar](docs/lunar/ROYAL_ADMINISTRATION.md). As descrições antigas de emissão pelo Banco Central abaixo registram a fase legada.
 
 O painel consulta dados reais de jogadores/contas, inventário/custódia, monstros/instâncias, Guilda/Tesouro, leilões/lances, mundo/eventos e auditoria. Operações mutáveis exigem permissão de domínio, justificativa, prévia do estado/impacto e confirmação em até 5 minutos. Backend rejeita sessão normal, confirmação repetida com dados diferentes, prévia obsoleta, fundos insuficientes e transferência de recursos de teste.
 

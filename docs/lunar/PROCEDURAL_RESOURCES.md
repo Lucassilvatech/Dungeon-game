@@ -1,128 +1,55 @@
-# Recursos Lunares procedurais 0.9 — diagnóstico e decisões
+# Recursos Lunares procedurais — estado atual 0.9
 
-Base obrigatória confirmada: `bf2ea7a52d090cae7d9260c573bd1e8d24354c6d`; árvore limpa, fetch executado. Nova branch: `feature/lunar-procedural-resources-0.9`. Main preservada.
+A etapa inicial criou decisões/ocorrências persistentes na branch `feature/lunar-procedural-resources-0.9` (HEAD9026877958b5323cad34ab9fb9410d4d34c36a2e). A continuação atual é `feature/lunar-variable-nuggets-royal-admin-0.9`: [pepitas variáveis e migração física](VARIABLE_NUGGETS.md), [Administração Real](ROYAL_ADMINISTRATION.md) e [relatório de validação atual](DELIVERY_VARIABLE_NUGGETS_0.9.md). O cutover está implementado e validado em cópia privada; ativação no ambiente operacional real ainda não executada.
 
-O cutover está implementado e validado em cópia privada; ativação no ambiente operacional real ainda não executada. Fundação/ledger, facade, escrows, NPCs e fluxos financeiros serão reutilizados.
+## Geração e exclusividade preservadas
 
-## Diagnóstico antes da programação
+`LunarResourceGeneration` registra uma decisão imutável por expedição, UUID da room, seed/generation, versão, configuração e snapshot do participante. Ausência de minério também é persistida. `LunarResourceOccurrence` tem identidade própria e unicidade `(expedition_id,generation,spawn_key)`, coordenadas, peso, estado, coletor e recibo. Índices por expedição/room/state/collected_by evitam busca global em snapshots. Revisão original7f422c075115 e histórico são preservados; revisão aditiva ca343e37b4ca permite pesos variáveis e custódia individual.
 
-- Expedição persiste seed/room único e pertence a um personagem. Raid é somente formação social, sem exploração ou combate compartilhados. Snapshot elegível desta etapa é SOLO com um participante; membros de raid não ganham acesso à instância privada. Não serão criadas raids cooperativas.
-- A geração de sala ocorre em exploration.adventure, com UUID/seed persistidos; snapshots podem materializar inimigos, mas não devem sortear recursos novos. Decisão sem ocorrência também precisa ser persistida.
-- Encerramento COMPLETED/FLED/FAILED passa por procedural_retention.prune. Ocorrências e recibos devem sobreviver à limpeza de inimigos transitórios.
-- Inventário tradicional limita slots para coleta, sem limite de peso físico. LunarHolding já representa moedas/pepitas separadamente de Item. Reutilizar holdings, sem duplicar pepita em Item. Cada pepita ocupará um slot da capacidade existente; moedas não ocupam slot. Divisão e coleta tradicional também respeitarão slots compartilhados.
-- Morte seleciona somente Item elegível, até cinco unidades. Holdings Lunares existentes não entram nessa seleção. Pepitas permanecerão em custódia Lunar após fuga/morte, como na fundação, sem inventar perda ou preço de recuperação novo. A taxa médica continua cobrando somente moedas; não converte minério para cobrar dívida.
-- Ledger já aceita source=discovery e mantém discovered_mg. Introduzir massa exclusivamente na coleta com DISCOVERED_MINERAL; spawn é potencial, sem massa econômica. GENESIS_BACKING permanece separado.
-- Configuração administrativa já exige permissão, prévia, justificativa, confirmação e auditoria. Novos parâmetros usarão esse fluxo, sem endpoint de spawn arbitrário. Spawn desativado por padrão; valores técnicos restantes PROVISIONAL, não balanceamento final. Preços por tamanho começam zero (compra desativada), sem equivalência comercial implícita com massa.
-- Discord usa transação SQL READ ONLY; apenas contagens de holdings e coleta própria serão expostas, sem posições/spawns disponíveis.
+Geração usa SHA-256 de dados persistentes da instância, com chance/seleção em inteiros; é chamada somente na criação da expedição. Reconexão, reload, logout/login, restart, `/state`, consultas Web ou Discord nunca geram novo resultado. A mesma seed em nova expedição não reutiliza automaticamente a decisão anterior. Alteração de configuração afeta somente novas instâncias. Decisões antigas v1, inclusive sem spawn, continuam definitivas; expedições anteriores não são preenchidas retroativamente.
 
-Implementação/testes/resultados serão registrados abaixo conforme executados. Boss global, Echo, automação do rei e Godot continuam fora do escopo.
+A arquitetura atual é **SOLO**: um personagem no snapshot elegível e uma sala privada. Raids sociais não concedem acesso compartilhado nem autorizam outro personagem a coletar. Não se inventou cooperação/raid/PvP. O backend recusa acesso de externos e mantém locks/recibos mesmo em requests concorrentes.
 
-## Modelo e geração implementados
+## Defaults atuais aprovados
 
-Revisão aditiva **7f422c075115**, após 59d047e53dc8, cria:
+| Chave | Valor |
+|---|---|
+| lunar_resource_spawn_enabled | true, somente com cutover ativo |
+| lunar_resource_spawn_chance_ppm | 20000, ou 2% |
+| lunar_resource_weight_bands | 80%: 100..200 g, 15%: 201..700 g, 5%: 701..1000 g |
+| lunar_guild_buy_rate_milliunits_per_gram | 800, ou 0,8 unidade monetária/g |
+| royal_admin_extraordinary_controls_enabled | true; ainda exige permissão e confirmação forte |
 
-- `LunarResourceGeneration`: uma decisão por expedição, room única, generation, versão, hash, snapshot do participante e configuração, flag spawned e timestamp. Também persiste ausência de minério. Trigger impede UPDATE/DELETE da decisão.
-- `LunarResourceOccurrence`: ID persistente, expedição/room/generation/spawn_key, ativo/peso, coordenadas, estado, coletor/timestamp e chave do recibo. Unicidade `(expedition_id,generation,spawn_key)` e `receipt_key`; pesos somente 100.000/500.000/1.000.000 mg; checks de estado/recibo/coletor; índices expedição, room, state e collected_by. Trigger conserva identidade e estados terminais. Downgrade com decisões existentes é recusado para preservar proveniência.
+Limites de gramas são inclusivos e o peso dentro da faixa é uniforme inteiro. Unidade interna é mg, sem float. Esses defaults substituem a antiga configuração provisória desativada/fixa; não são TEST_DEFAULT. Chaves antigas por tamanho são mantidas somente para compatibilidade histórica, sem orientar novos spawns ou preços. Configuração via `economy.configure` exige economy.manage, razão, prévia/confirm e auditoria. Fixtures Chromium forçam chance 100% apenas em bancos descartáveis; não são deploy.
 
-`lunar_resources.generate` é chamado somente pela criação da expedição, após a sala ser configurada. Usa SHA-256 de versão, ID de expedição, UUID da sala, seed e generation. A seed/UUID são criados pelo servidor, não pelo request. Não precisa de nova chamada aleatória nem revela segredo. Chance usa inteiros em partes por milhão e distribuição inteira; posição é uma célula alcançável, sem parede/spawn/saída. Uma instância tem no máximo uma ocorrência nesta versão.
+## Lifecycle, coleta e inventário
 
-Reexecutar generate encontra a decisão gravada e retorna sem rolar novamente. `/state`, carteira, consultas Discord e reconexão nunca chamam geração Lunar. Alterar configuração só afeta novas expedições. Expedições anteriores à migração não recebem minério retroativo; consultas não preenchem decisões históricas ausentes. Nova expedição recebe outra identidade e decisão independente, mesmo se uma seed numérica coincidir.
+AVAILABLE→COLLECTED ou EXPIRED, sem retorno. COMPLETED/FLED/FAILED expiram ocorrências não coletadas no encerramento transacional. Recursos abandonados não vão ao Tesouro nem contam como oferta. Retenção preserva decisões/recibos; instância encerrada não pode ser reentrada para reroll.
 
-O grupo elegível persistido é `SOLO`, com o personagem dono da expedição. Raids sociais existentes não compartilham room nem elegibilidade. Não há dois membros elegíveis na arquitetura atual; requests concorrentes do dono competem pelo mesmo lock, e outros personagens, inclusive membros da mesma raid social, são rejeitados. Cooperação com múltiplos participantes é futura, sem relaxar autorização agora.
+`POST /expeditions/{id}/lunar-resources/{resource_id}/collect` aceita exclusivamente request_id UUID. O servidor resolve peso/owner, exige personagem no snapshot, mesma instância/generation, estado válido, distância Manhattan≤1, ausência de combate e capacidade. Mutex financeiro precede locks do personagem e ocorrência. Replay do mesmo request não duplica; outra tentativa sobre recurso coletado é recusada. Auditoria inválida aborta toda a transação.
 
-## Configuração — não é balanceamento final
+Spawn é potencial; **somente coleta** registra `DISCOVERED_MINERAL`, aumenta discovered_mg e cria `LunarMineralLot` HELD com a mesma massa e identidade/origem próprias. Não cria moeda ou Item duplicado. `LunarHolding` passa a guardar moedas; minério fica somente em lotes. Coleta de ocorrência antiga ainda AVAILABLE também usa o novo modelo, preservando origem e peso fixo histórico.
 
-| Parâmetro | Default | Semântica |
-|---|---|---|
-| lunar_resource_spawn_enabled | false | Desativado até configuração administrativa explícita; exige cutover ativo |
-| lunar_resource_spawn_chance_ppm | 1000 | PROVISIONAL técnico; 1.000 de 1.000.000, não chance final |
-| lunar_resource_weight_distribution | small 90, medium 9, large 1 | PROVISIONAL, pesos relativos inteiros |
-| lunar_guild_prices | três preços 0 | Sem oferta de compra; nunca significa pepita gratuita |
+Cada lote HELD ocupa um slot junto aos itens/stacks tradicionais; moedas não ocupam slot. Split preserva soma/capacidade e gera filhos com origem/pai. Morte/fuga mantêm a regra de custódia Lunar anterior: não se criou perda nova de minério, venda forçada ou conversão para taxa médica. Sem sistema paralelo de mochila/peso físico.
 
-Os tamanhos permanecem 100g/500g/1.000g. Preços são por pepita, em unidades monetárias compatíveis (1 unidade = 1g de moeda Lunar), **independentes do peso comercial do minério**. Exemplo de fixture: pepita 100g vendida por 7g de moeda, não uma conversão de massa em moeda.
+## Guilda e auditoria
 
-Usar `economy.configure` com economy.manage, motivo, prévia, confirmação e recibo administrativo. Bool estrito, chance 0..1.000.000, mapas exatamente com nugget_small/medium/large e valores inteiros não negativos. Não aceita float, bool em valor numérico, tamanhos extras ou distribuição vazia/zero. A Web ADM aceita JSON para esses parâmetros. Não há endpoint de spawn manual nem bot com poderes administrativos.
+Cotação por lot_id, peso, rate, preço, caixa e revisão/hash. Preço `floor(g×rate/1000)`; com rate 800, 143 g→114, 684 g→547 e1000 g→800 moedas/unidades. Preço comercial é independente da equivalência física da moeda. Mudança/reversão do rate invalida quote anterior; replay confirmado continua idempotente.
 
-CI/Chromium e cenários usam **TEST_DEFAULT**: chance 100%, tamanho 100g e preço 7 unidades, somente em bancos descartáveis. A distribuição/rendimento das simulações não é recomendação de design. Não ativar esses parâmetros no ambiente operacional.
+Venda junto à recepcionista e fora de combate move moedas reais Guilda→jogador e o mesmo ID de minério jogador→Guilda, atomicamente. Caixa insuficiente recusa; não há criação de dinheiro, cunhagem ou envio automático ao Tesouro. Transferências/confisco e mint somente pelo workflow manual auditado da Administração Real.
 
-## Lifecycle, coleta e custódia
+Equação atual: `GENESIS_BACKING + DISCOVERED_MINERAL + ADMIN_INJECTION − DESTROYED = moedas + lotes HELD`. Auditoria separa potencial procedural, origens, contas, dívida/recebível e transformações. Pais SPLIT/filhos MINTED/BURNED são histórico, sem dupla contagem de massa. Linhagem alcança ocorrência/expedição/coletor, splits, venda, owners, mint/burn e recibos. [Detalhamento contábil](VARIABLE_NUGGETS.md).
 
-Estados: AVAILABLE → COLLECTED ou EXPIRED, sem retorno. COMPLETED/FLED/FAILED expiram ocorrências restantes no mesmo fluxo transacional de encerramento. Retenção não apaga decisões, ocorrências ou recibos; instância encerrada não pode ser reentrada após sair. Recursos abandonados não vão ao Tesouro e não acrescentam massa à Supply.
+Métricas incluem ocorrências geradas/coletadas/expiradas, massa disponível/expirada potencial, massa coletada/vendida, origem da oferta e material por categoria de conta. Logs de spawn/coleta/expiração/venda/conflito não expõem dados secretos do RNG. Painel Real mostra esses estados sem endpoint de spawn público.
 
-`POST /expeditions/{id}/lunar-resources/{resource_id}/collect` aceita somente UUID request_id. Resolve peso/quantidade/dono no servidor. Exige sessão, snapshot elegível, expedição ativa, mesma room/generation, distância Manhattan≤1, ausência de combate e capacidade. Mutex financeiro existente precede lock de personagem e ocorrência. Request igual retorna replay; request diferente sobre ocorrência coletada retorna RESOURCE_ALREADY_COLLECTED; instância expirada recusa coleta. Qualquer falha na auditoria aborta holdings, Supply, ledger e estado juntos.
+## Clientes, desempenho e evidências
 
-Entrada econômica ocorre **somente na coleta**: `DISCOVERED_MINERAL`, source discovery, uma pepita em LunarHolding do jogador, contexto com occurrence_id/expedition_id/peso. LunarSupply.discovered_mg aumenta na mesma massa, sem moedas, mint ou gênese. Ocorrência mantém identidade própria mesmo quando holdings agregam ativos fungíveis; splits/vendas usam o ledger existente, sem duplicar pepita em Item.
-
-Capacidade compartilhada: número de stacks/itens tradicionais + quantidade total de pepitas. Cada pepita ocupa um slot; moedas continuam fora da mochila de coleta. Não foi criado limite de peso ou mochila nova. Coleta tradicional, comércio que utiliza ensure_collection_capacity e divisão Web de pepitas respeitam a capacidade conjunta. Loot legado que já ultrapassava o limite não é apagado.
-
-Fuga preserva inventário coletado. Morte mantém a política atual: sorteia até cinco unidades Item elegíveis para destruição/recuperação; holdings Lunares permanecem em custódia. Pepitas não são convertidas em Item nem avaliadas automaticamente para confisco/recuperação. Não há nova perda específica, liquidação forçada ou conversão de minério para pagar taxa médica. A taxa/dívida em moedas continua na facade existente.
-
-## Compra pela Guilda e auditoria
-
-`GET /lunar/guild-quotes` retorna quantidade própria, tamanho, preço monetário configurado, caixa e hash da cotação. `POST /lunar/guild-sell` aceita somente ativo conhecido, quote e UUID. Vende uma pepita por operação junto à recepcionista, fora de combate. Sem minério, caixa ou oferta válida, recusa. Preço alterado exige nova cotação. Replay usa recibo persistente mesmo após mudança de preço.
-
-Transação transfere moedas reais Guilda→jogador via finance.move e minério jogador→Guilda via lunar.post/MINERAL_SALE. Pagamento amortiza dívida médica pela regra existente. Trigger/ledger preservam proveniência e massa. Não há cunhagem automática, emissão, transferência automática ao Tesouro ou burn. Fundação de mint permanece exclusiva do Tesouro sobre minério já existente.
-
-Auditoria existente continua conferindo holdings/postings e gênese+descoberta−destruição. Nova reconciliação liga cada DISCOVERED_MINERAL à ocorrência/coletor/ativo/peso; verifica também contadores de origem contra entradas líquidas do ledger. Relatório separa gênese, descoberta e destruição, e holdings de pepitas por categoria de conta. Ativos existentes são fungíveis: não se atribui arbitrariamente cada moeda atual a um lote histórico específico.
-
-Métricas: ocorrências geradas/coletadas/expiradas, massa coletada/descoberta/vendida/disponível/expirada, mineral nos jogadores/Guilda/Tesouro e ledger por origem. Massa disponível/expirada é potencial, não deve ser somada à massa econômica. `GET /admin/lunar/resources` exige economy.read e pagina as últimas 100 ocorrências. Painel Lunar mostra configuração, métricas, coletor e timestamps. Logs: resource_spawned, resource_collected, resource_expired, resource_sale e resource_collection_conflict, sem seed secreta ou hash RNG.
-
-## Web, Discord e limites
-
-Web apresenta marcador leve ☾ no Phaser, nome, peso e botão de coleta acessível por toque/teclado. O botão caminha até a ocorrência e chama a API com pending/gate contra duplo clique. Coleta atualiza mapa, carteira e inventário; venda requer confirmação de preço. Nenhum asset pesado novo.
-
-Discord mantém transações SQL REPEATABLE READ, READ ONLY. Carteira/mineral/inventário mostram pepitas e massa próprias; consultas incluem contagem de coletas próprias, sem revelar spawn disponível, coordenadas de minério ou recursos de outro participante. Nenhum comando de coleta/venda/mint/split foi adicionado. **Discord remains read-only. Discord cannot control the character.**
+Web/Phaser mostra marcador☾, peso variável e botão acessível por toque, pending e confirmação; inventário mostra lotes e split; Guilda cota/vende por ID. Fluxos mobile 390 px e reconexão validados em Chromium na entrega atual. Discord mostra apenas lotes próprios/pesos/massa/coletas próprias em transação SQL READ ONLY; não revela localização de recurso potencial ou outro grupo. **Discord remains read-only. Discord cannot control the character.**
 
 Windows: FROZEN. Android: FROZEN. APK: NOT REQUIRED. Windows build: NOT REQUIRED. Godot source: PRESERVED.
 
-Leitura de ocorrências não recalcula mapas. Verificação executada: 100 leituras de recursos persistidos resultaram em 100 queries SQL, sem escrita/geração (uma query por consulta, sem N+1). Isso não é benchmark de produção. Auditoria de escrita varre o histórico e o mutex financeiro serializa operações; medir contenção/latência antes de escalar. Presença continua exigindo broker antes de múltiplos workers; nenhum serviço obrigatório novo foi introduzido.
+Snapshots consultam ocorrências persistidas sem recalcular geração. Sem serviço obrigatório novo. Auditoria de escrita cresce com histórico; mutex prioriza correção, com contenção a medir em carga real. Presença permanece com um worker; broker necessário antes de múltiplos workers. Sem afirmação de benchmark de produção.
 
-## Validação executada e procedimento
+Evidências históricas da etapa procedural: [PROCEDURAL_VALIDATION.json](PROCEDURAL_VALIDATION.json). São resultados de uma revisão anterior, não contagem da suíte atual. Evidências atuais, fixture de migração, cópia privada e comandos em [VARIABLE_NUGGETS.md](VARIABLE_NUGGETS.md) e [DELIVERY_VARIABLE_NUGGETS_0.9.md](DELIVERY_VARIABLE_NUGGETS_0.9.md). Dumps/credenciais não são versionados.
 
-A regressão dirigida executou 64 testes com sucesso, 2 avisos de depreciação, 164,22s; contém conjuntos sobrepostos e **não deve ser somada** à suíte completa final. Simulador preservou 15 cenários da fundação e adicionou 9 cenários procedurais de 10.000 expedições: ausência, raridade, excesso artificial, coleta parcial, abandono, venda, Guilda insolvente, reconexão e concorrência. Todos com gap 0. Valores são fixtures, não balanceamento final.
-
-Cópia privada da base real já convertida: upgrade até 7f422c075115 + alembic check; preservados 47 tabelas e 1.638 hashes de registros anteriores, inclusive recibo do cutover. Coleta TEST nessa cópia acrescentou 100.000 mg de descoberta, manteve 100.450.000 mg de gênese e gap 0. Ambiente operacional original intocado; dump privado fora do Git. A preservação foi comparada antes de inserir o personagem/ocorrência de teste.
-
-Com DATABASE_URL apontando exclusivamente a PostgreSQL descartável:
-
-```sh
-cd backend
-../.venv/bin/alembic upgrade head
-../.venv/bin/alembic check
-TOWER_TEST_DATABASE=1 ../.venv/bin/python -m pytest tests -q
-cd ../frontend
-npm test
-npm run build
-BASE_URL=http://127.0.0.1:8070 CHROMIUM_PATH=/usr/bin/chromium npm run test:e2e
-TOWER_TEST_DATABASE=1 PROCEDURAL_TEST_DATABASE_URL="$DATABASE_URL" BASE_URL=http://127.0.0.1:8070 CHROMIUM_PATH=/usr/bin/chromium node tests/lunar-resources.cjs
-```
-
-O Chromium de recursos exige banco privado explícito, parâmetros TEST_DEFAULT na API e cria/revoga owner temporário só nesse banco. PYTHON_EXECUTABLE permite selecionar Python; por padrão usa .venv local se disponível. O workflow Web executa esse teste depois do smoke legado, com banco descartável. Não apontar fixtures, scripts ou pytest ao banco operacional.
-
-Pendências intencionais: balanceamento final, sessões de jogadores, grupos cooperativos, produção de NPCs, transferências/cunhagem automáticas, deploy/ativação real, carga de produção e Discord externo real. Boss global, Echo e política automática do rei não foram implementados. Próxima fase depende de nova autorização.
-
-## Resultado final da execução
-
-- Suíte backend completa, execução única final: **234 passed, 0 failed, 0 skipped, 2 warnings, 669,46s (11min09s)**. Não soma a regressão dirigida ou tentativas anteriores. Avisos de depreciação existentes: alias AnyIO no Starlette e audioop no discord.py.
-- `npm test`: **1 passed, 0 failed, 0 skipped** (freeze dos workflows nativos). `npm run build`: **PASS**, 4,96s, aviso conhecido de chunk Phaser grande.
-- Chromium com 390px: **PASS** no fluxo procedural e venda à Guilda, com reload/logout/login, inventário, fuga e auditoria; repetido com wandering normal. Smoke legado completo pós-cutover: **PASS**, incluindo exploração, combate, recompensas, expedições, morte, dívida, recuperação e reconexão.
-- Discord pós-coleta: **PASS** em cinco consultas; pepita/peso/inventário corretos, nenhuma ocorrência potencial revelada e seis snapshots de domínio rigorosamente inalterados. A suíte também mantém bloqueio dos controles do personagem. Não foi usado bot externo real.
-- Alembic upgrade/check: **PASS** em bancos de teste/cópias privadas, sem operações pendentes. Cópia já convertida preservou 47 tabelas/1.638 hashes e o recibo de cutover. Backup adicional fresco do banco operacional foi restaurado em outro banco privado: 39 tabelas/1.554 hashes preservados após upgrade/cutover/audit. Nenhuma escrita no operacional.
-- Simulação: **15 cenários anteriores + 9 novos cenários procedurais**, com gap 0 em todos; números não são balanceamento final.
-
-Evidência sanitizada: [PROCEDURAL_VALIDATION.json](PROCEDURAL_VALIDATION.json). Dumps privados, credenciais e fixtures de banco não foram versionados.
-
-## Git e revisão
-
-| Commit | Tema |
-|---|---|
-| b780afb | Diagnóstico antes da implementação e correção do estado do cutover |
-| 9402958 | Decisões/ocorrências, coleta, custódia e migração aditiva |
-| 9cda07c | Integração com lifecycle, endpoints e capacidade compartilhada |
-| b0ee885 | Configuração/preços, observação ADM e Discord read-only |
-| 1be2f68 | Mapa, coleta e venda Web |
-| d3bca02 | Regressão de recursos, concorrência e simulações |
-| ddf1d5c | Chromium procedural e workflow Web privado |
-| 7aa95d7 | Totais explícitos da custódia mineral no ADM |
-
-Push somente para a nova feature branch; sem merge/force push. Draft PR destinado à feature/lunar-cutover-economy-0.9. Descrição em [PULL_REQUEST_LUNAR_PROCEDURAL.md](../PULL_REQUEST_LUNAR_PROCEDURAL.md). Compare: https://github.com/Lucassilvatech/Dungeon-game/compare/feature%2Flunar-cutover-economy-0.9...feature%2Flunar-procedural-resources-0.9?expand=1
+Boss global, Echo, automação do rei, produção NPC, cooperação avançada, deploy/carga real e conexão Discord externa permanecem futuros e exigem autorização separada. Não foram antecipados.
