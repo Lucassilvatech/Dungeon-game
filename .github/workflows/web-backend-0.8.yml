@@ -54,8 +54,7 @@ jobs:
       # TEST_DEFAULT only: this job owns a disposable database, never production.
       LUNAR_RESOURCE_SPAWN_ENABLED: 'true'
       LUNAR_RESOURCE_SPAWN_CHANCE_PPM: '1000000'
-      LUNAR_RESOURCE_WEIGHT_DISTRIBUTION: '{"nugget_small":1,"nugget_medium":0,"nugget_large":0}'
-      LUNAR_GUILD_PRICES: '{"nugget_small":7,"nugget_medium":13,"nugget_large":19}'
+      LUNAR_GUILD_BUY_RATE_MILLIUNITS_PER_GRAM: '800'
       SECRET_CHANCE: '0'
     steps:
       - uses: actions/checkout@v4
@@ -84,4 +83,8 @@ jobs:
 
       - name: Procedural Lunar collection and finite Guild purchase (private TEST_DEFAULT)
         run: PROCEDURAL_TEST_DATABASE_URL="$DATABASE_URL" BASE_URL=http://127.0.0.1:8080 node tests/lunar-resources.cjs
+        working-directory: frontend
+
+      - name: Variable lots and Royal administration on mobile (private database)
+        run: ROYAL_TEST_DATABASE_URL="$DATABASE_URL" BASE_URL=http://127.0.0.1:8080 node tests/royal.cjs
         working-directory: frontend

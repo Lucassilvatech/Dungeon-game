@@ -39,7 +39,7 @@ const { chromium } = require('playwright'), assert = require('node:assert/strict
         const ah = { Authorization: 'Bearer ' + await admin.evaluate(() => sessionStorage.getItem('admin_token')) };
         const adm = async (p, body) => { const r = await (body ? admin.request.post(base + '/api/admin' + p, { headers: ah, data: body }) : admin.request.get(base + '/api/admin' + p, { headers: ah })); assert.equal(r.status(), 200, await r.text()); return r.json(); };
         const initial=await adm('/lunar/audit');
-        const p = await adm('/operations/preview', { operation_id: crypto.randomUUID(), action: 'bank.transfer', target: 'central_bank', params: { source: 'treasury', destination: 'guild', amount: '7' }, reason: 'Financiar compra real de pepita no teste privado' });
+        const p = await adm('/operations/preview', { operation_id: crypto.randomUUID(), action: 'bank.transfer', target: 'central_bank', params: { source: 'treasury', destination: 'guild', amount: '800' }, reason: 'Financiar compra real de pepita no teste privado' });
         await adm('/operations/' + p.id + '/confirm', { confirmed: true, confirmation_token: p.confirmation_token });
         const state = () => page.evaluate(async () => { const r = await fetch('/api/state', { headers: { Authorization: 'Bearer ' + sessionStorage.getItem('token') } }); if (!r.ok)
             throw Error('state ' + r.status); return r.json(); });
@@ -50,18 +50,18 @@ const { chromium } = require('playwright'), assert = require('node:assert/strict
         assert.equal(s.expedition.status, 'ACTIVE');
         const occurrence = s.map.lunar_resources[0];
         assert(occurrence);
-        assert.equal(occurrence.weight_mg, '100000');
-        await page.getByText('Peso: 100 g · Disponível', { exact: true }).waitFor();
+        assert(BigInt(occurrence.weight_mg)>=100000n&&BigInt(occurrence.weight_mg)<=1000000n);const weight=BigInt(occurrence.weight_mg),g=weight/1000n;
+        await page.getByText(`Peso: ${g} g · Disponível`, { exact: true }).waitFor();
         for (let i = 0; i < 3 && (await state()).map.lunar_resources.length; i++) {
             await page.getByRole('button', { name: 'Coletar Minério Lunar', exact: true }).click();
             await idle();
         }
         s = await state();
         assert.deepEqual(s.map.lunar_resources, []);
-        assert.equal(s.lunar_inventory[0].quantity, '1');
+        assert.equal(s.lunar_inventory[0].weight_mg,weight.toString());const lotId=s.lunar_inventory[0].lot_id;
         assert.equal(s.character.coins, 0);
         await page.getByRole('button', { name: /^▣ Inventário/ }).click();
-        await page.getByText('Minério Lunar · Pepita 100 g × 1', { exact: true }).waitFor();
+        await page.getByText(`Pepita #${lotId} · ${g} g`, { exact: true }).waitFor();
         await page.reload();
         await page.locator('canvas').waitFor();
         await idle();
@@ -72,7 +72,7 @@ const { chromium } = require('playwright'), assert = require('node:assert/strict
         await page.getByRole('button', { name: 'Entrar', exact: true }).click();
         await page.locator('canvas').waitFor();
         await idle();
-        assert.equal((await state()).lunar_inventory[0].quantity, '1');
+        assert.equal((await state()).lunar_inventory[0].lot_id,lotId);
         await page.getByRole('button', { name: 'FUGIR DA AVENTURA', exact: true }).click();
         await page.getByRole('button', { name: 'CONFIRMAR FUGA', exact: true }).click();
         await idle();
@@ -85,21 +85,21 @@ const { chromium } = require('playwright'), assert = require('node:assert/strict
         await page.getByRole('button', { name: 'Falar com recepcionista', exact: true }).click();
         await idle();
         await page.getByRole('button', { name: '☾ Lunar', exact: true }).click();
-        await page.getByRole('button', { name: 'Vender pepita 100 g', exact: true }).waitFor();
+        await page.getByRole('button', { name: `Vender Pepita #${lotId}`, exact: true }).waitFor();
         page.on('dialog', d => d.accept());
-        await page.getByRole('button', { name: 'Vender pepita 100 g', exact: true }).click();
+        await page.getByRole('button', { name: `Vender Pepita #${lotId}`, exact: true }).click();
         await idle();
         s = await state();
         assert.deepEqual(s.lunar_inventory, []);
-        assert.equal(s.character.coins, 7);
+        assert.equal(s.character.coins,Number(g*800n/1000n));
         const audit = await adm('/lunar/audit');
         assert.equal(audit.gap_mg, '0');
-        assert.equal(BigInt(audit.discovered_mg)-BigInt(initial.discovered_mg),100000n);
-        assert.equal(BigInt(audit.lunar_resource_sold_to_guild_mg)-BigInt(initial.lunar_resource_sold_to_guild_mg),100000n);
+        assert.equal(BigInt(audit.discovered_mg)-BigInt(initial.discovered_mg),weight);
+        assert.equal(BigInt(audit.lunar_resource_sold_to_guild_mg)-BigInt(initial.lunar_resource_sold_to_guild_mg),weight);
         assert.deepEqual(audit.metadata_mismatches, []);
         const view = await adm('/lunar/resources');
         assert.equal(view.metrics.lunar_resource_occurrences_collected-initial.lunar_resource_occurrences_collected, 1);
-        assert.equal(BigInt(view.metrics.mineral_by_account_kind_mg.guild)-BigInt(initial.mineral_by_account_kind_mg.guild??'0'),100000n);
+        assert.equal(BigInt(view.metrics.mineral_by_account_kind_mg.guild)-BigInt(initial.mineral_by_account_kind_mg.guild??'0'),weight);
         assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
         assert.deepEqual(errors, []);
         console.log('PASS: Chromium 390px registration/login, procedural map and mineral marker, collection, inventory, reload/logout/login, flee custody, Guild sale with real cash, admin metrics and audit gap 0');
