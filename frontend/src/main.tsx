@@ -693,7 +693,7 @@ function App() {
                 <>
                   <p className="eyebrow">O QUE VOCÊ CARREGA</p>
                   <h2>Inventário persistente</h2>
-                  {(state.lunar_inventory??[]).map(n=><p key={n.asset_code}>Minério Lunar · Pepita {BigInt(n.weight_mg)/1000n+''} g × {n.quantity}</p>)}
+                  {(state.lunar_inventory??[]).map(n=><p key={n.lot_id}>Pepita #{n.lot_id} · {BigInt(n.weight_mg)/1000n+''} g</p>)}
                   <p>Slots: {state.collection_capacity.used}/{state.collection_capacity.limit}. Cada pepita ocupa um slot.</p>
                   <div className="items">
                     {state.inventory.map((i) => (

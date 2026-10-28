@@ -3,13 +3,15 @@ import { createRoot } from "react-dom/client";
 import "./style.css";
 import {PublishContract} from "./Contracts";
 import {LunarResourcesAdmin} from "./LunarResources";
+import {Royal} from "./Royal";
 import {CutoverPanel} from "./Cutover";
 import { WorldEvents } from "./WorldEvents";
 
 type Row = Record<string, any>;
 const modules = [
   ["overview", "Visão geral"],
-  ["bank", "Banco Central"],
+  ["royal","Administração do Rei"],
+  ["bank", "Compatibilidade legada"],
  ["lunar", "Cutover Lunar"],
   ["economy", "Economia"],
   ["guilds", "Guildas"],
@@ -245,7 +247,7 @@ function App() {
   }, [token, module, search, offset]);
   const allowed = Object.keys(session?.actions ?? {}).filter((k) =>
     module === "bank"
-      ? k.startsWith("bank.")
+      ? false // Compatibility panel is observational; operational controls live in Royal.
       : module === "economy"
         ? k.startsWith("economy.") || k.startsWith("sandbox.")
         : module === "guilds"
@@ -329,7 +331,7 @@ function App() {
     player_available: "Moedas disponíveis aos jogadores",
     medical_debt: "Dívida médica total",
     escrow: "Ouro reservado em leilões",
-    central_bank: "Reservas do Banco Central",
+    central_bank: "Reservas legadas central_bank",
     guild_treasury: "Tesouro da Guilda",
     pending_obligations: "Recompensas pendentes (obrigações)",
     genesis: "Emissão inicial histórica",
@@ -418,7 +420,7 @@ function App() {
           {modules
             .filter(([id]) =>
               session?.permissions?.includes(
-                (["bank","lunar"].includes(id) ? "economy" : id) + ".read",
+                (["bank","lunar","royal"].includes(id) ? "economy" : id) + ".read",
               ),
             )
             .map(([id, title]) => (
@@ -464,6 +466,7 @@ function App() {
         </p>
         {data && dataModule === module && (
           <section>
+            {module === "royal"&&<Royal data={data} busy={busy} canManage={session?.permissions?.includes("economy.manage")} request={request} run={run} refresh={load}/>}
             {module === "lunar"&&<LunarResourcesAdmin request={request} busy={busy}/>}
             {module === "lunar"&&<CutoverPanel data={data} busy={busy} canManage={session?.permissions?.includes("economy.manage")} request={request} run={run} refresh={load}/>}
  {module === "overview" && (
@@ -786,7 +789,7 @@ function App() {
             )}
           </section>
         )}
-        {allowed.length > 0 && (
+        {allowed.length > 0 && module !== "royal" && (
           <section className="operation">
             <h3>Operação autorizada</h3>
             <label>
@@ -825,7 +828,7 @@ function App() {
                           "min_auction_start_price",
                           "auction_duration_hours",
                           "auction_proceeds_destination",
-                          "lunar_resource_spawn_enabled","lunar_resource_spawn_chance_ppm","lunar_resource_weight_distribution","lunar_guild_prices",
+                          "lunar_resource_spawn_enabled","lunar_resource_spawn_chance_ppm","lunar_resource_weight_bands","lunar_guild_buy_rate_milliunits_per_gram","royal_admin_extraordinary_controls_enabled",
                         ].map((k) => (
                           <option key={k}>{k}</option>
                         ))}

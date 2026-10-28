@@ -98,7 +98,7 @@ export type State = {
     y: number;
   };
   inventory: Item[];
-  lunar_inventory?:{asset_code:string;quantity:string;weight_mg:string}[];
+  lunar_inventory?:{lot_id:number;weight_mg:string;state:string}[];
   battle: Battle | null;
   unlocked_floor: number;
   map: {
