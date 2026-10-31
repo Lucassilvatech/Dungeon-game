@@ -261,12 +261,12 @@ def interact(db, c):
             "message": "Leiloeiro: consulte espólios, detalhes e histórico de lances.",
             "open_auctions": True,
         }
-    if current(db, c).id == "recovery_hall":
-        npc = current(db, c).data.get("npc")
-        if not npc or distance((c.x, c.y), npc) > 1:
-            fail("Aproxime-se do Guardião de Recuperação")
+    if current(db, c).id == "city1":
+        from .recovery_site import require_near
+
+        require_near(db, c)
         return {
-            "message": "Recuperação pessoal: adicional de 100%, total de 200% do valor-base.",
+            "message": "A figura encapuzada revela os pertences que guardou para você.",
             "open_recovery": True,
         }
     receptionist(db, c)

@@ -833,7 +833,7 @@ class GuildPriceHistory(Base):
     request_id: Mapped[str] = mapped_column(
         ForeignKey("admin_operations.id"), primary_key=True
     )
-    policy_key: Mapped[str] = mapped_column(String(80), index=True)
+    policy_key: Mapped[str] = mapped_column(String(80), index=True, primary_key=True)
     before: Mapped[dict] = mapped_column(JSON)
     after: Mapped[dict] = mapped_column(JSON)
     actor_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"))

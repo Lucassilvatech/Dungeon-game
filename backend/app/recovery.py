@@ -161,9 +161,9 @@ def recover(db, c, id, request_id):
         if r.request_id != request_id:
             fail("Item já recuperado")
         return {"message": "Recuperação já confirmada.", "replayed": True}
-    room = current(db, c)
-    if room.id != "recovery_hall" or distance((c.x, c.y), room.data["npc"]) > 1:
-        fail("Aproxime-se do Guardião de Recuperação na Guilda")
+    from .recovery_site import require_near
+
+    require_near(db, c)
     if funds(db, c) < r.price or funds(db, c) < 0:
         fail("Saldo insuficiente para recuperar o item")
     item = db.get(Item, r.item_id)

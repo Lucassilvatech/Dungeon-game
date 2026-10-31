@@ -8,7 +8,6 @@ ELIGIBLE = {
     "city1",
     "guild",
     "auction_hall",
-    "recovery_hall",
     "training",
     "common_a",
     "common_b",
@@ -40,7 +39,14 @@ def travel(db, c, target):
 
     guard_departure(db, c)
     idle(db, c)
+    legacy_recovery = target == "recovery_hall"
+    if legacy_recovery:
+        target = "city1"
     if target not in {d["id"] for d in destinations(db, c)}:
         fail("Destino permanente ainda não visitado ou inelegível", 403)
     enter(db, c, db.get(Room, target))
+    if legacy_recovery:
+        from .recovery_site import NPC
+
+        c.x, c.y = NPC[0], NPC[1] + 1
     event(db, "FAST_TRAVEL", c, destination=target)

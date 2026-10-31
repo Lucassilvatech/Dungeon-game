@@ -595,7 +595,12 @@ def confirm(db, actor, id, token):
         fail("STALE_PREVIEW: estado mudou desde a prévia; gere uma nova confirmação")
     apply(db, actor, op)
     db.flush()
-    op.after = describe(db, op.action, op.target, op.params)
+    op.after = (
+        guild_admin.describe_after(db, op.action, op.target, op.params)
+        if op.action
+        in ("guild.batch_prices", "guild.item_prices", "guild.mineral_prices")
+        else describe(db, op.action, op.target, op.params)
+    )
     op.status = "COMMITTED"
     op.finished_at = utc_now()
     import logging

@@ -12,20 +12,23 @@ ACTIONS = {
         "guild.rebalance",
         "guild.item_prices",
         "guild.mineral_prices",
+        "guild.batch_prices",
     )
 }
 ACKS = {"acknowledge_free", "acknowledge_arbitrage"}
 PARAMS = {
     "royal.exchange": {"inputs", "outputs"},
+    "guild.batch_prices": {"changes"},
     "guild.rebalance": {"initial"},
     "guild.item_prices": {
+        "expected_revision",
         "buy_price_units",
         "sell_price_units",
         "buy_enabled",
         "sell_enabled",
     }
     | ACKS,
-    "guild.mineral_prices": set(commerce.MINERAL_KEYS) | ACKS,
+    "guild.mineral_prices": set(commerce.MINERAL_KEYS) | ACKS | {"expected_revision"},
 }
 INITIAL_KEY = "GUILD_DENOMINATION_REBALANCE_V1"
 
@@ -97,6 +100,10 @@ def price_values(db, key, p):
 def describe(db, action, target, p):
     if not finance.active(db):
         fail("Cutover Lunar deve estar ativo")
+    if action == "guild.batch_prices":
+        if target != "guild":
+            fail("Lote exige a Guilda", 422)
+        return batch_plan(db, p)
     if action == "royal.exchange":
         row = db.get(m.LunarAccount, finance.normalize(target))
         if not row:
@@ -167,6 +174,20 @@ def describe(db, action, target, p):
         key = "mineral" if action == "guild.mineral_prices" else target
         if key != "mineral" and not db.get(m.ItemDefinition, key):
             fail("Item inexistente", 404)
+        if (
+            action == "guild.mineral_prices"
+            and "expected_revision" in p
+            and p["expected_revision"] != commerce.mineral_policy(db)["revision"]
+        ):
+            fail("STALE_PREVIEW: política do minério alterada; atualize os valores")
+        if action == "guild.item_prices" and "expected_revision" in p:
+            if (
+                type(p["expected_revision"]) is not int
+                or p["expected_revision"] != commerce.item_policy(db, key)["revision"]
+            ):
+                fail(
+                    "STALE_PREVIEW: preço alterado por outro administrador; atualize o item"
+                )
         before, after, warnings = price_values(db, key, p)
         return {
             "policy_key": key,
@@ -213,7 +234,11 @@ def set_prices(db, actor, op, key, params):
 
 def apply(db, actor, op):
     who = f"admin:{actor.id}"
-    if op.action == "royal.exchange":
+    if op.action == "guild.batch_prices":
+        batch_plan(db, op.params)
+        for change in op.params["changes"]:
+            set_prices(db, actor, op, change["definition_id"], change)
+    elif op.action == "royal.exchange":
         lunar.exchange(
             db,
             finance.normalize(op.target),
@@ -266,3 +291,62 @@ def apply(db, actor, op):
     from .lunar_resources import assert_audit
 
     assert_audit(db)
+
+
+def batch_plan(db, p, enforce=True):
+    changes = p.get("changes")
+    if not isinstance(changes, list) or not 1 <= len(changes) <= 100:
+        fail("Informe entre1 e100 alterações de preços", 422)
+    ids = set()
+    conflicts = []
+    items = []
+    for change in changes:
+        if not isinstance(change, dict) or set(change) - (
+            {"definition_id", "expected_revision"} | PARAMS["guild.item_prices"]
+        ):
+            fail("Campos inválidos no lote de preços", 422)
+        definition = change.get("definition_id")
+        expected = change.get("expected_revision")
+        if (
+            not isinstance(definition, str)
+            or definition in ids
+            or type(expected) is not int
+            or expected < 0
+        ):
+            fail("Cada item deve ter identidade única e revisão original válida", 422)
+        d = db.get(m.ItemDefinition, definition)
+        if not d:
+            fail("Item inexistente no lote", 404)
+        ids.add(definition)
+        current = commerce.item_policy(db, definition)
+        if expected != current["revision"]:
+            conflicts.append(d.name)
+        items.append((d, change))
+    if conflicts and enforce:
+        fail(
+            f"STALE_BATCH: {len(changes)-len(conflicts)} alterações sem conflito; {len(conflicts)} item(ns) desatualizado(s): {', '.join(conflicts)}. Atualize a prévia; nenhuma alteração foi aplicada."
+        )
+    result = []
+    for d, change in items:
+        try:
+            before, after, warnings = price_values(db, d.id, change)
+        except __import__("fastapi").HTTPException as e:
+            fail(f"{d.name}: {e.detail}", e.status_code)
+        result.append(
+            {
+                "definition_id": d.id,
+                "name": d.name,
+                "before": before,
+                "proposed": after,
+                "warnings": warnings,
+            }
+        )
+    return {"items": result, "count": len(result), "supply_delta": "0"}
+
+
+def describe_after(db, action, target, p):
+    if action == "guild.batch_prices":
+        return batch_plan(db, p, enforce=False)
+    return describe(
+        db, action, target, {k: v for k, v in p.items() if k != "expected_revision"}
+    )

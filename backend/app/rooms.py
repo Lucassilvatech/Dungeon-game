@@ -82,7 +82,6 @@ STATIC_ROOMS = [
     ("city1", 1, "Vila do Alvorecer", RoomType.CITY),
     ("guild", 1, "Guilda · Recepção", RoomType.GUILD),
     ("auction_hall", 1, "Guilda · Salão de Leilões", RoomType.GUILD),
-    ("recovery_hall", 1, "Guilda · Recuperação pessoal", RoomType.GUILD),
     ("training", 1, "Pátio de treinamento", RoomType.TRAINING),
     ("common_a", 1, "Bosque das lanternas", RoomType.COMMON),
     ("common_b", 1, "Trilha dos vagalumes", RoomType.COMMON),
@@ -95,7 +94,6 @@ EDGES = [
     ("city1", "guild", (9, 7), (2, 9)),
     ("guild", "training", (35, 10), (2, 9)),
     ("guild", "auction_hall", (35, 20), (2, 9)),
-    ("guild", "recovery_hall", (2, 20), (2, 9)),
     ("city1", "common_a", (50, 18), (2, 9)),
     ("common_a", "common_b", (32, 13), (2, 9)),
     ("common_b", "combat", (32, 13), (2, 9)),
@@ -157,13 +155,9 @@ def seed_world(db):
                 {"kind": "chair", "x": 21, "y": 13},
             ],
         }
-    recovery = db.get(Room, "recovery_hall")
-    if recovery.data.get("npc_role") != "recovery":
-        recovery.data = {
-            **recovery.data,
-            "npc_name": "Guardião de Recuperação",
-            "npc_role": "recovery",
-        }
+    from .recovery_site import seed as seed_recovery
+
+    seed_recovery(db)
     db.flush()
     for a, b, pa, pb in EDGES:
         for src, dst, p in [(a, b, pa), (b, a, pb)]:
@@ -212,6 +206,10 @@ def enter(db, c, room):
         old = db.scalar(select(Expedition).where(Expedition.room_id == room.id))
         if old and old.status != "ACTIVE" and c.room_id != room.id:
             fail("Instância encerrada não pode ser revisitada")
+    if room.data.get("archived_recovery_hall"):
+        from .game import fail
+
+        fail("Esse serviço foi transferido para a cidade")
     c.room_id = room.id
     c.floor = room.floor_id
     c.x = 2
@@ -244,6 +242,8 @@ def room_payload(db, c):
         target = db.get(Room, e.target)
         if target.owner_id not in (None, c.id):
             continue
+        if target.data.get("archived_recovery_hall"):
+            continue
         known = db.get(RoomState, (c.id, target.id))
         exits.append(
             {
@@ -274,6 +274,8 @@ def atlas(db, c):
         .join(RoomState, Room.id == RoomState.room_id)
         .where(RoomState.character_id == c.id, Room.floor_id == c.floor)
     ):
+        if room.data.get("archived_recovery_hall"):
+            continue
         result.append(
             {
                 "id": room.id,
@@ -295,6 +297,8 @@ def atlas(db, c):
     edges = []
     for e in db.scalars(select(RoomConnection).where(RoomConnection.source.in_(known))):
         target = db.get(Room, e.target)
+        if target.data.get("archived_recovery_hall"):
+            continue
         if target.kind == RoomType.SECRET_DUNGEON and e.target not in known:
             continue
         if target.owner_id not in (None, c.id):

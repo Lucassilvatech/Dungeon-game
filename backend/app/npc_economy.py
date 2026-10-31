@@ -11,7 +11,7 @@ def at_service(db, c):
     idle(db, c)
     r = current(db, c)
     if (
-        r.id not in ("guild", "auction_hall", "recovery_hall")
+        r.id not in ("guild", "auction_hall")
         or not r.data.get("npc")
         or distance((c.x, c.y), r.data["npc"]) > 1
     ):
