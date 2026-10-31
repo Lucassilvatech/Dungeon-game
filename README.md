@@ -1,6 +1,12 @@
 # Dungeon Game — Web First · consolidação 0.9
 
-## Entrega atual: economia autônoma dos NPCs
+## Entrega atual: overhaul visual Web pixel art
+
+Branch **feature/pixel-art-visual-overhaul-0.9**, base **2ae4446** da economia NPC. Vila, ruínas e secret/boss têm arte original, temas próprios, atores direcionais, bosses com silhuetas independentes, sombras/luzes/tochas e viewport responsivo. Caminhos chegam diretamente às portas; clicar na fachada usa a entrada real do backend. Nenhuma mudança na economia ou no banco; Discord read-only e Godot congelado. [Arquitetura visual](docs/PIXEL_ART_OVERHAUL.md) · [Relatório/evidências](docs/DELIVERY_PIXEL_ART_0.9.md) · [COMO EXECUTAR LOCALMENTE — Windows PowerShell](docs/PIXEL_ART_LOCAL_WINDOWS.md).
+
+Build visual: [baixar ZIP Web](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/31bdc7aac0611d959685cb43f8bbe811a2cb5f12/builds/development/0.9.0-web-pixel-art-041587f/DungeonGame-Web-0.9-Pixel-Art.zip). Requer backend desta branch/schema7167; não gera EXE/APK. Backend339 passed, frontend22 passed, build e quatro suítes Chromium PASS; métricas Canvas60FPS nos cinco ambientes amostrados.
+
+## Entrega anterior: economia autônoma dos NPCs
 
 Branch **feature/autonomous-npc-economy-0.9**, continuação da UX66e88e5. Alquimista/Ferreiro produzem consumindo estoque físico; Comerciante trabalha em lotes, com caixa e mercadoria finitos. Preços derivados e margens fixas são calculados no backend, persistem por revisão e chegam às lojas/ADM. Worker independente da UI, reposição paga e configurações com prévia/confirmação/auditoria. Migration **7167b684d5f7**, sem reset/reconversão monetária. Comerciante começa em zero, conforme decisão do usuário. [Regras/receitas](docs/lunar/NPC_ECONOMY.md) · [Entrega e testes](docs/lunar/DELIVERY_NPC_ECONOMY_0.9.md) · [Windows e validação manual](docs/lunar/OPERATIONAL_NPC_ECONOMY.md).
 
@@ -47,11 +53,11 @@ Builds históricos **0.7**, sem exportação nova em 0.8: [Windows x64](https://
 
 ## Revisar esta evolução sem alterar a main
 
-Esta entrega está em **feature/lunar-physical-denominations-guild-commerce-0.9**, continuação da `feature/lunar-variable-nuggets-royal-admin-0.9`, para revisão por PR; a main permanece estável e não houve merge automático. Guarde alterações locais antes de trocar de branch. Para testar o código desta entrega:
+A entrega visual atual está em **feature/pixel-art-visual-overhaul-0.9**, continuação da `feature/autonomous-npc-economy-0.9`, para revisão por PR; a main permanece estável e não houve merge automático. Guarde alterações locais antes de trocar de branch. Para testar o código desta entrega:
 
 ```powershell
 git fetch origin
-git switch feature/lunar-physical-denominations-guild-commerce-0.9
+git switch feature/pixel-art-visual-overhaul-0.9
 ```
 
 Use os comandos de execução abaixo na branch selecionada. Não use reset/force push ou apague volumes para atualizar.

@@ -1,5 +1,16 @@
 # Roadmap: primeiro andar antes de expandir a Torre
 
+## Overhaul visual Web0.9
+
+- [x] Atlas originais, temas safe/common/secret/boss, atores direcionais e bosses com arte própria.
+- [x] Caminhos até as portas, clique na fachada real, máscara conservadora de decoração e y-depth.
+- [x] Luzes/sombras/tochas, responsive390px, seleção de renderer por software e evidências Chromium.
+- [x] Economia NPC, backend autoritativo, Discord read-only e Godot congelado preservados.
+- [ ] Aprovação artística do usuário e benchmark em GPU/celular físicos; não confundir com validação headless.
+
+Detalhes e testes executados: [DELIVERY_PIXEL_ART_0.9](DELIVERY_PIXEL_ART_0.9.md).
+
+
 ## Economia NPC inicial — etapa atual
 
 Cadeia fechada autorizada:3 matérias-primas,3 poções, Lingote e6 peças; produção/reposição determinísticas com estoque/carteira reais, lotes, margens fixas e preços derivados versionados. Web/ADM integrados; nenhuma economia paralela. [Regras](lunar/NPC_ECONOMY.md) · [Entrega](lunar/DELIVERY_NPC_ECONOMY_0.9.md). Boss/Echo/política automática do rei continuam fora; não avançar automaticamente.

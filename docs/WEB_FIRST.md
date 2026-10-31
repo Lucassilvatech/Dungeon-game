@@ -1,5 +1,10 @@
 # Web First — 0.8
 
+## Cliente visual consolidado0.9
+
+React/TypeScript/Phaser continua principal; atlas originais, personagens direcionais, bosses próprios e temas consistentes. Câmera mantém leitura em390px e escala inteira; iluminação limitada, renderer Canvas automático para SwiftShader. Sem port Godot, sem escrita Discord. [Evidência e limites](DELIVERY_PIXEL_ART_0.9.md).
+
+
 ## Lojas/ADM sincronizados
 
 Lojas da vila e Economia dos NPCs consomem o mesmo estado/preço autoritativo. Totais chegam do servidor; quotes/revisões antigas exigem nova confirmação. Atualização após ação e polling2,5s/3s, com UI responsiva390px. Sem fórmula de preços duplicada no React. Discord só observa e Godot permanece congelado. [Fluxos](lunar/NPC_ECONOMY.md).

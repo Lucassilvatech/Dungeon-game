@@ -1,5 +1,10 @@
 # Arquitetura
 
+## Renderer Web pixel art0.9
+
+`Map.tsx` conserva entrada/estado de jogo; `Environment` usa terreno em batch por sala e props/atores por profundidade vertical. `visual/` separa temas, aparência, máscaras, caminhos até portas e seleção de renderer. Atlas PNG originais substituem sprites em memória. Câmera responsiva zoom1,60FPS alvo, Canvas para WebGL por software. Detalhes em [PIXEL_ART_OVERHAUL](PIXEL_ART_OVERHAUL.md); a descrição histórica de sprites16×24/escala1.5/30FPS abaixo foi substituída nesta branch.
+
+
 ## Produção NPC e revisão de mercado
 
 npc_economy mantém Item/NPCStock e bootstrap auditado; npc_production executa ciclos persistentes, produção e compras reais sob mutex existente. market_pricing centraliza referência/fatores/ceil/margem e MarketRevision imutável. Catálogo/checkout genéricos reutilizam recibos/finance; npc_admin integra AdminService.4 novas tabelas+slot opcional, sem segunda carteira. [Detalhes](lunar/NPC_ECONOMY.md).

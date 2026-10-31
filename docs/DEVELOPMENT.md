@@ -1,5 +1,10 @@
 # Desenvolvimento e validação
 
+## Atualização visual e testes isolados
+
+[PIXEL_ART_LOCAL_WINDOWS](PIXEL_ART_LOCAL_WINDOWS.md) contém comandos Git/Docker/backup, frontend, backend completo e Chromium em servidor descartável separado na porta55439. `npm test` inclui22 testes de lógica/rendering e freeze; `scripts/test_visual_stack.py --suite visual|smoke|npc-economy|encounters` cria um novo banco por execução, sem resetar o banco de origem. Pipeline de arte: `python scripts/build_pixel_assets.py` com `scripts/requirements-art.txt`. Não rode testes no operacional.
+
+
 ## Validar economia autônoma NPC
 
 test_npc_economy usa PostgreSQL real para receitas, lotes/margens/fatores, mercado, pausa/reposição, capacidade, concorrência/rollback, estoque/money, seed/reinício, consultas e logs. O runner scripts/test_npc_browser_stack.py exige DATABASE_URL/TOWER_TEST_DATABASE=1, cria outro banco e executa worker real+HTTP+Chromium; não migra/reset a base informada. [Comandos/resultados](lunar/DELIVERY_NPC_ECONOMY_0.9.md).
