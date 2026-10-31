@@ -333,6 +333,13 @@ const { chromium } = require("playwright"),
     await preview.getByText("Compra: 1 → 2", { exact: true }).first().waitFor();
     await preview.getByText("Venda: 2 → 3", { exact: true }).waitFor();
     await preview.getByText("Venda: 2 → 4", { exact: true }).waitFor();
+    await admin.getByLabel("Novo preço de venda", { exact: true }).fill("5");
+    await preview.waitFor({ state: "hidden" });
+    await admin.getByLabel("Novo preço de venda", { exact: true }).fill("4");
+    await admin
+      .getByRole("button", { name: "Revisar alterações", exact: true })
+      .click();
+    await preview.getByText("Venda: 2 → 4", { exact: true }).waitFor();
     await preview
       .getByLabel("Confirmar impacto comercial", { exact: true })
       .check();

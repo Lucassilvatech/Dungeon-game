@@ -141,6 +141,24 @@ export function GuildCommerceAdmin({
     [drafts, setDrafts] = useState<Record<string, Draft>>({}),
     [active, setActive] = useState<string | null>(null),
     [mineral, setMineral] = useState<any>(null);
+  // A review belongs to its captured form values. Editing any operation
+  // requires a fresh preview rather than discarding a newer draft on confirm.
+  useEffect(() => {
+    setPreview(null);
+    setConfirmed(false);
+  }, [
+    drafts,
+    rebalanceReason,
+    exchangeReason,
+    batchReason,
+    mineralReason,
+    itemReasons,
+    mineral,
+    inputs,
+    outputs,
+    owner,
+    initial,
+  ]);
   const load = async () => {
     setData(await request("/guild/commerce?offset=" + offset));
     setError("");
