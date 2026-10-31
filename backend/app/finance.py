@@ -118,6 +118,56 @@ def debt(db, c):
     return row
 
 
+def select_up_to(available, denominations, cap):
+    lunar.integer(cap)
+    result = {}
+    for code, w in sorted(denominations.items(), key=lambda v: -v[1]):
+        n = min(available.get(code, 0), cap // w)
+        if n:
+            result[code] = n
+            cap -= n * w
+    return result
+
+
+def cash(db, owner):
+    quantities = lunar.balances(db, normalize(owner))
+    total = coin_mg(db, owner)
+    return {
+        "account": normalize(owner),
+        "total_weight_mg": str(total),
+        "coins": {code: str(quantities.get(code, 0)) for code in weights(db)},
+        "mass_percent_basis_points": {
+            code: quantities.get(code, 0) * w * 10000 // total if total else 0
+            for code, w in weights(db).items()
+        },
+    }
+
+
+def payment_quote(db, source, units):
+    lunar.integer(units)
+    try:
+        selected = (
+            lunar.select_coins(lunar.balances(db, source), weights(db), units * UNIT)
+            if units
+            else {}
+        )
+        return {
+            "payable": True,
+            "coins": {k: str(v) for k, v in selected.items()},
+            "error": None,
+        }
+    except HTTPException:
+        return {
+            "payable": False,
+            "coins": {},
+            "error": (
+                "INSUFFICIENT_FUNDS"
+                if coin_mg(db, source) < units * UNIT
+                else "INSUFFICIENT_DENOMINATIONS"
+            ),
+        }
+
+
 def move(db, source, target, units, key, *, amortize=True, actor=None, reason=None):
     lunar.mutex(db)
     lunar.integer(units)
@@ -137,25 +187,25 @@ def move(db, source, target, units, key, *, amortize=True, actor=None, reason=No
     if source == target:
         fail("Origem e destino devem diferir")
     mass = units * UNIT
+    available = lunar.balances(db, source)
     if coin_mg(db, source) < mass:
-        fail("Saldo físico insuficiente")
-    changes = {source: -mass, target: mass}
+        fail("INSUFFICIENT_FUNDS: saldo físico insuficiente")
+    chosen = lunar.select_coins(available, weights(db), mass) if mass else {}
+    # The recipient receives these exact pieces. No wallet is recomposed.
+    postings = []
+    for code, q in chosen.items():
+        postings.extend([(source, code, -q), (target, code, q)])
     repaid = 0
+    repayment = {}
     if amortize and target.startswith("player:"):
         c = db.get(m.Character, int(target.split(":")[1]))
         ob = debt(db, c)
-        repaid = min(mass, ob.weight_mg)
-        if repaid:
-            changes[target] -= repaid
-            changes["treasury"] = changes.get("treasury", 0) + repaid
-    postings = []
-    for owner, delta in sorted(changes.items()):
-        before = lunar.balances(db, owner)
-        after = compose(db, coin_mg(db, owner) + delta)
-        postings.extend(
-            (owner, code, after.get(code, 0) - before.get(code, 0))
-            for code in weights(db)
-        )
+        # Automatic repayment uses only pieces actually received. An indivisible
+        # coin is never broken to settle a smaller obligation.
+        repayment = select_up_to(chosen, weights(db), min(mass, ob.weight_mg))
+        repaid = sum(q * weights(db)[code] for code, q in repayment.items())
+        for code, q in repayment.items():
+            postings.extend([(target, code, -q), ("treasury", code, q)])
     result = lunar.post(
         db,
         key,
@@ -167,7 +217,13 @@ def move(db, source, target, units, key, *, amortize=True, actor=None, reason=No
         actor or source,
         reason or "Pagamento físico com origem explícita",
         postings,
-        context={"parameters": parameters, "debt_repaid_mg": str(repaid)},
+        context={
+            "parameters": parameters,
+            "debt_repaid_mg": str(repaid),
+            "physical_denominations_v1": True,
+            "coins_transferred": chosen,
+            "debt_coins": repayment,
+        },
     )
     if repaid:
         ob.weight_mg -= repaid
@@ -181,7 +237,10 @@ def fee(db, c, assessed, reference):
         return old.context["fee"]
     before = funds(db, c)
     available = coin_mg(db, f"player:{c.id}") // UNIT
-    paid = min(available, assessed)
+    selected = select_up_to(
+        lunar.balances(db, f"player:{c.id}"), weights(db), assessed * UNIT
+    )
+    paid = sum(q * weights(db)[code] for code, q in selected.items()) // UNIT
     ob = debt(db, c)
     financed = min(assessed - paid, max(0, 10000 - ob.weight_mg // UNIT))
     if paid:

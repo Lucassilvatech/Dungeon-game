@@ -118,6 +118,8 @@ def post(db, key, kind, actor, reason, postings, context=None, source=None):
         "ZERO_TRANSFER",
         "DEBT_REPAYMENT",
         "MINERAL_SPLIT",
+        "DENOMINATION_EXCHANGE",
+        "GUILD_DENOMINATION_REBALANCE",
     ):
         fail("Operação vazia", 422)
     supply = db.get(LunarSupply, 1)
@@ -144,6 +146,20 @@ def post(db, key, kind, actor, reason, postings, context=None, source=None):
         total += q * asset.weight_mg
         if a != "mineral_mg":
             updates.append((holding, o, a, before + q))
+    if total == 0 and kind not in (
+        "MINT",
+        "DENOMINATION_EXCHANGE",
+        "COIN_DENOMINATION_EXCHANGE",
+        "GUILD_DENOMINATION_REBALANCE",
+    ):
+        per_asset = defaultdict(int)
+        for r in rows:
+            if db.get(LunarAsset, r["asset"]).kind == "coin":
+                per_asset[r["asset"]] += r["quantity"]
+        if any(per_asset.values()):
+            fail(
+                "IMPLICIT_EXCHANGE_FORBIDDEN: denominações só mudam por operação explícita"
+            )
     if total > 0 and source not in ("discovery", "legacy_backing", "admin_injection"):
         fail("Operação criaria massa sem origem")
     if total < 0 and source != "destruction":
@@ -214,23 +230,51 @@ def split(db, id, source, outputs, key):
     return lots.split(db, id, row.id, grams, key)
 
 
-def exchange(db, id, inputs, outputs, key):
+def exchange(
+    db,
+    id,
+    inputs,
+    outputs,
+    key,
+    *,
+    actor=None,
+    reason=None,
+    kind="DENOMINATION_EXCHANGE",
+):
     mutex(db)
+    params = [id, inputs, outputs]
+    old = db.scalar(select(LunarEntry).where(LunarEntry.key == key))
+    if old:
+        if (
+            old.context.get("parameters") != params
+            or (actor is not None and old.actor != actor)
+            or (reason is not None and old.reason != reason)
+        ):
+            fail("Chave de troca já utilizada")
+        return old
+    if not inputs or not outputs:
+        fail("Informe entrada e saída da troca", 422)
     postings = []
+    held = balances(db, id)
     for sign, values in [(-1, inputs), (1, outputs)]:
         for code, q in values.items():
             integer(q, True)
             a = db.get(LunarAsset, code)
             if not a or a.kind != "coin":
                 fail("Troca aceita apenas moedas")
+            if sign == -1 and held.get(code, 0) < q:
+                fail("INSUFFICIENT_DENOMINATIONS: entrada da troca indisponível")
             postings.append((id, code, sign * q))
+    if sum(q * db.get(LunarAsset, a).weight_mg for _, a, q in postings):
+        fail("Troca deve preservar a massa", 422)
     return post(
         db,
         key,
-        "COIN_DENOMINATION_EXCHANGE",
-        id,
-        "Troca gratuita de denominações",
+        kind,
+        actor or id,
+        reason or "Troca explícita de denominações",
         postings,
+        context={"parameters": params, "physical_denominations_v1": True},
     )
 
 
@@ -275,7 +319,9 @@ def select_coins(available, weights, required):
             chosen[code] = count
             remaining -= count * weights[code]
     if remaining:
-        fail("Não há combinação exata de moedas disponíveis")
+        fail(
+            "INSUFFICIENT_DENOMINATIONS: caixa sem denominações suficientes para pagamento exato"
+        )
     return chosen
 
 
@@ -326,6 +372,13 @@ def wallet(db, id):
             for code, a in assets.items()
             if a.kind == "coin"
         },
+        "coin_total_weight_mg": str(
+            sum(
+                q * assets[code].weight_mg
+                for code, q in held.items()
+                if assets[code].kind == "coin"
+            )
+        ),
         "lots": [payload(r) for r in lots],
         "mineral_weight_mg": str(sum(r.weight_mg for r in lots)),
         "weight_mg": str(

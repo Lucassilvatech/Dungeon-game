@@ -65,7 +65,11 @@ def collect(db, c):
         return None
     rows, total = select_units(eligible(db, c), debt)
     treasury = db.scalar(select(Treasury).where(Treasury.id == 1).with_for_update())
-    if total > institution(db, "treasury"):
+    from . import finance
+
+    if total > institution(db, "treasury") or (
+        active(db) and not finance.payment_quote(db, "treasury", total)["payable"]
+    ):
         event(
             db,
             "DEBT_COLLECTION_DEFERRED",
@@ -118,6 +122,9 @@ def collect(db, c):
     if not active(db):
         treasury.balance -= total
     credit_player_gold(db, c, total, "treasury", f"debt-collection:{record.id}")
+    if active(db):
+        record.debt_after = debt_units(db, c)
+        record.surplus = max(0, total - (debt - record.debt_after))
     record.items = items
     event(
         db,
@@ -126,7 +133,7 @@ def collect(db, c):
         key=f"debt-collection:{record.id}",
         collection_id=record.id,
         debt_before=str(debt),
-        debt_repaid=str(min(debt, total)),
+        debt_repaid=str(debt - record.debt_after),
         assessed=str(total),
         surplus=str(record.surplus),
         next_accrued=str(c.debt_next_collection),
