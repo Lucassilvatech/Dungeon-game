@@ -129,6 +129,15 @@ export function drawObject(
   if (d.kind !== "rug" && d.kind !== "flower" && d.kind !== "moss")
     g.fillEllipse(x + w / 2 + 3, y + h - 2, w * 0.9, 12);
   switch (d.kind) {
+    case "recovery_tent":
+      g.fillStyle(0x15171d);g.fillTriangle(x,y+h-14,x+w/2,y+5,x+w,y+h-14);
+      g.fillStyle(0x514c43);g.fillTriangle(x+6,y+h-18,x+w/2,y+6,x+w/2,y+h-18);
+      g.fillStyle(0x373b3b);g.fillTriangle(x+w/2,y+6,x+w/2,y+h-18,x+w-5,y+h-18);
+      g.fillStyle(0x0a1015);g.fillTriangle(x+w/2,y+h/2,x+w/2-27,y+h-14,x+w/2+28,y+h-14);
+      g.lineStyle(2,0x726c58);g.lineBetween(x+4,y+h-12,x+w/2,y+3);g.lineBetween(x+w/2,y+3,x+w-3,y+h-12);
+      g.fillStyle(0x77715d);g.fillRect(x+31,y+h/2+10,15,10);g.fillStyle(0x302f2d);g.fillRect(x+36,y+h/2+12,9,2);
+      g.lineStyle(1,0x6f6755);g.lineBetween(x-9,y+h-3,x+10,y+h/2+8);g.lineBetween(x+w-7,y+h/2+7,x+w+9,y+h-4);
+      break;
     case "rug":
       g.fillStyle(0x7b4b4b);
       g.fillRect(x, y, w, h);

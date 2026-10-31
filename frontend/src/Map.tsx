@@ -46,6 +46,7 @@ export function Map({
       targetEnemy = 0;
       removed = new Set<number>();
       npcHomes: { x: number; y: number; walk: boolean }[] = [];
+      recoveryLabel: Phaser.GameObjects.Text|null=null;
       label(x: number, y: number, text: string) {
         return this.add
           .text(x, y, text, {
@@ -128,6 +129,7 @@ export function Map({
         this.labels.forEach((a) => a.destroy());
         this.labels = [];
         this.npcHomes = [];
+        this.recoveryLabel=null;
         this.removed.clear();
         this.tweens.killTweensOf(this.hero);
         drawEnvironment(this.back, s);
@@ -135,14 +137,14 @@ export function Map({
           const [x, y] = s.map.npc;
           this.npcs.push(
             this.add
-              .sprite(x * 32 + 16, y * 32 + 12, "npc")
+              .sprite(x * 32 + 16, y * 32 + 12, s.map.npc_role==="recovery"?"hooded":"npc")
               .setScale(1.5)
               .setDepth(12),
           );
           this.npcHomes.push({ x: x * 32 + 16, y: y * 32 + 12, walk: false });
-          this.labels.push(
-            this.label(x * 32 + 16, y * 32 - 17, "E · "+(s.map.npc_name??"Serviço da Guilda")),
-          );
+          const caption=this.label(x * 32 + 16,y * 32-17,"E · "+(s.map.npc_name??"Serviço da Guilda"));
+          if(s.map.npc_role==="recovery"){this.recoveryLabel=caption;caption.setVisible(false)}else this.recoveryLabel=null;
+          this.labels.push(caption);
         }
         for (const n of s.map.npcs || []) {
           this.npcs.push(
@@ -246,6 +248,7 @@ export function Map({
             4 +
             (moving ? Math.floor(time / 90) % 4 : frame),
         );
+        if(this.recoveryLabel&&s.map.npc)this.recoveryLabel.setVisible(Math.abs(s.character.x-s.map.npc[0])+Math.abs(s.character.y-s.map.npc[1])<=4);
         const ids = new Set(s.map.enemies.map((e) => e.id));
         this.actors.forEach((a, id) => {
           if (!ids.has(id)) {

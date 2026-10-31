@@ -6,6 +6,7 @@ export function createSprites(scene: Phaser.Scene) {
     hero: ["#e9cfa1", "#497b8d", "#473a39"],
     peer: ["#e7c6a2", "#9477a5", "#3e3242"],
     npc: ["#e8c7a0", "#c18c55", "#77543d"],
+    hooded: ["#07090b", "#20242b", "#10151c"],
     slime: ["#a4d698", "#609967", "#284f48"],
     goblin: ["#a8b983", "#637a66", "#384c46"],
     boss: ["#c5a9a0", "#925965", "#45354c"],
@@ -32,6 +33,12 @@ export function createSprites(scene: Phaser.Scene) {
         ctx.fillStyle = color;
         ctx.fillRect(ox + x, y + bob, w, h);
       };
+      if(key==="hooded"){
+        rect(5,2,6,2,"#34343a");rect(3,4,10,6,"#24262e");rect(4,5,8,6,"#030507");
+        rect(3,11,10,9,"#171c23");rect(2,16,12,5,"#11171f");rect(4,21,3,2,"#080d13");rect(10,21,3,2,"#080d13");
+        rect(3,11,2,8,"#2e3037");rect(12,13,1,7,"#39353a");
+        texture.add(frame,0,ox,0,16,24);continue;
+      }
       if (state === 4) {
         rect(3, 20, 10, 2, colors[1]);
         texture.add(frame, 0, ox, 0, 16, 24);
