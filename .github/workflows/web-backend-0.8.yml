@@ -33,6 +33,8 @@ jobs:
         working-directory: frontend
       - run: npm test
         working-directory: frontend
+      - name: Audit actual layout templates against strict decorative zones
+        run: PYTHONPATH=backend python scripts/export_visual_layout_fixtures.py /tmp/visual-layouts.json && VISUAL_LAYOUT_FIXTURES=/tmp/visual-layouts.json node frontend/tests/placement-audit.cjs
       - run: python scripts/simulate_lunar.py
       - run: python scripts/simulate_guild_liquidity.py
       - uses: actions/upload-artifact@v4
@@ -110,5 +112,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pixel-art-visual-review
-          path: artifacts/visual-review/
+          name: art-refinement-review
+          path: artifacts/art-refinement/
