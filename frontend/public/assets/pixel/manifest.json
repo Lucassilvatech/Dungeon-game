@@ -185,139 +185,139 @@
     },
     "width": 256,
     "height": 608,
-    "sha256": "c1f6a774207e9903f4eb273a54f96e06f8753fd061e81a28e76fe020d071af8b"
+    "sha256": "3de817c0947a45cf4d82829ee7d5934a5132a356a9fa96e3a8c440efa09c36a4"
   },
   "hero": {
     "file": "hero.png",
     "frames": {
-      "frameWidth": 32,
-      "frameHeight": 48,
+      "frameWidth": 48,
+      "frameHeight": 64,
       "endFrame": 79
     },
-    "width": 256,
-    "height": 480,
-    "sha256": "e8158b7684e0cf97a9a5a8910f44240cadeb8cd3c9b0cdc98552fd43fd1a04d7"
+    "width": 384,
+    "height": 640,
+    "sha256": "cacf4988fe8293fdd89778adef1e249017fc9bde9c5bb47fa9514e79f49f32bd"
   },
   "peer": {
     "file": "peer.png",
     "frames": {
-      "frameWidth": 32,
-      "frameHeight": 48,
+      "frameWidth": 48,
+      "frameHeight": 64,
       "endFrame": 79
     },
-    "width": 256,
-    "height": 480,
-    "sha256": "b32dc67ea441e5112ae5cbdb297e16b00abd030ce9cfe863f5bb0395d2bce148"
+    "width": 384,
+    "height": 640,
+    "sha256": "f1dcbbfa0df1d01d8337efa9ba5d13f47b2de7410f219f12d09c9cdba7fc2299"
   },
   "npc": {
     "file": "npc.png",
     "frames": {
-      "frameWidth": 32,
-      "frameHeight": 48,
+      "frameWidth": 48,
+      "frameHeight": 64,
       "endFrame": 79
     },
-    "width": 256,
-    "height": 480,
-    "sha256": "74de561601f7285bc93795c1b9664e0b93814482c814fe31073b9bc2e0c79bcf"
+    "width": 384,
+    "height": 640,
+    "sha256": "f4a04a355d8f88625185851375dfe38aa77454793aac0f633d51eec4157adbe4"
   },
   "merchant": {
     "file": "merchant.png",
     "frames": {
-      "frameWidth": 32,
-      "frameHeight": 48,
+      "frameWidth": 48,
+      "frameHeight": 64,
       "endFrame": 79
     },
-    "width": 256,
-    "height": 480,
-    "sha256": "42d284163e544bf79ee229d4a5b08d145496d11bdb544d91a440bc43b9cef78c"
+    "width": 384,
+    "height": 640,
+    "sha256": "2a409866b86e1429b9b45cf60d1ce0dbdedbef2a46bdc8efd8d91fd14830d821"
   },
   "alchemist": {
     "file": "alchemist.png",
     "frames": {
-      "frameWidth": 32,
-      "frameHeight": 48,
+      "frameWidth": 48,
+      "frameHeight": 64,
       "endFrame": 79
     },
-    "width": 256,
-    "height": 480,
-    "sha256": "680623770a032a7eb9aeae0d663b04a3a979af1b2cce4613c1e88bfe65e24c5c"
+    "width": 384,
+    "height": 640,
+    "sha256": "f1dcbbfa0df1d01d8337efa9ba5d13f47b2de7410f219f12d09c9cdba7fc2299"
   },
   "blacksmith": {
     "file": "blacksmith.png",
     "frames": {
-      "frameWidth": 32,
-      "frameHeight": 48,
+      "frameWidth": 48,
+      "frameHeight": 64,
       "endFrame": 79
     },
-    "width": 256,
-    "height": 480,
-    "sha256": "1e2c5829c6fa0117dc2fc49c1576551d3c505143ce3dcf50d2d26de50856a123"
+    "width": 384,
+    "height": 640,
+    "sha256": "e475ea30214edc8c9a291b470d94f6766572be456f2f68fc96942b71b3a3b0eb"
   },
   "hooded": {
     "file": "hooded.png",
     "frames": {
-      "frameWidth": 32,
-      "frameHeight": 48,
+      "frameWidth": 48,
+      "frameHeight": 64,
       "endFrame": 79
     },
-    "width": 256,
-    "height": 480,
-    "sha256": "5c49cc96ca518100043fc4060f6248869c615eda4094970341ee6ef3c6e385c6"
+    "width": 384,
+    "height": 640,
+    "sha256": "90cd66b577fa483caa08f37e894692fcc286c7cd5fd1b16564dca257503f254c"
   },
   "goblin": {
     "file": "goblin.png",
     "frames": {
-      "frameWidth": 32,
-      "frameHeight": 48,
+      "frameWidth": 48,
+      "frameHeight": 64,
       "endFrame": 79
     },
-    "width": 256,
-    "height": 480,
-    "sha256": "e15b4352cae57674b8c002626e4636aa4263c4560fba6170f0fff64859ec3fb9"
+    "width": 384,
+    "height": 640,
+    "sha256": "cd37982554be52e57b03b989956bd8628d99d35ddb70fa5f42aa839ee87ae624"
   },
   "goblin_elite": {
     "file": "goblin_elite.png",
     "frames": {
-      "frameWidth": 32,
-      "frameHeight": 48,
+      "frameWidth": 48,
+      "frameHeight": 64,
       "endFrame": 79
     },
-    "width": 256,
-    "height": 480,
-    "sha256": "12e5babd4038de58335876c89d45117d67736677e8c37828cf31518a4a5e95e3"
+    "width": 384,
+    "height": 640,
+    "sha256": "5ec43fc9e24646d2fba36ffe0ecc4e4ea4f3e6927a048269e5755ffe18f011c6"
   },
   "slime": {
     "file": "slime.png",
     "frames": {
-      "frameWidth": 32,
-      "frameHeight": 48,
+      "frameWidth": 48,
+      "frameHeight": 64,
       "endFrame": 79
     },
-    "width": 256,
-    "height": 480,
-    "sha256": "f25c83c708cc8241551bb05f392479a30e942de02d45c48d519204733afba053"
+    "width": 384,
+    "height": 640,
+    "sha256": "5ff2eb96b05d4aa5b2400c97763294240be98f428387f343594bb2bcb58afe73"
   },
   "slime_elite": {
     "file": "slime_elite.png",
     "frames": {
-      "frameWidth": 32,
-      "frameHeight": 48,
+      "frameWidth": 48,
+      "frameHeight": 64,
       "endFrame": 79
     },
-    "width": 256,
-    "height": 480,
-    "sha256": "a9981da4a6978ee25fbeaac54ddd180ead7cd87d6d1b022c334faa7b0671236e"
+    "width": 384,
+    "height": 640,
+    "sha256": "11929b1e6a91a6c8137a709648faf7b120822e0583c64dddb5d59d4f243b367a"
   },
   "dummy": {
     "file": "dummy.png",
     "frames": {
-      "frameWidth": 32,
-      "frameHeight": 48,
+      "frameWidth": 48,
+      "frameHeight": 64,
       "endFrame": 79
     },
-    "width": 256,
-    "height": 480,
-    "sha256": "db6bfd023f2c843147d293a1a2157d8c56743caed12f6a4a47031e0c22289f3b"
+    "width": 384,
+    "height": 640,
+    "sha256": "117f24adf0f84ba7412da4e27d96c5ba76c2db82a212a6176caaf08a3c19a300"
   },
   "effects": {
     "file": "effects.png",

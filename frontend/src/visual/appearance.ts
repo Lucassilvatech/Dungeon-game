@@ -1,6 +1,6 @@
 import type { Enemy, State } from '../api';
 import {resolveTheme,visualHash} from './themes';
-export const ACTOR_FRAME={width:32,height:48,count:80};
+export const ACTOR_FRAME={width:48,height:64,count:80};
 export type Direction=0|1|2|3; // down, left, right, up
 export function direction(dx:number,dy:number,previous:Direction=0):Direction {return Math.abs(dx)+Math.abs(dy)===0?previous:Math.abs(dx)>Math.abs(dy)?dx<0?1:2:dy<0?3:0;}
 export function actorFrame(mode:'idle'|'walk'|'attack'|'hurt'|'death',dir:Direction,tick:number):number {return ['idle','walk','attack','hurt','death'].indexOf(mode)*16+dir*4+tick%4;}
@@ -14,5 +14,5 @@ export function appearance(e:Pick<Enemy,'species'|'category'|'spawn_key'>,s:Pick
  }
  const mini=e.category==='miniboss',rare=e.category==='rare';
  const species=['slime','goblin','dummy'].includes(e.species)?e.species:'goblin';
- return {key:species+(mini?'_elite':''),scale:mini?1.5:1,boss:false,width:32,height:48,hitbox:32,rare};
+ return {key:species+(mini?'_elite':''),scale:mini?1.5:1,boss:false,width:48,height:64,hitbox:32,rare};
 }

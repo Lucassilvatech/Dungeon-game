@@ -3,7 +3,7 @@ import manifest from './visual/atlas.json';
 /** Shipping PNG atlases; original source and compiler are versioned with the game. */
 export function preloadSprites(scene:Phaser.Scene){
  for(const [name,e] of Object.entries(manifest)){
-  scene.load.spritesheet(name,'/assets/pixel/'+e.file,{frameWidth:'frameWidth' in e.frames?32:name==='tiles'?32:name==='effects'?64:128,frameHeight:'frameWidth' in e.frames?48:name==='tiles'?32:name==='effects'?64:128});
+  scene.load.spritesheet(name,'/assets/pixel/'+e.file,{frameWidth:'frameWidth' in e.frames?48:name==='tiles'?32:name==='effects'?64:128,frameHeight:'frameWidth' in e.frames?64:name==='tiles'?32:name==='effects'?64:128});
  }
 }
 export function createSprites(scene:Phaser.Scene){for(const key of Object.keys(manifest)){
