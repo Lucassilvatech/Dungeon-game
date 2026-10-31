@@ -135,6 +135,9 @@ def npc_economy_overview(actor=Depends(principal), db=Depends(get_db)):
     from . import npc_economy as npc, market_pricing as pricing
 
     require(actor, "economy.read")
+    from .lunar import mutex
+
+    mutex(db)
     revision = pricing.latest(db)
     return {
         "npcs": [
@@ -578,6 +581,7 @@ def guild_commerce_admin(offset: int = 0, actor=Depends(principal), db=Depends(g
     require(actor, "economy.read")
     from . import guild_commerce as commerce, guild_admin, finance
     from .mineral_lots import held, payload
+    from .market_pricing import price as market_price
 
     return {
         "cash": finance.cash(db, "guild"),
@@ -587,7 +591,13 @@ def guild_commerce_admin(offset: int = 0, actor=Depends(principal), db=Depends(g
             if finance.active(db)
             else None
         ),
-        "items": commerce.admin_catalog(db),
+        "items": [
+            {
+                **row,
+                "resale_quote": market_price(db, "guild", row["definition_id"], 1),
+            }
+            for row in commerce.admin_catalog(db)
+        ],
         "mineral": commerce.mineral_policy(db),
         "stock": [
             {

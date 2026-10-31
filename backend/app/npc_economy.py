@@ -326,7 +326,7 @@ def initialize(db):
                     base_value=0,
                     stackable=slot is None,
                     max_stack_size=99 if slot is None else 1,
-                    description="Produção física da vila. Atributos novos não definidos nesta etapa.",
+                    description="Mercadoria produzida na vila.",
                 )
             )
     db.flush()
@@ -518,26 +518,38 @@ def state(db, npc_id, admin=False):
                 ),
             }
         )
-    history = list(
-        db.scalars(
-            select(m.WorldEvent)
-            .where(
-                m.WorldEvent.kind.in_(
-                    (
-                        "NPC_PRODUCTION",
-                        "NPC_PURCHASE",
-                        "NPC_SALE",
-                        "NPC_RESTOCK_REQUEST",
-                        "NPC_CONFIG_UPDATED",
-                        "NPC_INVENTORY_ADJUSTED",
-                        "NPC_INITIAL_STOCK",
-                    )
+    from sqlalchemy import or_
+
+    history = (
+        list(
+            db.scalars(
+                select(m.WorldEvent)
+                .where(
+                    m.WorldEvent.kind.in_(
+                        (
+                            "NPC_PRODUCTION",
+                            "NPC_PURCHASE",
+                            "NPC_SALE",
+                            "NPC_RESTOCK_REQUEST",
+                            "NPC_CONFIG_UPDATED",
+                            "NPC_INVENTORY_ADJUSTED",
+                            "NPC_INITIAL_STOCK",
+                        )
+                    ),
+                    or_(
+                        m.WorldEvent.payload["npc"].as_string() == npc_id,
+                        m.WorldEvent.payload["source_npc"].as_string() == npc_id,
+                        m.WorldEvent.payload["destination_npc"].as_string() == npc_id,
+                    ),
                 )
+                .order_by(m.WorldEvent.id.desc())
+                .limit(100)
             )
-            .order_by(m.WorldEvent.id.desc())
-            .limit(100)
         )
+        if admin
+        else []
     )
+
     return {
         "id": profile.id,
         "name": profile.name,
