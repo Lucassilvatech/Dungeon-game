@@ -88,3 +88,7 @@ jobs:
       - name: Variable lots and Royal administration on mobile (private database)
         run: ROYAL_TEST_DATABASE_URL="$DATABASE_URL" BASE_URL=http://127.0.0.1:8080 node tests/royal.cjs
         working-directory: frontend
+
+      - name: Physical denominations and bidirectional Guild commerce (private database)
+        run: PHYSICAL_TEST_DATABASE_URL="$DATABASE_URL" BASE_URL=http://127.0.0.1:8080 node tests/physical-commerce.cjs
+        working-directory: frontend

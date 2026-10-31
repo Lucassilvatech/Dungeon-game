@@ -41,6 +41,8 @@ const { chromium } = require('playwright'), assert = require('node:assert/strict
         const initial=await adm('/lunar/audit');
         const p = await adm('/operations/preview', { operation_id: crypto.randomUUID(), action: 'bank.transfer', target: 'central_bank', params: { source: 'treasury', destination: 'guild', amount: '800' }, reason: 'Financiar compra real de pepita no teste privado' });
         await adm('/operations/' + p.id + '/confirm', { confirmed: true, confirmation_token: p.confirmation_token });
+        const reb=await adm('/operations/preview',{operation_id:crypto.randomUUID(),action:'guild.rebalance',target:'guild',params:{initial:false},reason:'Explicit physical cash composition for disposable browser fixture'});
+        await adm('/operations/'+reb.id+'/confirm',{confirmed:true,confirmation_token:reb.confirmation_token});
         const state = () => page.evaluate(async () => { const r = await fetch('/api/state', { headers: { Authorization: 'Bearer ' + sessionStorage.getItem('token') } }); if (!r.ok)
             throw Error('state ' + r.status); return r.json(); });
         const idle = () => page.waitForFunction(() => document.querySelector('main')?.getAttribute('aria-busy') === 'false');
