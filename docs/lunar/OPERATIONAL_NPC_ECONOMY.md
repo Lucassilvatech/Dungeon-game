@@ -9,9 +9,13 @@ Requer Git e Docker Desktop Linux. Se git status mostrar trabalho local, preserv
 ```powershell
 cd "C:\Users\pcnov\OneDrive\Documentos\dev\Dungeon-game"
 git status
+if (git status --porcelain) { throw "Preserve as alterações locais antes de continuar." }
 git fetch origin
+if ($LASTEXITCODE -ne 0) { throw "Fetch falhou; interrompa." }
 git switch feature/autonomous-npc-economy-0.9
+if ($LASTEXITCODE -ne 0) { throw "Troca de branch falhou; não execute pull na branch anterior." }
 git pull --ff-only origin feature/autonomous-npc-economy-0.9
+if ($LASTEXITCODE -ne 0) { throw "Atualização Git falhou; interrompa." }
 
 # Parar escritores antes do backup; manter volume/banco.
 docker compose stop backend discord
