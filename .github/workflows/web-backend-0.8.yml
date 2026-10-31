@@ -95,3 +95,7 @@ jobs:
       - name: Physical denominations and bidirectional Guild commerce (private database)
         run: PHYSICAL_TEST_DATABASE_URL="$DATABASE_URL" BASE_URL=http://127.0.0.1:8080 node tests/physical-commerce.cjs
         working-directory: frontend
+
+      - name: Aggregate shop batch pricing and relocated recovery (desktop and390px)
+        run: UX_TEST_DATABASE_URL="$DATABASE_URL" BASE_URL=http://127.0.0.1:8080 node tests/guild-shop-recovery-ux.cjs
+        working-directory: frontend

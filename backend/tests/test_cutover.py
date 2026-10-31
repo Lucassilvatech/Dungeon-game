@@ -494,7 +494,7 @@ def test_recovery_real_endpoint_transfers_to_recovery_account_once(client):
         rid = r.id
         iid = item.id
     convert()
-    navigate(client, h, "recovery_hall")
+    navigate(client, h, "city1")
     s = state(client, h)
     walk_tiles(client, h, tuple(s["map"]["npc"]))
     body = {"request_id": str(uuid4())}

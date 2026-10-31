@@ -93,7 +93,7 @@ const path = require("node:path"),
         s.map.monsters &&
         Object.keys(s.map.monsters).length === 0,
     );
-    assert(!s.map.npc);
+    assert.equal(s.map.npc_role,"recovery");assert.deepEqual(s.map.npc,[5,30]);
     await page.getByRole("button", { name: "▣ Inventário" }).click();
     await page.getByRole("button", { name: "Equipar", exact: true }).click();
     await page

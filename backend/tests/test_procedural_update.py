@@ -187,7 +187,7 @@ def test_personal_recovery_price_ownership_atomic_and_replay(client, monkeypatch
         client.post(f"/recovery/{rid}/recover", headers=other, json=request).status_code
         == 404
     )
-    navigate(client, h, "recovery_hall")
+    navigate(client, h, "city1")
     walk_tiles(client, h, state(client, h)["map"]["npc"])
     assert (
         client.post(f"/recovery/{rid}/recover", headers=h, json=request).status_code

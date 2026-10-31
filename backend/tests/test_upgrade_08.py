@@ -278,7 +278,45 @@ def test_populated_07_upgrade_preserves_all_original_columns_and_rights():
 
         before = snapshot()
         migrate("head")
-        assert snapshot() == before
+        after = snapshot()
+        # The recovery relocation adds village presentation metadata; all existing
+        # world keys and all financial/progression rows must remain unchanged.
+        assert {k: v for k, v in after.items() if k != "rooms"} == {
+            k: v for k, v in before.items() if k != "rooms"
+        }
+        old_rooms = {json.loads(row)["id"]: json.loads(row) for row in before["rooms"]}
+        new_rooms = {json.loads(row)["id"]: json.loads(row) for row in after["rooms"]}
+        assert old_rooms.keys() == new_rooms.keys()
+        for room_id, old in old_rooms.items():
+            updated = new_rooms[room_id]
+            if room_id == "city1":
+                assert updated["data"]["npc"] == [5, 30]
+                assert updated["data"]["npc_role"] == "recovery"
+                assert updated["data"]["recovery_site_version"] == 1
+                decorations = updated["data"]["decorations"]
+                assert [d for d in decorations if d["kind"] == "recovery_tent"] == [
+                    {"kind": "recovery_tent", "x": 3, "y": 27, "width": 5, "height": 5}
+                ]
+                assert [d for d in decorations if d["kind"] != "recovery_tent"] == [
+                    d
+                    for d in old["data"].get("decorations", [])
+                    if d["kind"] != "recovery_tent"
+                ]
+                relocated = {
+                    "npc",
+                    "npc_name",
+                    "npc_role",
+                    "recovery_site_version",
+                    "decorations",
+                }
+                assert {
+                    k: v for k, v in updated["data"].items() if k not in relocated
+                } == {k: v for k, v in old["data"].items() if k not in relocated}
+                assert {k: v for k, v in updated.items() if k != "data"} == {
+                    k: v for k, v in old.items() if k != "data"
+                }
+            else:
+                assert updated == old
         with copy.connect() as db:
             assert (
                 db.scalar(text("SELECT created_at FROM characters WHERE id=991"))

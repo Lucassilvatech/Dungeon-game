@@ -87,9 +87,10 @@ const { chromium } = require('playwright'), assert = require('node:assert/strict
         await page.getByRole('button', { name: 'Falar com recepcionista', exact: true }).click();
         await idle();
         await page.getByRole('button', { name: '☾ Lunar', exact: true }).click();
-        await page.getByRole('button', { name: `Vender Pepita #${lotId}`, exact: true }).waitFor();
+        await page.locator('[data-lot-id="'+lotId+'"]').getByRole('button', { name: 'Vender pepita', exact: true }).waitFor();
         page.on('dialog', d => d.accept());
-        await page.getByRole('button', { name: `Vender Pepita #${lotId}`, exact: true }).click();
+        await page.locator('[data-lot-id="'+lotId+'"]').getByRole('button', { name: 'Vender pepita', exact: true }).click();
+        await page.getByRole('dialog', {name: 'Confirmar venda de minério', exact: true}).getByRole('button', {name: 'Confirmar venda', exact: true}).click();
         await idle();
         s = await state();
         assert.deepEqual(s.lunar_inventory, []);
