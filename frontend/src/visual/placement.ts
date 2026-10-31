@@ -1,28 +1,367 @@
-import type { State } from '../api';
-import {cityPaths,buildingEntrances} from './paths';
-export {isVillagePath} from './paths';
-export type Placement={kind:string;x:number;y:number;width?:number;height?:number;solid?:boolean};
-const key=(x:number,y:number)=>`${x},${y}`;
-/** Conservative visual-only reserved mask. Never modifies authoritative walls or route rules. */
-export function placementMask(s:Pick<State,'map'|'room'>):Set<string>{
- const m=s.map,mask=new Set<string>(),walls=new Set(m.walls.map(p=>p.join(',')));
- const reserve=(x:number,y:number,r=1)=>{for(let yy=y-r;yy<=y+r;yy++)for(let xx=x-r;xx<=x+r;xx++)mask.add(key(xx,yy));};
- const goals:number[][]=[[2,2],...s.room.exits.map(e=>[e.x,e.y]),...(m.npc?[m.npc]:[]),...(m.service_npcs??[]).map(n=>[n.x,n.y]),...(m.gather_nodes??[]).map(n=>[n.x,n.y]),...(m.lunar_resources??[]).map(n=>[n.x,n.y]),...(m.spawns?Object.values(m.spawns).map(p=>[p.x,p.y]):Object.values(m.monsters))];
- if(m.portal)goals.push(m.portal);
- goals.forEach(([x,y])=>reserve(x,y,1));
- for(const b of m.buildings??[])for(let y=b.y;y<b.y+b.height;y++)for(let x=b.x;x<b.x+b.width;x++)mask.add(key(x,y));
- // Required routes from the stable saved spawn; no random decoration along narrow corridors.
- const queue:[[number,number]]|[number,number][]=[[2,2]],parent=new Map<string,string>();parent.set('2,2','');
- for(let i=0;i<queue.length;i++){const [x,y]=queue[i];for(const [dx,dy] of [[1,0],[0,1],[-1,0],[0,-1]]){const a=x+dx,b=y+dy,k=key(a,b);if(a<1||b<1||a>=m.width-1||b>=m.height-1||walls.has(k)||parent.has(k))continue;parent.set(k,key(x,y));queue.push([a,b]);}}
- for(const [x,y] of goals){let k=key(x,y);if(!parent.has(k))k=[[x+1,y],[x-1,y],[x,y+1],[x,y-1]].map(p=>p.join(',')).find(p=>parent.has(p))??'';while(k){mask.add(k);k=parent.get(k)??'';}}
- if(s.room.kind==='CITY'){for(const k of cityPaths(s))mask.add(k);for(const d of buildingEntrances(s))reserve(d.x,d.y,1);}
- // Arena's center is intentionally clear; ornamental runes are flat and exempt.
- if(['BOSS','SECRET_DUNGEON'].includes(s.room.kind))for(let y=4;y<m.height-4;y++)for(let x=5;x<m.width-5;x++)mask.add(key(x,y));
- return mask;
+import type { State } from "../api";
+import { cityPaths, buildingEntrances } from "./paths";
+import { tileHash } from "./themes";
+export { isVillagePath } from "./paths";
+export type Placement = {
+  kind: string;
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+  solid?: boolean;
+};
+export type Zone =
+  | "PATH"
+  | "BUILDING_FOOTPRINT"
+  | "BUILDING_INTERIOR"
+  | "DOOR_ACCESS"
+  | "INTERACTION_ZONE"
+  | "NPC_ZONE"
+  | "SPAWN_ZONE"
+  | "COMBAT_ZONE"
+  | "RESOURCE_ZONE"
+  | "WALL"
+  | "SAFE_ZONE"
+  | "DECORATION_ALLOWED";
+export type Zones = Record<Zone, Set<string>>;
+const key = (x: number, y: number) => `${x},${y}`;
+const forbidden: Zone[] = [
+  "PATH",
+  "BUILDING_FOOTPRINT",
+  "BUILDING_INTERIOR",
+  "DOOR_ACCESS",
+  "INTERACTION_ZONE",
+  "NPC_ZONE",
+  "SPAWN_ZONE",
+  "COMBAT_ZONE",
+  "RESOURCE_ZONE",
+  "WALL",
+];
+const sizes: Record<string, [number, number]> = {
+  tree: [3, 4],
+  well: [2, 3],
+  ruin: [2, 3],
+  statue: [2, 3],
+  obelisk: [2, 3],
+  crystal: [2, 2],
+  barrel: [1, 2],
+  crate: [2, 2],
+  bush: [2, 1],
+  flower: [1, 1],
+  moss: [1, 1],
+  mushroom: [1, 1],
+  rock: [1, 1],
+  alchemy: [3, 3],
+  forge: [3, 3],
+};
+export function visualFootprint(p: Placement): Placement {
+  const [w, h] = sizes[p.kind] ?? [1, 1];
+  return {
+    ...p,
+    x: p.x - Math.floor(w / 2),
+    y: p.y - h + 1,
+    width: w,
+    height: h,
+  };
 }
-export function canPlace(p:Placement,mask:Set<string>,width:number,height:number):boolean {
- const w=p.width??1,h=p.height??1;
- if(p.x<1||p.y<1||p.x+w>=width||p.y+h>=height)return false;
- for(let y=p.y;y<p.y+h;y++)for(let x=p.x;x<p.x+w;x++)if(mask.has(key(x,y)))return false;
- return true;
+function cells(p: Pick<Placement, "x" | "y" | "width" | "height">) {
+  const result: string[] = [];
+  for (let y = p.y; y < p.y + (p.height ?? 1); y++)
+    for (let x = p.x; x < p.x + (p.width ?? 1); x++) result.push(key(x, y));
+  return result;
+}
+export function buildZones(s: Pick<State, "map" | "room">): Zones {
+  const m = s.map,
+    z = Object.fromEntries(
+      [...forbidden, "SAFE_ZONE", "DECORATION_ALLOWED"].map((n) => [
+        n,
+        new Set<string>(),
+      ]),
+    ) as Zones;
+  const walls = new Set(m.walls.map((p) => p.join(",")));
+  z.WALL = walls;
+  const square = (
+    zone: Zone,
+    x: number,
+    y: number,
+    r = 0,
+    walkable = false,
+  ) => {
+    for (let yy = y - r; yy <= y + r; yy++)
+      for (let xx = x - r; xx <= x + r; xx++)
+        if (!walkable || !walls.has(key(xx, yy))) z[zone].add(key(xx, yy));
+  };
+  square("SPAWN_ZONE", 2, 2, 1);
+  for (const e of s.room.exits) square("DOOR_ACCESS", e.x, e.y, 1);
+  if (m.portal) square("DOOR_ACCESS", m.portal[0], m.portal[1], 1);
+  const npcs = [
+    ...(m.npc ? [m.npc] : []),
+    ...(m.service_npcs ?? []).map((n) => [n.x, n.y]),
+    ...(m.npcs ?? []).map((n) => [n.x, n.y]),
+  ];
+  for (const [x, y] of npcs) {
+    square("NPC_ZONE", x, y);
+    square("INTERACTION_ZONE", x, y, 1, true);
+  }
+  const resources = [
+    ...(m.gather_nodes ?? []).map((n) => [n.x, n.y]),
+    ...(m.lunar_resources ?? []).map((n) => [n.x, n.y]),
+  ];
+  for (const [x, y] of resources) square("RESOURCE_ZONE", x, y, 1);
+  for (const b of m.buildings ?? [])
+    for (const k of cells(b)) {
+      z.BUILDING_FOOTPRINT.add(k);
+      z.BUILDING_INTERIOR.add(k);
+    }
+  const spawns = m.spawns
+    ? Object.values(m.spawns).map((p) => [p.x, p.y])
+    : Object.values(m.monsters);
+  for (const [x, y] of spawns) square("COMBAT_ZONE", x, y, 2);
+  const goals = [
+    [2, 2],
+    ...s.room.exits.map((e) => [e.x, e.y]),
+    ...npcs,
+    ...resources,
+    ...spawns,
+  ];
+  if (m.portal) goals.push(m.portal);
+  const queue: [number, number][] = [[2, 2]],
+    parent = new Map<string, string>([["2,2", ""]]);
+  for (let i = 0; i < queue.length; i++) {
+    const [x, y] = queue[i];
+    for (const [dx, dy] of [
+      [1, 0],
+      [0, 1],
+      [-1, 0],
+      [0, -1],
+    ]) {
+      const a = x + dx,
+        b = y + dy,
+        k = key(a, b);
+      if (
+        a < 1 ||
+        b < 1 ||
+        a >= m.width - 1 ||
+        b >= m.height - 1 ||
+        walls.has(k) ||
+        parent.has(k)
+      )
+        continue;
+      parent.set(k, key(x, y));
+      queue.push([a, b]);
+    }
+  }
+  for (const [x, y] of goals) {
+    let k = key(x, y);
+    if (!parent.has(k))
+      k =
+        [
+          [x + 1, y],
+          [x - 1, y],
+          [x, y + 1],
+          [x, y - 1],
+        ]
+          .map((p) => p.join(","))
+          .find((p) => parent.has(p)) ?? "";
+    while (k) {
+      z.PATH.add(k);
+      k = parent.get(k) ?? "";
+    }
+  }
+  if (s.room.kind === "CITY") {
+    for (const k of cityPaths(s)) z.PATH.add(k);
+    for (const d of buildingEntrances(s)) square("DOOR_ACCESS", d.x, d.y, 1);
+  }
+  const inside = ["GUILD", "TRAINING", "BUILDING_INTERIOR"].includes(
+    s.room.kind,
+  );
+  const arena = ["BOSS", "SECRET_DUNGEON"].includes(s.room.kind);
+  if (arena)
+    for (let y = 4; y < m.height - 4; y++)
+      for (let x = 5; x < m.width - 5; x++) z.COMBAT_ZONE.add(key(x, y));
+  for (let y = 1; y < m.height - 1; y++)
+    for (let x = 1; x < m.width - 1; x++) {
+      const k = key(x, y);
+      if (s.room.safe) z.SAFE_ZONE.add(k);
+      if (inside) z.BUILDING_INTERIOR.add(k);
+      const border = x <= 4 || y <= 4 || x >= m.width - 5 || y >= m.height - 5;
+      if (
+        !inside &&
+        (s.room.kind === "CITY" || border) &&
+        !forbidden.some((n) => z[n].has(k))
+      )
+        z.DECORATION_ALLOWED.add(k);
+    }
+  return z;
+}
+export function placementMask(s: Pick<State, "map" | "room">) {
+  const z = buildZones(s);
+  return new Set(forbidden.flatMap((n) => [...z[n]]));
+}
+export function canPlace(
+  p: Placement,
+  mask: Set<string>,
+  width: number,
+  height: number,
+) {
+  if (
+    p.x < 1 ||
+    p.y < 1 ||
+    p.x + (p.width ?? 1) >= width ||
+    p.y + (p.height ?? 1) >= height
+  )
+    return false;
+  return cells(p).every((k) => !mask.has(k));
+}
+export function placementViolations(p: Placement, z: Zones): Zone[] {
+  return forbidden.filter((n) => cells(p).some((k) => z[n].has(k)));
+}
+export type PlannedProp = Placement & { footprint: Placement; variant: number };
+export function planScenery(s: Pick<State, "map" | "room">) {
+  const z = buildZones(s),
+    m = s.map,
+    props: PlannedProp[] = [],
+    occupied = new Set<string>();
+  let rejected = 0;
+  const approve = (p: Placement) => {
+    const footprint = visualFootprint(p),
+      cs = cells(footprint);
+    if (
+      !canPlace(footprint, new Set(), m.width, m.height) ||
+      placementViolations(footprint, z).length ||
+      !cs.every((k) => z.DECORATION_ALLOWED.has(k) && !occupied.has(k))
+    ) {
+      rejected++;
+      return false;
+    }
+    cs.forEach((k) => occupied.add(k));
+    props.push({ ...p, footprint, variant: tileHash(m.seed ?? 0, p.x, p.y) });
+    return true;
+  };
+  const city = s.room.kind === "CITY",
+    inside = ["GUILD", "TRAINING", "BUILDING_INTERIOR"].includes(s.room.kind),
+    arena = ["BOSS", "SECRET_DUNGEON"].includes(s.room.kind);
+  if (city) {
+    approve({ kind: "well", x: 21, y: 14 });
+    for (const n of m.service_npcs ?? []) {
+      const kind = (n.id ?? "").includes("alchemist")
+        ? "alchemy"
+        : (n.id ?? "").includes("blacksmith")
+          ? "forge"
+          : "crate";
+      for (const [dx, dy] of [
+        [3, 1],
+        [-3, 1],
+        [3, 3],
+        [-3, 3],
+      ])
+        if (approve({ kind, x: n.x + dx, y: n.y + dy })) break;
+    }
+    // Compose groves; do not scatter a random prop on every floor cell.
+    const groves = [
+      [0.08, 0.19],
+      [0.35, 0.24],
+      [0.6, 0.28],
+      [0.86, 0.41],
+      [0.32, 0.78],
+      [0.85, 0.84],
+    ];
+    for (const [gx, gy] of groves) {
+      const cx = Math.round(gx * m.width),
+        cy = Math.round(gy * m.height),
+        candidates: { x: number; y: number; rank: number }[] = [];
+      for (let dy = -3; dy <= 4; dy++)
+        for (let dx = -3; dx <= 3; dx++)
+          candidates.push({
+            x: cx + dx,
+            y: cy + dy,
+            rank:
+              Math.abs(dx) +
+              Math.abs(dy) +
+              (tileHash(m.seed ?? 0, cx + dx, cy + dy) % 7) / 10,
+          });
+      candidates.sort((a, b) => a.rank - b.rank);
+      let count = 0;
+      for (const q of candidates) {
+        if (approve({ kind: "tree", x: q.x, y: q.y })) {
+          approve({ kind: "flower", x: q.x + 2, y: q.y - 1 });
+          approve({ kind: "bush", x: q.x - 2, y: q.y });
+          if (++count === 2) break;
+        }
+      }
+    }
+    for (const b of m.buildings ?? [])
+      for (const x of [b.x - 2, b.x + b.width + 1]) {
+        approve({ kind: "flower", x, y: b.y + b.height - 1 });
+        if (tileHash(m.seed ?? 0, x, b.y) % 2 === 0)
+          approve({ kind: "barrel", x, y: b.y + b.height - 2 });
+      }
+  } else if (!inside) {
+    const theme = m.theme,
+      kind = arena
+        ? "obelisk"
+        : theme === "crystal_bones"
+          ? "crystal"
+          : theme === "abandoned_wood"
+            ? "statue"
+            : "ruin";
+    const candidates: { x: number; y: number; rank: number }[] = [];
+    for (let y = 3; y < m.height - 1; y++)
+      for (let x = 2; x < m.width - 1; x++)
+        if (x <= 4 || y <= 4 || x >= m.width - 5 || y >= m.height - 5)
+          candidates.push({ x, y, rank: tileHash((m.seed ?? 0) + 311, x, y) });
+    candidates.sort((a, b) => a.rank - b.rank);
+    let count = 0;
+    for (const q of candidates)
+      if (approve({ kind, x: q.x, y: q.y })) {
+        if (!arena)
+          approve({
+            kind: "mushroom",
+            x: q.x + (q.x < m.width / 2 ? 2 : -2),
+            y: q.y - 1,
+          });
+        if (++count >= Math.min(6, Math.floor((m.width * m.height) / 140)))
+          break;
+      }
+  }
+  // Legacy large random props are deliberately NOT rendered through a bypass.
+  // Their solid walls remain visible architecture; city scatter walls are repaired by migration.
+  const fixtures = (m.decorations ?? [])
+    .filter(
+      (d) =>
+        inside &&
+        [
+          "counter",
+          "table",
+          "board",
+          "shelf",
+          "chair",
+          "bench",
+          "banner",
+        ].includes(d.kind),
+    )
+    .filter((d) => {
+      const forbiddenFixture: Zone[] = [
+        "PATH",
+        "DOOR_ACCESS",
+        "NPC_ZONE",
+        "INTERACTION_ZONE",
+        "SPAWN_ZONE",
+        "RESOURCE_ZONE",
+        "COMBAT_ZONE",
+      ];
+      return !forbiddenFixture.some((n) => cells(d).some((k) => z[n].has(k)));
+    });
+  const floorDetails = (m.decorations ?? []).filter(
+    (d) => inside && d.kind === "rug",
+  );
+  const violations = props.flatMap((p) =>
+    placementViolations(p.footprint, z).map((zone) => ({
+      kind: p.kind,
+      x: p.x,
+      y: p.y,
+      zone,
+    })),
+  );
+  return { zones: z, props, fixtures, floorDetails, rejected, violations };
 }

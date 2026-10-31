@@ -5,7 +5,7 @@ export type VisualThemeProfile = {
   palette:{label:string; accent:number}; lightProfile:'day'|'warm'|'teal'|'ritual';
   particleProfile:'leaves'|'dust'|'embers'; ambientProfile:number; bossProfile:string[];
 };
-const theme=(id:ThemeId,groundSet:string,wallSet:string,lightProfile:VisualThemeProfile['lightProfile'],props:string[],accent:number,bossProfile:string[]):VisualThemeProfile=>({id,groundSet,wallSet,propSet:props,vegetationSet:lightProfile==='day'?['flower','bush']:['moss','mushroom'],palette:{label:lightProfile==='day'?'#fff4ce':'#d0e4df',accent},lightProfile,particleProfile:lightProfile==='day'?'leaves':lightProfile==='ritual'?'embers':'dust',ambientProfile:lightProfile==='ritual'?0.16:lightProfile==='day'?0:0.08,bossProfile});
+const theme=(id:ThemeId,groundSet:string,wallSet:string,lightProfile:VisualThemeProfile['lightProfile'],props:string[],accent:number,bossProfile:string[]):VisualThemeProfile=>({id,groundSet,wallSet,propSet:props,vegetationSet:lightProfile==='day'?['flower','bush']:['moss','mushroom'],palette:{label:lightProfile==='day'?'#fff4ce':'#d0e4df',accent},lightProfile,particleProfile:lightProfile==='day'?'leaves':lightProfile==='ritual'?'embers':'dust',ambientProfile:lightProfile==='ritual'?0.26:lightProfile==='day'?0:lightProfile==='warm'?.06:.14,bossProfile});
 export const THEMES:Record<ThemeId,VisualThemeProfile>={
  SAFE_VILLAGE:theme('SAFE_VILLAGE','grass','village_wall','day',['tree','bush','flower','crate'],0xe2c789,['moss_colossus']),
  SAFE_GUILD:theme('SAFE_GUILD','wood','guild_wall','warm',['shelf','barrel','banner','table'],0xf0c279,['thorn_chief']),

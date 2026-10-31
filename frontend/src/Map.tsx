@@ -104,6 +104,13 @@ export function Map({
             s = live.current.state;
           const facade=hitBuildingEntrance(s,p.x,p.y);
           if(facade){live.current.onTarget({x:facade.x,y:facade.y,kind:"exit",id:facade.exitId});return;}
+          // Visual body selection maps back to the existing authoritative actor tile.
+          const bodyHit=(xx:number,yy:number)=>Math.abs(p.x-(xx*32+16))<=16&&p.y>=yy*32-30&&p.y<=yy*32+20;
+          const serviceBody=s.map.service_npcs?.find(n=>bodyHit(n.x,n.y));
+          if(serviceBody){live.current.onTarget({x:serviceBody.x,y:serviceBody.y,kind:"service",serviceId:serviceBody.id});return;}
+          if(s.map.npc&&bodyHit(s.map.npc[0],s.map.npc[1])){live.current.onTarget({x:s.map.npc[0],y:s.map.npc[1],kind:"npc"});return;}
+          const enemyBody=[...this.actors.entries()].sort((a,b)=>b[1].sprite.depth-a[1].sprite.depth).find(([id,a])=>a.sprite.getBounds().contains(p.x,p.y)&&s.map.enemies.some(e=>e.id===id&&e.state==="ALIVE"));
+          if(enemyBody){const e=s.map.enemies.find(e=>e.id===enemyBody[0])!;live.current.onTarget({x:e.x,y:e.y,kind:"monster",monster:String(e.id)});return;}
           const lunarResource=s.map.lunar_resources?.find(n=>n.x===x&&n.y===y);
           const resource=s.map.gather_nodes?.find(n=>n.x===x&&n.y===y&&n.enabled&&n.remaining>0);
           const service = s.map.service_npcs?.find(n=>n.x===x&&n.y===y);
@@ -159,14 +166,14 @@ export function Map({
               .setDepth(12),
           );
           this.npcHomes.push({ x: x * 32 + 16, y: y * 32 + 12, walk: false });
-          const caption=this.label(x * 32 + 16,y * 32-17,"E · "+(s.map.npc_name??"Serviço da Guilda"));
+          const caption=this.label(x * 32 + 16,y * 32-45,"E · "+(s.map.npc_name??"Serviço da Guilda"));
           if(s.map.npc_role==="recovery"){this.recoveryLabel=caption;caption.setVisible(false)}else this.recoveryLabel=null;
           this.labels.push(caption);
         }
         for(const n of s.map.service_npcs??[]){
           this.npcs.push(this.add.sprite(n.x*32+16,n.y*32+12,n.sprite).setScale(1).setOrigin(.5,.875).setDepth(12));
           this.npcHomes.push({x:n.x*32+16,y:n.y*32+12,walk:false});
-          this.labels.push(this.label(n.x*32+16,n.y*32-17,n.name));
+          this.labels.push(this.label(n.x*32+16,n.y*32-45,n.name));
         }
         for (const n of s.map.npcs || []) {
           this.npcs.push(
@@ -181,7 +188,7 @@ export function Map({
             walk: n.walk,
           });
         }
-        for(const e of s.room.exits)this.labels.push(this.label(e.x*32+16,e.y*32-17,e.known?e.name:"? Caminho"));
+        for(const e of s.room.exits)this.labels.push(this.label(e.x*32+16,e.y*32-45,e.known?e.name:"? Caminho"));
         this.hero.setPosition(s.character.x * 32 + 16, s.character.y * 32 + 12);
         this.lastTile = `${s.character.x},${s.character.y}`;
         this.cameras.main
@@ -196,7 +203,7 @@ export function Map({
         const bossFrame=({moss_colossus:0,thorn_chief:1,abyssal_warden:2,basalt_drake:3} as Record<string,number>)[look.key.replace("boss_","")];
         const sprite=this.add.sprite(e.x*32+16,e.y*32+12,look.boss?"bosses":look.key,look.boss?bossFrame:0).setOrigin(.5,look.boss?1:.875).setScale(look.scale).setDepth(100+e.y*32+29);
         if(e.category==="rare")sprite.setTint(0xa8d8e7);
-        const label=this.label(sprite.x,sprite.y-(look.boss?190:look.scale>1?72:40),(e.category_label??"Comum")+" · "+e.name+" · "+e.level).setColor(e.name_color??"#e3eadb");
+        const label=this.label(sprite.x,sprite.y-(look.boss?190:look.scale>1?88:56),(e.category_label??"Comum")+" · "+e.name+" · "+e.level).setColor(e.name_color??"#e3eadb");
         this.actors.set(e.id,{sprite,label,lastX:e.x,lastY:e.y,dying:false,boss:look.boss,scale:look.scale,dir:0});
       }
       resourceKey="";
@@ -296,7 +303,7 @@ export function Map({
               ease: "Sine.easeInOut",
             });
           }
-          a.label.setPosition(Math.round(a.sprite.x),Math.round(a.sprite.y-(a.boss?190:a.scale>1?72:40)));
+          a.label.setPosition(Math.round(a.sprite.x),Math.round(a.sprite.y-(a.boss?190:a.scale>1?88:56)));
           a.sprite.setDepth(100+a.sprite.y+17);
           const walking =
             Math.abs(a.sprite.x - e.x * 32 - 16) +
@@ -346,7 +353,7 @@ export function Map({
         for(const a of this.actors.values()){if(a.dying)continue;g.fillEllipse(Math.round(a.sprite.x),Math.round(a.sprite.y+17),a.boss?90:24,a.boss?23:8);}
         for(const sp of [...this.npcs,...this.others.values()])g.fillEllipse(Math.round(sp.x),Math.round(sp.y+17),22,8);
         this.environment?.update(time,motion.matches,this.hero);
-        if(time-this.lastDiagnostic>1000){this.lastDiagnostic=time;el.current!.dataset.visual=JSON.stringify({theme:this.environment?.theme.id,room:s.room.id,renderer:this.game.renderer.type===Phaser.CANVAS?"CANVAS":"WEBGL",fps:Math.round(this.game.loop.actualFps),objects:this.children.length,lights:this.environment?.lights.length,particles:this.environment?.particles.length,camera:{x:this.cameras.main.scrollX,y:this.cameras.main.scrollY,zoom:1},enemies:[...this.actors.entries()].map(([id,a])=>({id,key:a.sprite.texture.key,frame:a.sprite.frame.name,scale:a.scale,boss:a.boss,hitbox:32}))});}
+        if(time-this.lastDiagnostic>1000){this.lastDiagnostic=time;el.current!.dataset.visual=JSON.stringify({theme:this.environment?.theme.id,room:s.room.id,renderer:this.game.renderer.type===Phaser.CANVAS?"CANVAS":"WEBGL",fps:Math.round(this.game.loop.actualFps),objects:this.children.length,lights:this.environment?.lights.length,particles:this.environment?.particles.length,placement:{count:this.environment?.plan.props.length,violations:this.environment?.plan.violations,rejected:this.environment?.plan.rejected},camera:{x:this.cameras.main.scrollX,y:this.cameras.main.scrollY,zoom:1},enemies:[...this.actors.entries()].map(([id,a])=>({id,key:a.sprite.texture.key,frame:a.sprite.frame.name,scale:a.scale,boss:a.boss,hitbox:32}))});}
 
       }
     }
