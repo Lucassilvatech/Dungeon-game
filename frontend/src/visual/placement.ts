@@ -326,6 +326,19 @@ export function planScenery(s: Pick<State, "map" | "room">) {
   }
   // Legacy large random props are deliberately NOT rendered through a bypass.
   // Their solid walls remain visible architecture; city scatter walls are repaired by migration.
+  const authoredFurniture = (m.decorations ?? []).filter(
+    (d) => ["counter", "table", "board"].includes(d.kind) && (d.width ?? 1) > 1,
+  );
+  const nearWall = (d: Placement) =>
+    d.x <= 3 || d.y <= 3 || d.x >= m.width - 4 || d.y >= m.height - 4;
+  const pairedSeat = (d: Placement) =>
+    authoredFurniture.some(
+      (f) =>
+        d.x >= f.x - 1 &&
+        d.x <= f.x + (f.width ?? 1) &&
+        d.y >= f.y - 1 &&
+        d.y <= f.y + (f.height ?? 1),
+    );
   const fixtures = (m.decorations ?? [])
     .filter(
       (d) =>
@@ -339,6 +352,12 @@ export function planScenery(s: Pick<State, "map" | "room">) {
           "bench",
           "banner",
         ].includes(d.kind),
+    )
+    .filter(
+      (d) =>
+        authoredFurniture.includes(d) ||
+        (["shelf", "banner"].includes(d.kind) && nearWall(d)) ||
+        (["chair", "bench"].includes(d.kind) && pairedSeat(d)),
     )
     .filter((d) => {
       const forbiddenFixture: Zone[] = [

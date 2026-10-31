@@ -324,3 +324,18 @@ test("reference based character atlases have larger frames and all80 animation c
       endFrame: 79,
     });
 });
+
+test("interior furniture requires a deliberate footprint or contextual seating/wall", () => {
+  const s = state("GUILD");
+  s.map.decorations = [
+    { kind: "table", x: 6, y: 14, width: 3, height: 2 },
+    { kind: "chair", x: 7, y: 13 },
+    { kind: "chair", x: 19, y: 19 },
+    { kind: "shelf", x: 19, y: 19 },
+    { kind: "banner", x: 19, y: 18 },
+  ];
+  const p = planScenery(s);
+  assert(p.fixtures.some((d) => d.kind === "table"));
+  assert(p.fixtures.some((d) => d.kind === "chair" && d.x === 7));
+  assert(!p.fixtures.some((d) => d.x === 19));
+});
