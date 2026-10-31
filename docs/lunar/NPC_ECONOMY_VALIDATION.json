@@ -1,0 +1,79 @@
+{
+  "branch": "feature/autonomous-npc-economy-0.9",
+  "base": "feature/guild-shop-recovery-ux-0.9",
+  "initial_head": "66e88e5d461898054792db7597a7d94bfa6f3569",
+  "code_head": "d3fa50171ed4dd26935181c9b2541ce14820ac8d",
+  "backend": {
+    "command": "TOWER_TEST_DATABASE=1 PYTHONPATH=backend .venv/bin/python -m pytest backend/tests -q",
+    "passed": 339,
+    "failed": 0,
+    "skipped": 0,
+    "warnings": 2,
+    "duration_seconds": 716.27,
+    "database": "Disposable PostgreSQL17; one complete run, no subset counts added"
+  },
+  "frontend": {
+    "command": "npm test",
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "duration_ms": 48.206298
+  },
+  "build": {
+    "command": "npm run build",
+    "result": "PASS",
+    "duration_seconds": 5.08,
+    "warning": "Known Phaser chunk >500kB"
+  },
+  "chromium": {
+    "gameplay": "PASS: expanded city/guild/training, mobile, four-turn combat, death removal/rejection, inventory, guild claim, reconnect, committed expedition, API/exit blocking, flee preview/cancel/penalty, two procedural themes, wandering, manual attributes, persistent death summary, medical debt, bounded death losses, personal recovery and isolated second-player ownership",
+    "lunar_wallet": "PASS: mobile Lunar wallet, denomination/nugget display, server-backed physical denomination display, unavailable split without stock, no overflow",
+    "lunar_resources": "PASS: Chromium 390px registration/login, procedural map and mineral marker, collection, inventory, reload/logout/login, flee custody, Guild sale with real cash, admin metrics and audit gap 0",
+    "royal": "PASS: Royal 390px injection, manual 437g mint from 684g, residual247g lineage, player split500+184, Guild payment400, confiscation, partial mineral/coin burn, coin injection and zero-gap audit; Godot unchanged",
+    "physical_commerce": "PASS: desktop/390px actual wallet72/1/5, no-change Guild rejection, explicit exchange, independent base prices/history and fixed fee, partial stock sale and purchase, player no-change rejection, competing out-of-stock rejection, V1 rebalance/fingerprint, stale preview/quote, whole mineral buy/sell and audit gap0",
+    "guild_ux": "PASS: aggregated stock>=12438/>=3000, desktop grid/mobile390, live search, TUDO240 excludes equipped99, MAX server capacity/coins, instant totals, integrated confirmation/cancel, per-operation reason, two-item atomic batch/history, conditional risks, stale revisions retained, southwest hooded tent, proximity recovery and audit gap0",
+    "autonomous_npc_worker": "PASS: actual autonomous worker1→2 potions,90ore→18ingots→six equipment targets, financed physical restock, merchant10x2+1=21, shared market/factors/margins/lots, stale quote requires second confirmation, finite inventory, six independent equipment slots, admin/game sync,390px, idempotent seed and audit gap0"
+  },
+  "private_copy": {
+    "source": "Previously verified private UX copy; Windows operational database untouched",
+    "migration": "7167b684d5f7",
+    "old_tables": 53,
+    "old_original_column_row_hashes_preserved": 1778,
+    "upgrade_original_rows_exact": true,
+    "seed_original_rows_preserved": true,
+    "initial_material_bootstrap": "Approved once; merchant zero; no coins created",
+    "cutover": "Existing receipt preserved; not rerun",
+    "upgrade": "PASS",
+    "alembic_check": "PASS",
+    "production": "PASS",
+    "mass_mg": "100550000",
+    "gap_mg": "0",
+    "ledger_mismatches": [],
+    "metadata_mismatches": []
+  },
+  "actual_restart": {
+    "actual_http_backend_restart": "PASS",
+    "npc_inventory_wallet_factors_lots_and_margins_preserved": true,
+    "canonical_state_sha256_before_after": "a8b77d49dc84a1b7a815d4ff7f560cc09717723ce2b526f7ad9378a61a85416f"
+  },
+  "package": {
+    "archive": "builds/development/0.9.0-web-npc-economy-d3fa501/DungeonGame-Web-0.9-NPC-Economy.zip",
+    "source_commit": "d3fa50171ed4dd26935181c9b2541ce14820ac8d",
+    "files": 8,
+    "zip_crc": "PASS",
+    "all_manifest_hashes": "PASS",
+    "sha256": "d7a7eb2d42d80efc0e16e2326a5dbf1c6bcd96b093901b6db4f61dadc86b7f00",
+    "bytes": 452192
+  },
+  "protected_remote_refs_before_publication": {
+    "refs/heads/feature/guild-shop-recovery-ux-0.9": "66e88e5d461898054792db7597a7d94bfa6f3569",
+    "refs/heads/main": "eab42d7e732befb04244e29d5e1615e821c5ea5e"
+  },
+  "not_executed": [
+    "Operational deployment/migration on user Windows database",
+    "Live external Discord validation",
+    "Production load test",
+    "GitHub Actions execution not observed"
+  ],
+  "scope_boundary": "No new potion-use effects or equipment combat bonuses were specified; purchasing, production, persistent inventory and independent equipment slots work without invented balancing"
+}

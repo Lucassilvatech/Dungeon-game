@@ -1,5 +1,10 @@
 # Central Administrativa web
 
+## Economia dos NPCs
+
+Novo módulo na Central existente: estoques reais, caixas, receitas, preços/revisão, estado/histórico, fatores/margens/lotes/capacidades/alvos e flags. Edição de várias políticas por NPC é atômica e exige economy.manage, razão≥10, prévia/confirm e revisão original. Há transferência de estoque existente e financiamento real usando ações protegidas existentes. [Procedimento](lunar/OPERATIONAL_NPC_ECONOMY.md).
+
+
 ## Preços individuais e em lote — Guilda
 
 Cada operação comercial tem justificativa local≥10 caracteres. Salvar este item ou revisar lote; conflitos de revisão rejeitam tudo e preservam rascunhos. Permissão economy.manage, preview, confirmação, UUID e auditoria permanecem. Histórico registra cada política sob UUID comum. Reconhecimento de arbitragem/gratuidade apenas quando risco ativo existe. [Fluxo e schema](lunar/GUILD_SHOP_RECOVERY_UX.md).

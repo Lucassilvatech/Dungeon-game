@@ -1,5 +1,10 @@
 > Nota de versão 0.6: o mercado geral descrito abaixo continua proposto. O Banco Central manual, créditos administrativos isolados e o leilão exclusivo de espólios já foram implementados; estado atual e contabilidade estão em [CENTRAL_BANK.md](CENTRAL_BANK.md), [ACCOUNTING.md](ACCOUNTING.md) e [AUCTIONS.md](AUCTIONS.md). Não confundir esse planejamento anterior de mercado com a implementação atual.
 
+## Cadeia fechada NPC
+
+Moedas1/5/10g continuam físicas; produção não emite dinheiro. Novo estoque inicial dos produtores é histórico/autorizado e concedido uma vez. Comerciante novo estoque/caixa0; depois só recebe patrimônio existente ou compra real. Guilda revende materiais com base independente+margem1 por operação, Comerciante usa referência×lote+margem1. Derivados usam fatores inteiros/ceil, sem porcentagem por intermediário. [Especificação](lunar/NPC_ECONOMY.md).
+
+
 ## Comércio agregado sem nova economia
 
 TUDO/MAX são projeções; confirmação é autoritativa e atômica sobre Item/NPCStock/LunarHolding existentes. Guilda pode ter12438 unidades; entrada no jogador respeita99 por pilha e capacidade. Nenhum preço, estoque, supply ou carteira é redefinido. Recuperação na vila mantém transferência PLAYER→npc:recovery e custo200%. [Especificação](lunar/GUILD_SHOP_RECOVERY_UX.md).

@@ -1,5 +1,10 @@
 # Preços independentes e comércio físico da Guilda
 
+## Evolução NPC atual
+
+Nesta etapa a revenda de matérias-primas da Guilda acrescenta uma margem fixa configurável por operação à base de venda existente; valores antigos não são sobrescritos e recibos históricos continuam reexecutáveis sem novo efeito. O catálogo/checkout atende também os3 balcões novos, com preço/lote/revisão autoritativos. [Regras completas](NPC_ECONOMY.md). Descrições anteriores de ausência de produção NPC abaixo são históricas.
+
+
 ## Interface atual: loja agregada e preços em lote
 
 A Web usa o novo catálogo `/economy/shop/catalog`, somando materiais elegíveis por definição e mantendo equipamento individual. TUDO/MAX, confirmações integradas e edição administrativa individual/em lote estão descritos em [GUILD_SHOP_RECOVERY_UX.md](GUILD_SHOP_RECOVERY_UX.md). Os endpoints por Item abaixo permanecem como compatibilidade. Migration e06a9c24f8bd amplia a identidade de GuildPriceHistory para(request_id,policy_key), preservando registros anteriores e vinculando cada política ao mesmo lote. Preços configurados não são sobrescritos.

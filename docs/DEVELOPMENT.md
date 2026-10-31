@@ -1,5 +1,10 @@
 # Desenvolvimento e validação
 
+## Validar economia autônoma NPC
+
+test_npc_economy usa PostgreSQL real para receitas, lotes/margens/fatores, mercado, pausa/reposição, capacidade, concorrência/rollback, estoque/money, seed/reinício, consultas e logs. O runner scripts/test_npc_browser_stack.py exige DATABASE_URL/TOWER_TEST_DATABASE=1, cria outro banco e executa worker real+HTTP+Chromium; não migra/reset a base informada. [Comandos/resultados](lunar/DELIVERY_NPC_ECONOMY_0.9.md).
+
+
 ## Validação da loja e barraca — 0.9
 
 Testes PostgreSQL em test_shop_recovery_ux.py cobrem agregação/capacidade/moedas, enumeração independente de MAX, concorrência/replay/rollback, lote/revisões/riscos e acesso legado da recuperação. Chromium guild-shop-recovery-ux.cjs usa UX_TEST_DATABASE_URL explícita e TOWER_TEST_DATABASE=1; jamais volume operacional. [Resultados/comandos](lunar/DELIVERY_GUILD_SHOP_RECOVERY_UX_0.9.md) · [Windows](lunar/OPERATIONAL_GUILD_SHOP_RECOVERY_UX.md).

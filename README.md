@@ -1,6 +1,13 @@
 # Dungeon Game — Web First · consolidação 0.9
 
-## Entrega atual: loja da Guilda, preços em lote e barraca de recuperação
+## Entrega atual: economia autônoma dos NPCs
+
+Branch **feature/autonomous-npc-economy-0.9**, continuação da UX66e88e5. Alquimista/Ferreiro produzem consumindo estoque físico; Comerciante trabalha em lotes, com caixa e mercadoria finitos. Preços derivados e margens fixas são calculados no backend, persistem por revisão e chegam às lojas/ADM. Worker independente da UI, reposição paga e configurações com prévia/confirmação/auditoria. Migration **7167b684d5f7**, sem reset/reconversão monetária. Comerciante começa em zero, conforme decisão do usuário. [Regras/receitas](docs/lunar/NPC_ECONOMY.md) · [Entrega e testes](docs/lunar/DELIVERY_NPC_ECONOMY_0.9.md) · [Windows e validação manual](docs/lunar/OPERATIONAL_NPC_ECONOMY.md).
+
+
+Build Web NPC: [baixar ZIP](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/5945b42cfad79f74904b4fb29097fe3549101703/builds/development/0.9.0-web-npc-economy-d3fa501/DungeonGame-Web-0.9-NPC-Economy.zip) · [SHA256](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/5945b42cfad79f74904b4fb29097fe3549101703/builds/development/0.9.0-web-npc-economy-d3fa501/SHA256SUMS). Requer backend/schema7167b684d5f7. Backend final339 passed/0 failed/0 skipped; frontend/build e7 scripts Chromium aprovados.
+
+## Entrega anterior: loja da Guilda, preços em lote e barraca de recuperação
 
 Branch **feature/guild-shop-recovery-ux-0.9**: loja em grade com pesquisa, estoque físico agregado, TUDO entre pilhas, MÁXIMO com moedas/capacidade reais e confirmação integrada. Administração tem justificativas locais, edição individual e lote atômico com revisões/histórico por item. Recuperação fica na barraca do sudoeste da vila, junto à figura encapuzada; preserva custo200%, custódia e ledger. Migration **e06a9c24f8bd**, sem redefinir preços ou refazer cutover. [Regras/arquitetura](docs/lunar/GUILD_SHOP_RECOVERY_UX.md) · [Entrega e testes](docs/lunar/DELIVERY_GUILD_SHOP_RECOVERY_UX_0.9.md) · [Atualizar/executar no Windows](docs/lunar/OPERATIONAL_GUILD_SHOP_RECOVERY_UX.md).
 

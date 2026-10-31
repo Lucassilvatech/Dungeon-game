@@ -1,5 +1,10 @@
 # Primeiro andar: regras e implementação
 
+## Lojas da vila — NPCs
+
+Comerciante(34,8), Alquimista(36,15), Ferreiro(16,22) em city1. E/clique/toque/Ir até exigem caminhada e proximidade para comprar. Estoque finito e lotes de materiais; seis peças com slots independentes. A produção avança no servidor sem abrir lojas. Recuperação permanece na barraca sudoeste, separada da Guilda. [Regras](lunar/NPC_ECONOMY.md).
+
+
 ## Vila e loja — estado atual 0.9
 
 A recuperação pessoal agora é um serviço discreto na barraca sudoeste da vila, NPC encapuzado(5,30). Aproximação≤1 e interação abrem a interface existente, com custo200% preservado. Não há porta de recuperação na Guilda. Comércio da recepção usa estoque agregado e moedas reais, sem troco automático. [Regras](lunar/GUILD_SHOP_RECOVERY_UX.md). Descrições históricas de recovery_hall abaixo não representam o acesso Web atual.

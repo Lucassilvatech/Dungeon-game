@@ -1,5 +1,10 @@
 # Web First — 0.8
 
+## Lojas/ADM sincronizados
+
+Lojas da vila e Economia dos NPCs consomem o mesmo estado/preço autoritativo. Totais chegam do servidor; quotes/revisões antigas exigem nova confirmação. Atualização após ação e polling2,5s/3s, com UI responsiva390px. Sem fórmula de preços duplicada no React. Discord só observa e Godot permanece congelado. [Fluxos](lunar/NPC_ECONOMY.md).
+
+
 ## Loja e recuperação — UX atual 0.9
 
 Comércio em cards responsivos, pesquisa nos dois sentidos, quantidade/TUDO/MAX e total exato. Confirmação integrada sem browser dialogs nas compras/vendas, stale quote exige nova revisão. Recuperação abre pelo NPC encapuzado na vila; consulta remota não permite pagamento à distância. [Especificação](lunar/GUILD_SHOP_RECOVERY_UX.md).

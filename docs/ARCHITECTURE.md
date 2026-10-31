@@ -1,5 +1,10 @@
 # Arquitetura
 
+## Produção NPC e revisão de mercado
+
+npc_economy mantém Item/NPCStock e bootstrap auditado; npc_production executa ciclos persistentes, produção e compras reais sob mutex existente. market_pricing centraliza referência/fatores/ceil/margem e MarketRevision imutável. Catálogo/checkout genéricos reutilizam recibos/finance; npc_admin integra AdminService.4 novas tabelas+slot opcional, sem segunda carteira. [Detalhes](lunar/NPC_ECONOMY.md).
+
+
 ## Comércio agregado e recuperação na vila — 0.9
 
 guild_catalog reutiliza transfer_item/finance/receipt e mutex; agrupa materiais seguros e preserva equipamento individual. MAX pesquisa classes de pagamento exato1/5/10 e capacidade. guild.batch_prices reutiliza AdminService; histórico tem PK(request_id,policy_key), lote integral rejeitado em conflito. recovery_site centraliza NPC city1(5,30); sala antiga arquivada e links filtrados, sem excluir IDs. [Detalhes](lunar/GUILD_SHOP_RECOVERY_UX.md).

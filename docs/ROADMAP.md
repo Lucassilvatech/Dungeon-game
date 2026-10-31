@@ -1,20 +1,25 @@
 # Roadmap: primeiro andar antes de expandir a Torre
 
-## Loja/ADM/recuperação — evolução atual
+## Economia NPC inicial — etapa atual
 
-Loja agregada, pesquisa, TUDO/MÁXIMO, confirmação integrada, justificativas locais e preços em lote com conflito por revisão. Recuperação pessoal na barraca do sudoeste da vila, sem alterar custo/ownership. Migration e06a9c24f8bd preserva histórico e economia. [Regras](lunar/GUILD_SHOP_RECOVERY_UX.md) · [Validação](lunar/DELIVERY_GUILD_SHOP_RECOVERY_UX_0.9.md). Sem crafting, produção NPC ou preço automático.
-
-
-## Consolidação física e comércio da Guilda — implementados nesta branch
-
-Denominações independentes, seleção limitada ao caixa real, exchange explícito, rebalanceamento manual 70/20/10, preços independentes/flags/revisões/histórico, estoque finito, compra e venda de itens e lotes inteiros de minério. [Entrega/evidências](lunar/DELIVERY_PHYSICAL_COMMERCE_0.9.md). Cutover operacional informado ativo pelo usuário; não refeito nem rebalanceado automaticamente pelo agente. Próxima etapa separada poderá tratar economia autônoma NPC; produção, consumo, reposição, cadeias econômicas, Boss Global, Echo, músicas e multiplayer avançado não foram antecipados.
+Cadeia fechada autorizada:3 matérias-primas,3 poções, Lingote e6 peças; produção/reposição determinísticas com estoque/carteira reais, lotes, margens fixas e preços derivados versionados. Web/ADM integrados; nenhuma economia paralela. [Regras](lunar/NPC_ECONOMY.md) · [Entrega](lunar/DELIVERY_NPC_ECONOMY_0.9.md). Boss/Echo/política automática do rei continuam fora; não avançar automaticamente.
 
 
-## Entrega atual: pepitas variáveis e Administração Real
+## Base anterior: loja/ADM/recuperação
+
+Loja agregada, pesquisa, TUDO/MÁXIMO, confirmação integrada, justificativas locais e preços em lote com conflito por revisão. Recuperação pessoal na barraca do sudoeste da vila, sem alterar custo/ownership. Migration e06a9c24f8bd preserva histórico e economia. [Regras](lunar/GUILD_SHOP_RECOVERY_UX.md) · [Validação](lunar/DELIVERY_GUILD_SHOP_RECOVERY_UX_0.9.md). Naquela entrega, produção NPC ainda não estava incluída; a cadeia inicial está entregue na etapa atual. Sem preço automático por oferta/demanda.
+
+
+## Base anterior: consolidação física e comércio da Guilda
+
+Denominações independentes, seleção limitada ao caixa real, exchange explícito, rebalanceamento manual 70/20/10, preços independentes/flags/revisões/histórico, estoque finito, compra e venda de itens e lotes inteiros de minério. [Entrega/evidências](lunar/DELIVERY_PHYSICAL_COMMERCE_0.9.md). Cutover operacional informado ativo pelo usuário; não refeito nem rebalanceado automaticamente pelo agente. A cadeia inicial NPC foi implementada na etapa atual. Consumo/efeitos não especificados, Boss Global, Echo, músicas e multiplayer avançado permanecem fora.
+
+
+## Histórico: pepitas variáveis e Administração Real
 
 Implementados: spawn2% configurável; bandas80/15/5; lotes individuais de 100..1000 g; migração física; split inteiro gratuito; preço inicial800 milliunits/g; dez áreas Reais com mint manual, transferências/confisco, burn e injection excepcionais; linhagem e auditoria separando potencial e massa econômica. [Modelo e evidências](lunar/VARIABLE_NUGGETS.md) · [Entrega](lunar/DELIVERY_VARIABLE_NUGGETS_0.9.md).
 
-Cutover implementado; ativação operacional informada pelo usuário. O agente validou somente cópias privadas, sem refazer conversão. Nenhum recurso artificial foi inserido no operacional. Boss global, Echo, política automática do rei e produção NPC continuam futuros, sem avanço automático. Discord read-only; Godot congelado.
+Cutover implementado; ativação operacional informada pelo usuário. O agente validou somente cópias privadas, sem refazer conversão. Nenhum recurso artificial foi inserido no operacional. Boss global, Echo e política automática do rei continuam futuros, sem avanço automático. Discord read-only; Godot congelado.
 
 
 > Continuação 0.9: [cutover Lunar e migração dos fluxos financeiros](lunar/CUTOVER.md) implementados na feature branch, com ativação administrativa explícita e validação em cópia privada. A continuação atual adiciona recursos Lunares procedurais, sem boss global ou ecos; ver [lifecycle e validação](lunar/PROCEDURAL_RESOURCES.md). Ambiente operacional preservado.
