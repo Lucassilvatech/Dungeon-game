@@ -1,0 +1,32 @@
+{
+  "version": "0.9.0-web-art-refinement-development",
+  "source_commit": "7f554989c42fcc998ddf19960991ff3491088524",
+  "backend_schema": "65a7c9e21b04",
+  "files": {
+    "admin.html": "728979b7140b7086df0aee7f1072690e6ff1f0039a8684b4e1a3ecedbcad0b44",
+    "assets/Map-DP_bgMdG.js": "c3cbc3d6f7c98277955807a183efa9efcfda0f5d80271b33870feb10c7702b7a",
+    "assets/admin-CR9elRv0.js": "2199b57d295d816aa14533173494b7e6fe068e48f86dd99c74be5fbac1057dce",
+    "assets/admin-DVqEuXoy.css": "4a4feee9995786a7283fa88927d171627b89079fb57ad578ad748ea85b3475f4",
+    "assets/client-BG2DAo-l.js": "ce581f7ea66e20b21cce78b937d18cdb84b8c66c6e867156fe514fdaf4b8b66d",
+    "assets/game-CriZvAHF.js": "30321c915c1d7a3f83da1b8a515de8ed1e0d48b2301e3d19c3a84c9e6152c02f",
+    "assets/game-DW5JGi27.css": "e15064c0fe003d74bdc889885399bd3734f5935f654df7d05113b942fe0bb471",
+    "assets/pixel/alchemist.png": "f1dcbbfa0df1d01d8337efa9ba5d13f47b2de7410f219f12d09c9cdba7fc2299",
+    "assets/pixel/blacksmith.png": "e475ea30214edc8c9a291b470d94f6766572be456f2f68fc96942b71b3a3b0eb",
+    "assets/pixel/bosses.png": "bac5d9fb839fb24019f710638fe64a7b208fdc2bb554a4f7f6d2a101fb3d2b7e",
+    "assets/pixel/dummy.png": "117f24adf0f84ba7412da4e27d96c5ba76c2db82a212a6176caaf08a3c19a300",
+    "assets/pixel/effects.png": "1c4c4da2a295acfacae5fc150ca899ef023670e307d81c3f84beff749416da9e",
+    "assets/pixel/goblin.png": "cd37982554be52e57b03b989956bd8628d99d35ddb70fa5f42aa839ee87ae624",
+    "assets/pixel/goblin_elite.png": "5ec43fc9e24646d2fba36ffe0ecc4e4ea4f3e6927a048269e5755ffe18f011c6",
+    "assets/pixel/hero.png": "cacf4988fe8293fdd89778adef1e249017fc9bde9c5bb47fa9514e79f49f32bd",
+    "assets/pixel/hooded.png": "90cd66b577fa483caa08f37e894692fcc286c7cd5fd1b16564dca257503f254c",
+    "assets/pixel/manifest.json": "20f01155c7ddd2bc27ab164aa29716228fa65b741e6fde2458d7fa8bd67ed995",
+    "assets/pixel/merchant.png": "2a409866b86e1429b9b45cf60d1ce0dbdedbef2a46bdc8efd8d91fd14830d821",
+    "assets/pixel/npc.png": "f4a04a355d8f88625185851375dfe38aa77454793aac0f633d51eec4157adbe4",
+    "assets/pixel/peer.png": "f1dcbbfa0df1d01d8337efa9ba5d13f47b2de7410f219f12d09c9cdba7fc2299",
+    "assets/pixel/scenery.png": "ea580da91a85b72db2aa4505c8bf72f27424e2cbfed76b62f00118c0fb01be16",
+    "assets/pixel/slime.png": "5ff2eb96b05d4aa5b2400c97763294240be98f428387f343594bb2bcb58afe73",
+    "assets/pixel/slime_elite.png": "11929b1e6a91a6c8137a709648faf7b120822e0583c64dddb5d59d4f243b367a",
+    "assets/pixel/tiles.png": "3de817c0947a45cf4d82829ee7d5934a5132a356a9fa96e3a8c440efa09c36a4",
+    "index.html": "f6117cf19e18fe7a2d8409f9806a9f79efabfb6f854ed8a8379b9421ed07f3e8"
+  }
+}
