@@ -1,11 +1,15 @@
 """Package built0.9 Web assets only; inspect CRC and every file's SHA256."""
 
 from pathlib import Path
+import argparse
 import hashlib
 import json
 import subprocess
 import zipfile
 
+parser=argparse.ArgumentParser()
+parser.add_argument("--variant",choices=["npc-economy","pixel-art"],default="npc-economy")
+variant=parser.parse_args().variant
 root = Path(__file__).resolve().parents[1]
 commit = subprocess.check_output(
     ["git", "rev-parse", "HEAD"], cwd=root, text=True
@@ -25,14 +29,14 @@ assert not any(
     for name in files
 )
 info = {
-    "version": "0.9.0-web-npc-economy-development",
+    "version": "0.9.0-web-"+variant+"-development",
     "source_commit": commit,
     "backend_schema": "7167b684d5f7",
     "files": {name: hashlib.sha256(data).hexdigest() for name, data in files.items()},
 }
-directory = root / "builds/development" / ("0.9.0-web-npc-economy-" + commit[:7])
+directory = root / "builds/development" / ("0.9.0-web-"+variant+"-" + commit[:7])
 directory.mkdir(parents=True, exist_ok=True)
-archive = directory / "DungeonGame-Web-0.9-NPC-Economy.zip"
+archive = directory / ("DungeonGame-Web-0.9-Pixel-Art.zip" if variant=="pixel-art" else "DungeonGame-Web-0.9-NPC-Economy.zip")
 readme = """DUNGEON GAME0.9 — CLIENTE WEB DE DESENVOLVIMENTO
 
 Arquivos estáticos React/TypeScript/Phaser. Requer backend desta branch
@@ -49,6 +53,8 @@ via file:// não configura servidor/API. Não contém backend, banco, tokens
 ou senhas. Áudio opcional começa silenciado. Não foram gerados builds nativos.
 SHA256/CRC verificam integridade; não representam certificação antivírus.
 """
+if variant=="pixel-art":
+    readme=readme.replace("feature/autonomous-npc-economy-0.9","feature/pixel-art-visual-overhaul-0.9").replace("docs/lunar/OPERATIONAL_NPC_ECONOMY.md","docs/PIXEL_ART_LOCAL_WINDOWS.md")
 with zipfile.ZipFile(
     archive, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9
 ) as z:

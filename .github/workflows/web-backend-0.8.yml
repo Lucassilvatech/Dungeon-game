@@ -1,7 +1,7 @@
 name: Web and authoritative backend 0.8
 on:
   pull_request:
-    paths: ['backend/**', 'frontend/**', 'discord-bot/**', 'scripts/**', '.github/workflows/web-backend-0.8.yml']
+    paths: ['art/**', 'backend/**', 'frontend/**', 'discord-bot/**', 'scripts/**', '.github/workflows/web-backend-0.8.yml']
   workflow_dispatch:
 jobs:
   verify:
@@ -27,6 +27,8 @@ jobs:
       - run: pip install -r backend/requirements-dev.txt
       - run: alembic upgrade head && alembic check && pytest -q
         working-directory: backend
+      - name: Reproduce original pixel atlases
+        run: pip install -r scripts/requirements-art.txt && python scripts/build_pixel_assets.py && git diff --exit-code -- frontend/public/assets/pixel frontend/src/visual/atlas.json
       - run: npm ci && npm run build
         working-directory: frontend
       - run: npm test
@@ -102,3 +104,11 @@ jobs:
 
       - name: Autonomous NPC chain with a real worker in a new private HTTP database
         run: python scripts/test_npc_browser_stack.py
+
+      - name: Original pixel worlds, facade doors, fixed bosses and responsive screenshots
+        run: python scripts/test_visual_stack.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pixel-art-visual-review
+          path: artifacts/visual-review/
