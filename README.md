@@ -1,6 +1,12 @@
 # Dungeon Game — Web First · consolidação 0.9
 
-## Entrega atual: overhaul visual Web pixel art
+## Entrega atual: refinamento direto das referências
+
+Branch **feature/pixel-art-cohesion-refinement-0.9**, base **cadbe5b**. Personagens reconstruídos usando diretamente a referência: cabeças quadradas, olhos pequenos e roupas azul/verde/roxo/marrom. Terreno mais limpo, bosques e detalhes agrupados, zonas rígidas para todos os props e correção das colisões decorativas antigas da vila. Migration incremental **65a7c9e21b04**, sem reset de personagem/economia. A referência vertical9:16 é apenas imagem; a Web permanece responsiva. [Direção e regras](docs/ART_REFINEMENT.md) · [Entrega e validação](docs/ART_REFINEMENT_DELIVERY_0.9.md) · [Executar no Windows](docs/ART_REFINEMENT_LOCAL_WINDOWS.md).
+
+Build atual: [baixar Web ZIP](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/65fe31e11e58e58d06c9332363e21802d496805d/builds/development/0.9.0-web-art-refinement-7bcbde1/DungeonGame-Web-0.9-Art-Refinement.zip) · [SHA256](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/65fe31e11e58e58d06c9332363e21802d496805d/builds/development/0.9.0-web-art-refinement-7bcbde1/SHA256SUMS).343 testes backend/26 frontend, build e quatro roteiros Chromium PASS.250 mapas reais auditados; capturas e métricas no relatório.
+
+## Entrega anterior: overhaul visual Web pixel art
 
 Branch **feature/pixel-art-visual-overhaul-0.9**, base **2ae4446** da economia NPC. Vila, ruínas e secret/boss têm arte original, temas próprios, atores direcionais, bosses com silhuetas independentes, sombras/luzes/tochas e viewport responsivo. Caminhos chegam diretamente às portas; clicar na fachada usa a entrada real do backend. Nenhuma mudança na economia ou no banco; Discord read-only e Godot congelado. [Arquitetura visual](docs/PIXEL_ART_OVERHAUL.md) · [Relatório/evidências](docs/DELIVERY_PIXEL_ART_0.9.md) · [COMO EXECUTAR LOCALMENTE — Windows PowerShell](docs/PIXEL_ART_LOCAL_WINDOWS.md).
 
@@ -53,11 +59,11 @@ Builds históricos **0.7**, sem exportação nova em 0.8: [Windows x64](https://
 
 ## Revisar esta evolução sem alterar a main
 
-A entrega visual atual está em **feature/pixel-art-visual-overhaul-0.9**, continuação da `feature/autonomous-npc-economy-0.9`, para revisão por PR; a main permanece estável e não houve merge automático. Guarde alterações locais antes de trocar de branch. Para testar o código desta entrega:
+A entrega visual atual está em **feature/pixel-art-cohesion-refinement-0.9**, continuação da `feature/pixel-art-visual-overhaul-0.9`, para revisão por PR; a main permanece estável e não houve merge automático. Guarde alterações locais antes de trocar de branch. Para testar o código desta entrega:
 
 ```powershell
 git fetch origin
-git switch feature/pixel-art-visual-overhaul-0.9
+git switch feature/pixel-art-cohesion-refinement-0.9
 ```
 
 Use os comandos de execução abaixo na branch selecionada. Não use reset/force push ou apague volumes para atualizar.

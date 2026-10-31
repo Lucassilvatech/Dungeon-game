@@ -1,0 +1,140 @@
+{
+  "date": "2026-10-31",
+  "base_branch": "feature/pixel-art-visual-overhaul-0.9",
+  "base_commit": "cadbe5b309fd43ef4413589293388a07db2e2be0",
+  "branch": "feature/pixel-art-cohesion-refinement-0.9",
+  "functional_commit": "7bcbde1b31d863e447b0399f394f84c0d7eabaa6",
+  "package_commit": "65fe31e11e58e58d06c9332363e21802d496805d",
+  "reference": "Directly supplied square-headed characters, no generic anime model integrated",
+  "image_ratio_instruction": "Portrait reference only; responsive game viewport preserved",
+  "backend": {
+    "passed": 343,
+    "failed": 0,
+    "skipped": 0,
+    "warnings": 2,
+    "duration_seconds": 714.45,
+    "one_complete_run": true
+  },
+  "frontend": {
+    "passed": 26,
+    "failed": 0,
+    "skipped": 0,
+    "duration_ms": 734.951499
+  },
+  "build": {
+    "status": "PASS",
+    "duration_seconds": 4.83
+  },
+  "chromium": {
+    "visual with actual click/touch": "PASS",
+    "smoke": "PASS",
+    "npc-economy": "PASS",
+    "encounters": "PASS"
+  },
+  "placement_audit": {
+    "status": "PASS",
+    "layouts": 250,
+    "room_types": {
+      "CITY": 25,
+      "GUILD": 25,
+      "TRAINING": 25,
+      "COMMON": 25,
+      "COMBAT": 25,
+      "PROCEDURAL": 25,
+      "BOSS": 25,
+      "SECRET_DUNGEON": 25,
+      "BUILDING_INTERIOR": 25,
+      "SPECIAL": 25
+    },
+    "props_audited": 2027,
+    "forbidden_intersections": 0,
+    "paths_connect_building_doors": true
+  },
+  "private_copy": {
+    "source": "Previously verified private representative Lunar/NPC copy; operational database untouched",
+    "migration": "65a7c9e21b04",
+    "upgrade": "PASS",
+    "alembic_check": "PASS",
+    "unchanged_nonspatial_tables": 55,
+    "unchanged_nonspatial_rows": 940,
+    "characters_finance_inventory_progress_exact": true,
+    "only_expected_city_geometry_changed": true,
+    "rooms_repaired": 1,
+    "decorative_collisions_removed": 31,
+    "procedural_rooms_unchanged": true,
+    "old_world_events_preserved": true,
+    "audit_gap_mg": "0",
+    "mass_mg": "100550000",
+    "ledger_mismatches": [],
+    "metadata_mismatches": []
+  },
+  "performance": {
+    "environment": "Headless Chromium virtualized cloud, not physical mobile/GPU benchmark",
+    "metrics": [
+      {
+        "room": "city1",
+        "phaser_fps": 60,
+        "raf_median_ms": 16.699999999999818,
+        "raf_p95_ms": 16.700000000000273,
+        "objects": 61,
+        "renderer": "CANVAS"
+      },
+      {
+        "room": "common_a",
+        "phaser_fps": 60,
+        "raf_median_ms": 16.699999999999818,
+        "raf_p95_ms": 16.700000000000273,
+        "objects": 46,
+        "renderer": "CANVAS"
+      },
+      {
+        "room": "secret",
+        "phaser_fps": 60,
+        "raf_median_ms": 16.699999999999818,
+        "raf_p95_ms": 16.700000000000273,
+        "objects": 36,
+        "renderer": "CANVAS"
+      },
+      {
+        "room": "boss",
+        "phaser_fps": 60,
+        "raf_median_ms": 16.699999999999818,
+        "raf_p95_ms": 16.700000000000273,
+        "objects": 38,
+        "renderer": "CANVAS"
+      },
+      {
+        "room": "guild",
+        "phaser_fps": 60,
+        "raf_median_ms": 16.699999999999818,
+        "raf_p95_ms": 16.799999999999727,
+        "objects": 59,
+        "renderer": "CANVAS"
+      }
+    ],
+    "errors": []
+  },
+  "source_unchanged": {
+    "godot-client": true,
+    "discord-bot": true,
+    "backend/app/finance.py": true,
+    "backend/app/lunar.py": true,
+    "backend/app/npc_economy.py": true
+  },
+  "package": {
+    "archive": "builds/development/0.9.0-web-art-refinement-7bcbde1/DungeonGame-Web-0.9-Art-Refinement.zip",
+    "source_commit": "7bcbde1b31d863e447b0399f394f84c0d7eabaa6",
+    "files": 25,
+    "zip_crc": "PASS",
+    "all_manifest_hashes": "PASS",
+    "sha256": "7e04e5363014f723f3e7ec0574581f12e4c3c3fff7152940c8d8cb0ff3295998",
+    "bytes": 721789
+  },
+  "limitations": [
+    "Artistic acceptance remains with user",
+    "Physical GPU/mobile/Windows execution not tested",
+    "CI remote run not observed",
+    "Operational deployment not performed",
+    "PR creation API unavailable"
+  ]
+}

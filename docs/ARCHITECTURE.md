@@ -1,5 +1,10 @@
 # Arquitetura
 
+## Refinamento artístico e acessibilidade da vila
+
+`planScenery` substitui os caminhos de bypass por zonas explícitas/footprints completos. Ator usa fonte diretamente baseada na referência em frames48×64 (conteúdo32×48). Migration65a7c9e21b04 limpa apenas colisões decorativas legadas de CITY, auditando tiles removidos; estrutura, entidades e economia preservadas. Temas/renderer anteriores reutilizados. [ART_REFINEMENT](ART_REFINEMENT.md).
+
+
 ## Renderer Web pixel art0.9
 
 `Map.tsx` conserva entrada/estado de jogo; `Environment` usa terreno em batch por sala e props/atores por profundidade vertical. `visual/` separa temas, aparência, máscaras, caminhos até portas e seleção de renderer. Atlas PNG originais substituem sprites em memória. Câmera responsiva zoom1,60FPS alvo, Canvas para WebGL por software. Detalhes em [PIXEL_ART_OVERHAUL](PIXEL_ART_OVERHAUL.md); a descrição histórica de sprites16×24/escala1.5/30FPS abaixo foi substituída nesta branch.

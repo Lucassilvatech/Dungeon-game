@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "layouts": 250,
+  "room_types": {
+    "CITY": 25,
+    "GUILD": 25,
+    "TRAINING": 25,
+    "COMMON": 25,
+    "COMBAT": 25,
+    "PROCEDURAL": 25,
+    "BOSS": 25,
+    "SECRET_DUNGEON": 25,
+    "BUILDING_INTERIOR": 25,
+    "SPECIAL": 25
+  },
+  "props_audited": 2027,
+  "forbidden_intersections": 0,
+  "paths_connect_building_doors": true
+}

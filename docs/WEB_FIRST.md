@@ -1,5 +1,10 @@
 # Web First — 0.8
 
+## Refinamento visual da referência
+
+A fonte atual de personagens é a reconstrução direta da imagem do usuário, sem o modelo genérico de anime das prévias descartadas. Desktop/mobile continuam responsivos;9:16 somente na referência vertical. [Regras e migração espacial](ART_REFINEMENT.md). Discord read-only e Godot congelado preservados.
+
+
 ## Cliente visual consolidado0.9
 
 React/TypeScript/Phaser continua principal; atlas originais, personagens direcionais, bosses próprios e temas consistentes. Câmera mantém leitura em390px e escala inteira; iluminação limitada, renderer Canvas automático para SwiftShader. Sem port Godot, sem escrita Discord. [Evidência e limites](DELIVERY_PIXEL_ART_0.9.md).

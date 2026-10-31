@@ -1,5 +1,10 @@
 # Desenvolvimento e validação
 
+## Refinamento atual: testes e banco
+
+Use [ART_REFINEMENT_LOCAL_WINDOWS](ART_REFINEMENT_LOCAL_WINDOWS.md), com backup, nova branch e upgrade65a7c9e21b04. Auditor independente: `PYTHONPATH=backend python scripts/export_visual_layout_fixtures.py /tmp/visual-layouts.json`, depois `VISUAL_LAYOUT_FIXTURES=/tmp/visual-layouts.json node frontend/tests/placement-audit.cjs`.250 mapas reais/10 tipos; capturas em artifacts/art-refinement. Nunca use o banco operacional para pytest.
+
+
 ## Atualização visual e testes isolados
 
 [PIXEL_ART_LOCAL_WINDOWS](PIXEL_ART_LOCAL_WINDOWS.md) contém comandos Git/Docker/backup, frontend, backend completo e Chromium em servidor descartável separado na porta55439. `npm test` inclui22 testes de lógica/rendering e freeze; `scripts/test_visual_stack.py --suite visual|smoke|npc-economy|encounters` cria um novo banco por execução, sem resetar o banco de origem. Pipeline de arte: `python scripts/build_pixel_assets.py` com `scripts/requirements-art.txt`. Não rode testes no operacional.

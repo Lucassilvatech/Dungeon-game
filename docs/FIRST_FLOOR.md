@@ -1,5 +1,10 @@
 # Primeiro andar: regras e implementação
 
+## Personagens da referência e caminhos limpos
+
+O refinamento atual usa diretamente as proporções dos personagens enviados pelo usuário, com cores profissionais preservadas. A vila tem terreno limpo, bosques/estações e caminhos sem caixas/pedras aleatórias. A migração espacial65a7c9e21b04 retira somente colisões decorativas antigas, sem mover personagens/NPCs/portas ou alterar economia. Dungeons/chefes mantêm gameplay e identidade persistidos; visual mais escuro/coeso.9:16 vale só para a referência em imagem.
+
+
 ## Apresentação visual0.9
 
 Vila com caminhos conectados às portas reais, três serviços comerciais e barraca sudoeste; ruínas comuns frias e secret/boss ritualístico têm temas/arte distintos. Bosses fixos e procedurais usam aparência própria e determinística; miniboss tem arte elite separada. Tudo é apresentação: coordenadas, colisões, atributos, economia, expedições e progresso continuam autoritativos e preservados. [Regras visuais](PIXEL_ART_OVERHAUL.md).

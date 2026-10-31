@@ -1,5 +1,16 @@
 # Roadmap: primeiro andar antes de expandir a Torre
 
+## Refinamento artístico0.9 — referência direta
+
+- [x] Personagens reconstruídos da referência (cabeças quadradas/roupas simples),80 frames e escala coerente.
+- [x] Piso limpo, bosques/detalhes agrupados, paletas safe/combat/boss e zonas estritas de props.
+- [x] Reparo auditado de colisões decorativas da vila; preservação validada em cópia privada.
+- [x] Auditor independente de250 mapas reais/10 tipos; integração Web e capturas desktop/mobile.
+- [ ] Aceite artístico final do usuário e validação física em GPU/celular/Windows.
+
+[Entrega atual e limites](ART_REFINEMENT_DELIVERY_0.9.md).
+
+
 ## Overhaul visual Web0.9
 
 - [x] Atlas originais, temas safe/common/secret/boss, atores direcionais e bosses com arte própria.
