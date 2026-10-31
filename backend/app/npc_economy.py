@@ -1,5 +1,7 @@
-"""Finite custody stock. No implicit products/prices, restock or starting NPC cash."""
+"""Finite NPC custody and authorized bootstrap shared by producer/shop services."""
 
+import json
+import logging
 from sqlalchemy import select
 from . import models as m, finance, lunar
 from .game import fail, idle
@@ -140,6 +142,13 @@ def buy_from_player(db, c, item_id, npc, price_mg, key):
 
 
 # Producers and the material merchant use the same Item/NPCStock custody and Lunar cash.
+logger = logging.getLogger("dungeon.npc_economy")
+logger.setLevel(logging.INFO)
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter("%(message)s"))
+    logger.addHandler(handler)
+
 RAW = ("herb", "crystal", "ore")
 RECIPES = [
     ("weak_healing_potion", "alchemist", {"herb": 2, "crystal": 1}, "alchemy", 10),
@@ -169,7 +178,6 @@ SERVICES = [
 
 def record(db, key, kind, **payload):
     from .clock import utc_now
-    import logging
 
     db.add(
         m.WorldEvent(
@@ -179,8 +187,15 @@ def record(db, key, kind, **payload):
             payload={"occurred_at": utc_now().isoformat(), **payload},
         )
     )
-    logging.getLogger("dungeon.npc_economy").info(
-        kind.lower(), extra={"event_key": key}
+    logger.info(
+        json.dumps(
+            {
+                "event": kind.lower(),
+                "event_key": key,
+                "npc": payload.get("npc"),
+                "revision": payload.get("revision"),
+            }
+        )
     )
 
 

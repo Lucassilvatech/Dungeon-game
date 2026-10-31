@@ -215,6 +215,19 @@ export function NpcEconomyAdmin({
           <article key={n.id}>
             <h4>{n.name}</h4>
             <p>
+              Tipo:{" "}
+              {
+                (
+                  {
+                    guild: "Serviços da Guilda",
+                    merchant: "Comércio em lotes",
+                    alchemist: "Alquimia",
+                    blacksmith: "Fundição e ferraria",
+                  } as Record<string, string>
+                )[n.id]
+              }
+            </p>
+            <p>
               {n.enabled ? "Ativo" : "Pausado"} · caixa{" "}
               {(BigInt(n.wallet.total_weight_mg) / 1000n).toString()} unidades
             </p>
@@ -306,19 +319,25 @@ export function NpcEconomyAdmin({
       {canManage && draft && (
         <fieldset>
           <legend>Configuração de {draft.name}</legend>
-          {profileFlags.map(([key, name]) => (
-            <label key={key}>
-              <input
-                type="checkbox"
-                aria-label={name}
-                checked={draft[key]}
-                onChange={(e) =>
-                  setDraft({ ...draft, [key]: e.target.checked })
-                }
-              />
-              {name}
-            </label>
-          ))}
+          {profileFlags
+            .filter(
+              ([key]) =>
+                key !== "production_enabled" ||
+                ["alchemist", "blacksmith"].includes(draft!.id),
+            )
+            .map(([key, name]) => (
+              <label key={key}>
+                <input
+                  type="checkbox"
+                  aria-label={name}
+                  checked={draft[key]}
+                  onChange={(e) =>
+                    setDraft({ ...draft, [key]: e.target.checked })
+                  }
+                />
+                {name}
+              </label>
+            ))}
           {["guild", "merchant"].includes(draft.id) && (
             <label>
               Margem fixa
@@ -349,20 +368,26 @@ export function NpcEconomyAdmin({
           {draft.items.map((p, index) => (
             <fieldset key={p.definition_id}>
               <legend>{p.name}</legend>
-              {Object.entries(policyNames).map(([key, name]) => (
-                <label key={key}>
-                  {name}
-                  <input
-                    type="number"
-                    min={0}
-                    aria-label={name + " de " + p.name}
-                    value={(p as any)[key]}
-                    onChange={(e) =>
-                      updatePolicy(index, key, Number(e.target.value))
-                    }
-                  />
-                </label>
-              ))}
+              {Object.entries(policyNames)
+                .filter(([key]) =>
+                  p.recipe
+                    ? !["reorder_point", "order_quantity"].includes(key)
+                    : key !== "target_stock",
+                )
+                .map(([key, name]) => (
+                  <label key={key}>
+                    {name}
+                    <input
+                      type="number"
+                      min={0}
+                      aria-label={name + " de " + p.name}
+                      value={(p as any)[key]}
+                      onChange={(e) =>
+                        updatePolicy(index, key, Number(e.target.value))
+                      }
+                    />
+                  </label>
+                ))}
               {[
                 ["production_enabled", "Produção do item"],
                 ["buy_enabled", "Compra do material"],
