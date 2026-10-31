@@ -1,3 +1,4 @@
+import {NpcEconomyAdmin} from "./NpcEconomy";
 import React, { useEffect, useState, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
@@ -9,6 +10,7 @@ import { WorldEvents } from "./WorldEvents";
 
 type Row = Record<string, any>;
 const modules = [
+  ["npc-economy", "Economia dos NPCs"],
   ["overview", "Visão geral"],
   ["royal","Administração do Rei"],
   ["bank", "Compatibilidade legada"],
@@ -420,7 +422,7 @@ function App() {
           {modules
             .filter(([id]) =>
               session?.permissions?.includes(
-                (["bank","lunar","royal"].includes(id) ? "economy" : id) + ".read",
+                (["bank","lunar","royal","npc-economy"].includes(id) ? "economy" : id) + ".read",
               ),
             )
             .map(([id, title]) => (
@@ -466,6 +468,7 @@ function App() {
         </p>
         {data && dataModule === module && (
           <section>
+            {module === "npc-economy"&&<NpcEconomyAdmin data={data} busy={busy} canManage={session?.permissions?.includes("economy.manage")} request={request} run={run} refresh={load}/>}
             {module === "royal"&&<Royal data={data} busy={busy} canManage={session?.permissions?.includes("economy.manage")} request={request} run={run} refresh={load}/>}
             {module === "lunar"&&<LunarResourcesAdmin request={request} busy={busy}/>}
             {module === "lunar"&&<CutoverPanel data={data} busy={busy} canManage={session?.permissions?.includes("economy.manage")} request={request} run={run} refresh={load}/>}
@@ -789,7 +792,7 @@ function App() {
             )}
           </section>
         )}
-        {allowed.length > 0 && module !== "royal" && (
+        {allowed.length > 0 && module !== "royal" && module !== "npc-economy" && (
           <section className="operation">
             <h3>Operação autorizada</h3>
             <label>

@@ -440,7 +440,9 @@ export function GuildCommerceAdmin({
           )}
           <h4>Preços da Guilda</h4>
           <p>
-            Compra: a Guilda paga ao jogador. Venda: o jogador paga à Guilda.
+            Compra: a Guilda paga ao jogador. Venda: base por unidade;
+            matérias-primas acrescentam uma margem fixa por operação. A margem é
+            configurada em Economia dos NPCs.
           </p>
           <div className="guild-price-table">
             <table>
@@ -450,7 +452,9 @@ export function GuildCommerceAdmin({
                     "Item",
                     "Estoque",
                     "Compra",
-                    "Venda",
+                    "Venda (base)",
+                    "Margem por operação",
+                    "Total para 1 unidade",
                     "Compra ativa",
                     "Venda ativa",
                     "Revisão",
@@ -473,6 +477,8 @@ export function GuildCommerceAdmin({
                     <td>{i.stock}</td>
                     <td>{i.buy_price_units}</td>
                     <td>{i.sell_price_units}</td>
+                    <td>{i.resale_quote.fixed_margin_units}</td>
+                    <td>{i.resale_quote.total_price_units}</td>
                     <td>{i.buy_enabled ? "Sim" : "Não"}</td>
                     <td>{i.sell_enabled ? "Sim" : "Não"}</td>
                     <td>{i.revision}</td>
