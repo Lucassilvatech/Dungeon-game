@@ -1,0 +1,15 @@
+{
+  "version": "0.9.0-web-guild-ux-development",
+  "source_commit": "5d6901c192705fd1c41873cfb0d3716b79a6e912",
+  "backend_schema": "e06a9c24f8bd",
+  "files": {
+    "admin.html": "ab5470ea338ade6bcbbcc300eded29646a4e3d852a8c6201a204759496b01f25",
+    "assets/Map-CrqaGGcW.js": "49e8b4d9c07ee535c84102242f883807304e413b2115c592db1fbe0d21a36576",
+    "assets/admin-B3dz0Zuu.js": "5762886f74653d32a718412b6df7271a14e1c0f7072b3fdf53c61eb2022291d8",
+    "assets/admin-CDKk5nXu.css": "a80915059732b87b28d24b918167988390d7a6a3e75738743a8a225de56a9d3a",
+    "assets/client-BG2DAo-l.js": "ce581f7ea66e20b21cce78b937d18cdb84b8c66c6e867156fe514fdaf4b8b66d",
+    "assets/game-Bqlo6kYU.css": "76118c1893372d84f86dd77f5175c10563c18836ffcb93ea26b8b91d243e5646",
+    "assets/game-rsMr81xe.js": "f1aacee4f719527337963fda1a71392b5aeaef1e8a4531f560c6cf9fa727c146",
+    "index.html": "f453d76e128b100e0591a833401716033ae4ce36e5e7a73206cc5d9357f97c80"
+  }
+}
