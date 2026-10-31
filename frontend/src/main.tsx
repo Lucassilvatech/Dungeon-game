@@ -1,3 +1,4 @@
+import {NpcShops} from "./NpcShops";
 import React, { useEffect, useRef, useState, lazy, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { api, State, Battle } from "./api";
@@ -143,6 +144,7 @@ function App() {
       socket?.close();
     };
   }, [token, !!state,connectionEpoch]);
+  const [npcShop,setNpcShop]=useState("merchant");
   async function execute(fn: () => Promise<unknown>, propagate=false) {
     if (gate.current) { if(propagate)throw Error("Aguarde a operação atual terminar."); return; }
     gate.current = true;
@@ -157,6 +159,7 @@ function App() {
         if (r?.rewards) setTab("guild");
         if (r?.open_auctions) setTab("auction");
         if (r?.open_recovery) setTab("recovery");
+        if(r?.open_npc_shop){setNpcShop(r.open_npc_shop);setTab("npc-shops")}
       } else if (r?.code) setNotice("Código Discord (5 minutos): " + r.code);
       else if (r?.status) {
         setFx({
@@ -213,6 +216,7 @@ function App() {
         return api(`/expeditions/${r.expedition_id}/lunar-resources/${r.id}/collect`,{request_id:crypto.randomUUID()});
       }
       if(t.kind==="resource")return api(`/resources/${t.id}/collect`,{request_id:crypto.randomUUID()});
+      if(t.kind==="service")return api(`/economy/npcs/${t.serviceId}/interact`,{});
       if (t.kind === "npc") return api("/interact", {});
       if (t.kind === "monster") {
         if (
@@ -471,7 +475,7 @@ function App() {
                 peers={peers}
                 fx={fx}
                 onMove={move}
-                onInteract={() => action("/interact")}
+                onInteract={() => { const n=state.map.service_npcs?.find(n=>Math.abs(c.x-n.x)+Math.abs(c.y-n.y)<=1);action(n?`/economy/npcs/${n.id}/interact`:"/interact"); }}
                 onTarget={target}
               />
               </Suspense>
@@ -623,7 +627,7 @@ function App() {
               ["recovery", "♜ Recuperação"],
               ["history", "◷ Histórico"],
  ["lunar", "☾ Lunar"],
- ["shop", "▤ Comércio"],
+ ["shop", "▤ Comércio"], ["npc-shops","⚒ Lojas da vila"],
  ["collection", "♧ Coleta"], ["contracts", "▤ Contratos"],
               ["raid", "♧ Raid"],
             ].map(([id, label]) => (
@@ -724,13 +728,13 @@ function App() {
                           <small>
                             {i.kind === "weapon"
                               ? "ARMA · FORÇA +" + i.power
-                              : "EMPILHÁVEL · " +
+                              : i.equipment_slot ? "EQUIPAMENTO · "+({head:"Cabeça",chest:"Peitoral",hands:"Mãos",legs:"Pernas",feet:"Pés",weapon:"Arma"} as Record<string,string>)[i.equipment_slot] : "EMPILHÁVEL · " +
                                 i.quantity +
                                 "/" +
                                 i.max_stack_size}
                           </small>
                         </span>
-                        {i.kind === "weapon" && (
+                        {(i.kind === "weapon" || !!i.equipment_slot) && (
                           <button
                             disabled={busy}
                             onClick={() =>
@@ -926,7 +930,8 @@ function App() {
               {tab === "recovery" && (
                 <PersonalRecovery state={state} busy={busy} action={action} transact={(path,body)=>execute(()=>api(path,body),true)} />
               )}
-              {tab==="shop"&&<Shop state={state} busy={busy} transact={(path,body)=>execute(()=>api(path,body),true)}/>}
+              {tab==="npc-shops"&&<NpcShops state={state} busy={busy} target={target} selected={npcShop} onSelect={setNpcShop} transact={(path,body)=>execute(()=>api(path,body),true)}/>}
+{tab==="shop"&&<Shop state={state} busy={busy} transact={(path,body)=>execute(()=>api(path,body),true)}/>}
  {tab==="lunar"&&<LunarWallet busy={busy} action={action} transact={(path,body)=>execute(()=>api(path,body),true)}/>}
  {tab==="collection"&&<Gathering state={state} busy={busy} target={target}/>}
  {tab==="contracts"&&<ContractBoard state={state} busy={busy} action={action}/>}

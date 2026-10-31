@@ -19,7 +19,8 @@ export type Peer = { id: number; name: string; x: number; y: number };
 export type Target = {
   x: number;
   y: number;
-  kind: "ground" | "exit" | "npc" | "monster" | "resource" | "lunar";
+  kind: "ground" | "exit" | "npc" | "monster" | "resource" | "lunar" | "service";
   id?: number;
   monster?: string;
+  serviceId?: string;
 };

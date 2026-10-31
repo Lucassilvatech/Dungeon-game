@@ -7,6 +7,7 @@ export type Item = {
   kind: string;
   quantity: number;
   equipped: boolean;
+  equipment_slot?: string | null;
   location: string;
   stackable: boolean;
   max_stack_size: number;
@@ -116,6 +117,7 @@ export type State = {
       height?: number;
       solid?: boolean;
     }[];
+    service_npcs?: { id: string; name: string; x: number; y: number; sprite: string }[];
     npcs?: { id: string; name: string; x: number; y: number; walk: boolean }[];
     width: number;
     height: number;

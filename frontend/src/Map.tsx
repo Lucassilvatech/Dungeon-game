@@ -93,6 +93,7 @@ export function Map({
             s = live.current.state;
           const lunarResource=s.map.lunar_resources?.find(n=>n.x===x&&n.y===y);
           const resource=s.map.gather_nodes?.find(n=>n.x===x&&n.y===y&&n.enabled&&n.remaining>0);
+          const service = s.map.service_npcs?.find(n=>n.x===x&&n.y===y);
           const exit = s.room.exits.find((e) => e.x === x && e.y === y);
           const enemy = s.map.enemies.find(
               (e) => e.state === "ALIVE" && e.x === x && e.y === y,
@@ -101,7 +102,7 @@ export function Map({
           live.current.onTarget({
             x,
             y,
-            kind: exit
+            kind: service ? "service" : exit
               ? "exit"
               : enemy
                 ? "monster"
@@ -109,6 +110,7 @@ export function Map({
                   ? "npc"
                   : lunarResource ? "lunar" : resource ? "resource" : "ground",
             id: exit?.id??lunarResource?.id??resource?.id,
+            serviceId: service?.id,
             monster: enemy ? String(enemy.id) : undefined,
           });
         });
@@ -145,6 +147,11 @@ export function Map({
           const caption=this.label(x * 32 + 16,y * 32-17,"E · "+(s.map.npc_name??"Serviço da Guilda"));
           if(s.map.npc_role==="recovery"){this.recoveryLabel=caption;caption.setVisible(false)}else this.recoveryLabel=null;
           this.labels.push(caption);
+        }
+        for(const n of s.map.service_npcs??[]){
+          this.npcs.push(this.add.sprite(n.x*32+16,n.y*32+12,n.sprite).setScale(1.5).setDepth(12));
+          this.npcHomes.push({x:n.x*32+16,y:n.y*32+12,walk:false});
+          this.labels.push(this.label(n.x*32+16,n.y*32-17,n.name));
         }
         for (const n of s.map.npcs || []) {
           this.npcs.push(

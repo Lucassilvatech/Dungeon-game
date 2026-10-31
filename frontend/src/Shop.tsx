@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, type State } from "./api";
 import { GameDialog, commerceMessage, type Transact } from "./GameDialog";
 type Card = {
@@ -10,6 +10,12 @@ type Card = {
   unit_price_units: string;
   maximum_quantity: string;
   enabled: boolean;
+  fixed_margin_units: string;
+  minimum_lot_size: number;
+  order_step: number;
+  minimum_total_price_units: string;
+  price_revision: unknown;
+  market_revision: number;
 };
 type Offer = {
   row: Card;
@@ -22,10 +28,14 @@ export function Shop({
   state,
   busy,
   transact,
+  npcId,
+  npcName,
 }: {
   state: State;
   busy: boolean;
   transact: Transact;
+  npcId?: string;
+  npcName?: string;
 }) {
   const [data, setData] = useState<{
       active: boolean;
@@ -37,23 +47,39 @@ export function Shop({
     [error, setError] = useState(""),
     [pending, setPending] = useState(false),
     [offer, setOffer] = useState<Offer | null>(null);
-  const load = async () => setData(await api("/economy/shop/catalog"));
+  const previousLots = useRef<Record<string, string>>({});
+  const [totals, setTotals] = useState<Record<string, string>>({});
+  const base = npcId ? `/economy/npcs/${npcId}` : "/economy/shop/catalog";
+  const catalogPath = npcId ? base + "/shop" : base;
+  const service = state.map.service_npcs?.find((n) => n.id === npcId);
+  const nearNpc =
+    !npcId ||
+    (!!service &&
+      state.room.id === "city1" &&
+      Math.abs(state.character.x - service.x) +
+        Math.abs(state.character.y - service.y) <=
+        1);
+  const load = async () => setData(await api(catalogPath));
   useEffect(() => {
     let live = true;
-    api("/economy/shop/catalog")
-      .then((d) => {
-        if (live) setData(d);
-      })
-      .catch((e) => {
-        if (live) setError(commerceMessage(e));
-      });
+    const refresh = () =>
+      api(catalogPath)
+        .then((d) => {
+          if (live) setData(d);
+        })
+        .catch((e) => {
+          if (live) setError(commerceMessage(e));
+        });
+    void refresh();
+    const timer = setInterval(refresh, 2500);
     return () => {
       live = false;
+      clearInterval(timer);
     };
-  }, [busy]);
+  }, [busy, npcId]);
   const key = (r: Card, direction: string) => direction + ":" + r.key;
   const amount = (r: Card, direction: string) =>
-    values[key(r, direction)] ?? "1";
+    values[key(r, direction)] ?? String(r.minimum_lot_size);
   const valid = (s: string) =>
     /^\d+$/.test(s) && BigInt(s) > 0n && BigInt(s) <= 9007199254740991n;
   const payload = (row: Card, direction: string, n: string) => ({
@@ -62,6 +88,56 @@ export function Shop({
     quantity: Number(n),
     operation_type: direction,
   });
+  useEffect(() => {
+    if (!data) return;
+    const changed: Record<string, string> = {};
+    for (const direction of ["buy", "sell"] as const)
+      for (const row of data[direction]) {
+        const k = key(row, direction),
+          lot = `${row.minimum_lot_size}:${row.order_step}`;
+        if (previousLots.current[k] && previousLots.current[k] !== lot) {
+          const value = values[k];
+          if (
+            value &&
+            (!valid(value) ||
+              BigInt(value) < BigInt(row.minimum_lot_size) ||
+              BigInt(value) % BigInt(row.order_step))
+          )
+            changed[k] = String(row.minimum_lot_size);
+        }
+        previousLots.current[k] = lot;
+      }
+    if (Object.keys(changed).length) setValues((v) => ({ ...v, ...changed }));
+  }, [data]);
+  const totalKey = (r: Card, d: string, n: string) =>
+    key(r, d) +
+    ":" +
+    n +
+    ":" +
+    JSON.stringify(r.price_revision) +
+    ":" +
+    r.market_revision;
+  useEffect(() => {
+    let live = true;
+    const timer = setTimeout(() => {
+      for (const direction of ["buy", "sell"] as const)
+        for (const row of data?.[direction] ?? []) {
+          const n = amount(row, direction),
+            k = totalKey(row, direction, n);
+          if (!valid(n) || n === String(row.minimum_lot_size) || totals[k])
+            continue;
+          void api(base + "/quote", payload(row, direction, n))
+            .then((q) => {
+              if (live) setTotals((v) => ({ ...v, [k]: q.total_price_units }));
+            })
+            .catch(() => {});
+        }
+    }, 150);
+    return () => {
+      live = false;
+      clearTimeout(timer);
+    };
+  }, [values, data, npcId]);
   const prepare = async (
     row: Card,
     direction: "buy" | "sell",
@@ -77,10 +153,7 @@ export function Shop({
             ? "Você não possui essa quantidade vendável."
             : "A quantidade excede o que você pode comprar com seu caixa e mochila.",
         );
-      const q = await api(
-        "/economy/shop/catalog/quote",
-        payload(row, direction, quantity),
-      );
+      const q = await api(base + "/quote", payload(row, direction, quantity));
       if (!q.payment.payable)
         throw Error(
           direction === "sell"
@@ -106,7 +179,7 @@ export function Shop({
     setError("");
     const current = offer;
     try {
-      await transact("/economy/shop/catalog/trade", {
+      await transact(base + "/trade", {
         ...payload(
           current.row,
           current.direction,
@@ -118,14 +191,16 @@ export function Shop({
       setOffer(null);
       setValues((values) => ({
         ...values,
-        [key(current.row, current.direction)]: "1",
+        [key(current.row, current.direction)]: String(
+          current.row.minimum_lot_size,
+        ),
       }));
       await load();
     } catch (e) {
       if (e instanceof Error && e.message.includes("STALE_QUOTE")) {
         try {
           const q = await api(
-            "/economy/shop/catalog/quote",
+            base + "/quote",
             payload(
               current.row,
               current.direction,
@@ -153,7 +228,10 @@ export function Shop({
     const s = amount(row, direction),
       maximum = BigInt(row.maximum_quantity),
       value = valid(s) ? BigInt(s) : 0n,
-      total = value * BigInt(row.unit_price_units),
+      total =
+        s === String(row.minimum_lot_size)
+          ? row.minimum_total_price_units
+          : (totals[totalKey(row, direction, s)] ?? "…"),
       label = direction === "sell" ? "Vender" : "Comprar";
     const change = (n: bigint) =>
       setValues((v) => ({
@@ -177,14 +255,22 @@ export function Shop({
           <strong>{row.quantity}</strong>
         </p>
         <p>
-          Guilda {direction === "sell" ? "compra" : "vende"}:{" "}
+          {npcName ?? "Guilda"} {direction === "sell" ? "compra" : "vende"}:{" "}
           <strong>{row.unit_price_units}</strong> por unidade
         </p>
+        {row.minimum_lot_size > 1 && (
+          <p>
+            Lote mínimo: {row.minimum_lot_size} · múltiplos de {row.order_step}
+          </p>
+        )}
+        {BigInt(row.fixed_margin_units) > 0n && (
+          <p>Margem por operação: {row.fixed_margin_units}</p>
+        )}
         <div className="shop-quantity">
           <button
             aria-label={`Diminuir ${row.name} para ${direction === "sell" ? "vender" : "comprar"}`}
-            disabled={busy || pending || value <= 1n}
-            onClick={() => change(value - 1n)}
+            disabled={busy || pending || value <= BigInt(row.minimum_lot_size)}
+            onClick={() => change(value - BigInt(row.order_step))}
           >
             −
           </button>
@@ -208,7 +294,7 @@ export function Shop({
           <button
             aria-label={`Aumentar ${row.name} para ${direction === "sell" ? "vender" : "comprar"}`}
             disabled={busy || pending || value >= maximum}
-            onClick={() => change(value + 1n)}
+            onClick={() => change(value + BigInt(row.order_step))}
           >
             +
           </button>
@@ -235,7 +321,12 @@ export function Shop({
         )}
         <button
           disabled={
-            busy || pending || !!state.battle || !row.enabled || maximum === 0n
+            busy ||
+            pending ||
+            !!state.battle ||
+            !nearNpc ||
+            !row.enabled ||
+            maximum === 0n
           }
           onClick={() => void prepare(row, direction)}
         >
@@ -252,8 +343,12 @@ export function Shop({
     );
   return (
     <section className="guild-shop">
-      <h2>Loja da Guilda</h2>
-      <p>Escolha seus materiais e negocie junto à recepcionista.</p>
+      <h2>{npcId ? "Loja · " + npcName : "Loja da Guilda"}</h2>
+      <p>
+        {npcId
+          ? "Negocie o estoque disponível junto ao NPC na vila."
+          : "Escolha seus materiais e negocie junto à recepcionista."}
+      </p>
       <label className="shop-search">
         Pesquisar item
         <input
@@ -263,6 +358,9 @@ export function Shop({
           onChange={(e) => setSearch(e.target.value)}
         />
       </label>
+      {!nearNpc && (
+        <p>Aproxime-se do NPC para comprar. Use “Ir até” para caminhar.</p>
+      )}
       {error && !offer && <p role="alert">{error}</p>}
       {pending && <p role="status">Preparando a operação…</p>}
       {!data && <p>Carregando a loja…</p>}
@@ -271,27 +369,31 @@ export function Shop({
       )}
       {data?.active && (
         <>
-          {(["buy", "sell"] as const).map((direction) => (
-            <section key={direction}>
-              <h3>
-                {direction === "buy"
-                  ? "Comprar da Guilda"
-                  : "Vender para a Guilda"}
-              </h3>
-              <div className="shop-grid">
-                {filtered(data[direction]).map((r) => card(r, direction))}
-              </div>
-              {!filtered(data[direction]).length && (
-                <p>
-                  {search
-                    ? "Nenhum item encontrado."
-                    : direction === "buy"
-                      ? "Estoque esgotado."
-                      : "Você não possui itens vendáveis."}
-                </p>
-              )}
-            </section>
-          ))}
+          {(npcId ? (["buy"] as const) : (["buy", "sell"] as const)).map(
+            (direction) => (
+              <section key={direction}>
+                <h3>
+                  {direction === "buy"
+                    ? npcId
+                      ? "Comprar de " + npcName
+                      : "Comprar da Guilda"
+                    : "Vender para a Guilda"}
+                </h3>
+                <div className="shop-grid">
+                  {filtered(data[direction]).map((r) => card(r, direction))}
+                </div>
+                {!filtered(data[direction]).length && (
+                  <p>
+                    {search
+                      ? "Nenhum item encontrado."
+                      : direction === "buy"
+                        ? "Estoque esgotado."
+                        : "Você não possui itens vendáveis."}
+                  </p>
+                )}
+              </section>
+            ),
+          )}
         </>
       )}
       {offer && (
