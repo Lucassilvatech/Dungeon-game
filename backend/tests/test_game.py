@@ -21,7 +21,7 @@ def clean(monkeypatch):
     with Session.begin() as db:
         db.execute(
             text(
-                "TRUNCATE lunar_cutovers, lunar_debts, rate_limit_buckets, admin_login_attempts, central_bank, monster_definitions, game_settings, accounts, sessions, link_codes, characters, items, item_definitions, battles, treasury, ledger, world_events RESTART IDENTITY CASCADE"
+                "TRUNCATE npc_profiles, market_revisions, lunar_cutovers, lunar_debts, rate_limit_buckets, admin_login_attempts, central_bank, monster_definitions, game_settings, accounts, sessions, link_codes, characters, items, item_definitions, battles, treasury, ledger, world_events RESTART IDENTITY CASCADE"
             )
         )
     seed()
@@ -59,6 +59,7 @@ def walk_tiles(c, h, target):
     }
     if m.get("npc"):
         blocked.add(tuple(m["npc"]))
+    blocked.update((n["x"], n["y"]) for n in m.get("service_npcs", []))
     while queue:
         p, path = queue.pop(0)
         if distance(p, target) <= 1:

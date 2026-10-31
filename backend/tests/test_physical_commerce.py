@@ -280,7 +280,7 @@ def test_bidirectional_item_prices_physical_cash_stock_and_stack(client):
             "coin_medium": 1,
             "coin_small": 2,
         }
-    cash_inject(client, ah, f"player:{cid}", 0, 0, 2)
+    cash_inject(client, ah, f"player:{cid}", 0, 0, 3)
     bought = trade(client, h, q(client, h, sold, 1, "buy"))
     assert bought.status_code == 200, bought.text
     with Session() as db:
@@ -363,7 +363,7 @@ def test_stock_ownership_equipment_protected_capacity_and_no_change(
         client,
         ah,
         buy_price_units=17,
-        sell_price_units=19,
+        sell_price_units=18,
         buy_enabled=True,
         sell_enabled=True,
     )

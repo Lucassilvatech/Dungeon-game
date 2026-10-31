@@ -13,10 +13,13 @@ def fresh_lunar(clean):
     with Session.begin() as db:
         db.execute(
             text(
-                "TRUNCATE lunar_entries,lunar_holdings,lunar_accounts,lunar_assets,lunar_supply,lunar_cutovers,lunar_debts RESTART IDENTITY CASCADE"
+                "TRUNCATE items,world_events,npc_profiles,market_revisions,lunar_entries,lunar_holdings,lunar_accounts,lunar_assets,lunar_supply,lunar_cutovers,lunar_debts RESTART IDENTITY CASCADE"
             )
         )
         lunar.initialize(db)
+    from app.seed import seed
+
+    seed()
 
 
 def convert():

@@ -97,7 +97,7 @@ def test_aggregated_real_stock_above_99_and_no_catalog_money_writes(client):
             db.scalar(
                 select(func.sum(m.Item.quantity))
                 .join(m.NPCStock, m.NPCStock.item_id == m.Item.id)
-                .where(m.Item.definition == "herb")
+                .where(m.Item.definition == "herb", m.NPCStock.account_id == "guild")
             )
             == 3000
         )
@@ -136,7 +136,7 @@ def test_sell_all_multi_stack_receipt_atomic_and_protected_excluded(client):
             db.scalar(
                 select(func.sum(m.Item.quantity))
                 .join(m.NPCStock, m.NPCStock.item_id == m.Item.id)
-                .where(m.Item.definition == "herb")
+                .where(m.Item.definition == "herb", m.NPCStock.account_id == "guild")
             )
             == 240
         )
@@ -178,12 +178,19 @@ def test_buy_large_guild_stack_splits_player_inventory_and_maximum_capacity(
 
 def test_maximum_stock_money_denominations_capacity_and_free_price(client, monkeypatch):
     ah, h, cid = ready(client)
-    config(client, ah, "herb", sell_price_units=19, sell_enabled=True)
+    config(client, ah, "herb", sell_price_units=18, sell_enabled=True)
     item(cid, 50, "herb", guild=True)
     cash_inject(client, ah, f"player:{cid}", 2)
     assert view(client, h)["buy"][0]["maximum_quantity"] == "0"
-    config(client, ah, "herb", sell_price_units=10, sell_enabled=True)
-    assert view(client, h)["buy"][0]["maximum_quantity"] == "2"
+    config(client, ah, "herb", buy_price_units=1, sell_price_units=1, sell_enabled=True)
+    assert view(client, h)["buy"][0]["maximum_quantity"] == "19"
+    execute(
+        client,
+        ah,
+        "npc.configure",
+        "guild",
+        {"expected_revision": 1, "fixed_margin": 0},
+    )
     config(
         client,
         ah,
@@ -264,7 +271,7 @@ def test_concurrent_aggregate_buy_and_request_replay(client):
     config(client, ah, "herb", buy_price_units=1, sell_price_units=1, sell_enabled=True)
     item(cid, 99, "herb", guild=True)
     item(cid, 1, "herb", guild=True)
-    cash_inject(client, ah, f"player:{cid}", 20)
+    cash_inject(client, ah, f"player:{cid}", 20, small=1)
     offer = quote(client, h, 100, "buy")
     req = str(uuid4())
     with ThreadPoolExecutor(3) as pool:

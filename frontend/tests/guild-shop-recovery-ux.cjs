@@ -163,7 +163,7 @@ const { chromium } = require("playwright"),
     await herb.getByRole("button", { name: "TUDO", exact: true }).click();
     assert.equal(await herb.getByRole("textbox").inputValue(), "240");
     await herb.getByText("Você receberá:").waitFor();
-    assert.match(await herb.innerText(), /Você receberá: 240/);
+    await herb.getByText("Você receberá: 240", { exact: true }).waitFor();
     assert.equal(await buy.count(), 1);
     const originalCatalog = await get("/economy/shop/catalog");
     assert(
@@ -234,7 +234,7 @@ const { chromium } = require("playwright"),
       offer.maximum_quantity,
     );
     await buy.getByRole("textbox").fill("5");
-    assert.match(await buy.innerText(), /Custo total: 10/);
+    await buy.getByText("Custo total: 11", { exact: true }).waitFor();
     await buy
       .getByRole("button", { name: "Comprar Folha Luminosa", exact: true })
       .click();
