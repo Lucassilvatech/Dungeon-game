@@ -130,6 +130,21 @@ def starter_diagnostics(actor=Depends(principal), db=Depends(get_db)):
     return result
 
 
+@router.get("/npc-economy")
+def npc_economy_overview(actor=Depends(principal), db=Depends(get_db)):
+    from . import npc_economy as npc, market_pricing as pricing
+
+    require(actor, "economy.read")
+    revision = pricing.latest(db)
+    return {
+        "npcs": [
+            npc.state(db, n.id, admin=True)
+            for n in db.scalars(select(m.NpcProfile).order_by(m.NpcProfile.id))
+        ],
+        "market": {"revision": revision.id, **revision.snapshot} if revision else None,
+    }
+
+
 @router.get("/{module}")
 def view(
     module: str,

@@ -167,13 +167,18 @@ def item_quote(db, c, item_id, quantity, direction):
         "owner": i.owner,
         "state": i.location,
     }
+    from .market_pricing import price as market_price
+
+    q.update(market_price(db, "guild", d.id, quantity, direction))
+    total = int(q["total_price_units"])
+    q["price_weight_mg"] = str(total * 1000)
     q["quote_hash"] = q["quote"] = lunar.fingerprint(q)
     payer = "guild" if direction == "sell" else f"player:{c.id}"
     q["payment"] = finance.payment_quote(db, payer, total)
     return q
 
 
-def transfer_item(db, c, i, qty, direction, total, receive=None):
+def transfer_item(db, c, i, qty, direction, total, receive=None, account="guild"):
     """Keep equipment identities; partial stack transfer creates an explicit child receipt."""
     stock = db.get(m.NPCStock, i.id)
     if direction == "buy" and receive is None:
@@ -205,7 +210,7 @@ def transfer_item(db, c, i, qty, direction, total, receive=None):
         moved.owner, moved.location, moved.equipped = None, "npc", False
         db.add(
             m.NPCStock(
-                item_id=moved.id, account_id="guild", sale_weight_mg=total * 1000
+                item_id=moved.id, account_id=account, sale_weight_mg=total * 1000
             )
         )
     else:

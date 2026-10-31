@@ -111,6 +111,7 @@ def effective(db, c):
         .where(Item.owner == c.id, Item.location == "inventory", Item.equipped == True)
     ):
         bonuses["strength"] += definition.power if definition.kind == "weapon" else 0
+        bonuses["defense"] += definition.power if definition.kind == "armor" else 0
     return {
         key: {
             "base": getattr(c, key),

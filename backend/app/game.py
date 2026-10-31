@@ -84,6 +84,8 @@ def inventory(db, c):
             power=d.power,
             quantity=i.quantity,
             equipped=i.equipped,
+            equipment_slot=d.equipment_slot
+            or ("weapon" if d.kind == "weapon" else None),
             location=i.location,
             stackable=d.stackable,
             max_stack_size=d.max_stack_size,
@@ -243,6 +245,7 @@ def move(db, c, dx, dy):
     }
     if data.get("npc"):
         blocked.add(tuple(data["npc"]))
+    blocked.update((n["x"], n["y"]) for n in data.get("service_npcs", []))
     if (
         not (0 <= target[0] < data["width"] and 0 <= target[1] < data["height"])
         or target in blocked
@@ -636,12 +639,20 @@ def equip(db, c, item_id):
     if not item or item.owner != c.id or item.location != "inventory":
         fail("Item indisponível", 404)
     definition = db.get(ItemDefinition, item.definition)
-    if definition.kind != "weapon":
+    slot = definition.equipment_slot or (
+        "weapon" if definition.kind == "weapon" else None
+    )
+    if not slot:
         fail("Item não equipável")
     for old in db.scalars(
         select(Item).where(Item.owner == c.id, Item.equipped == True)
     ):
-        old.equipped = False
+        old_definition = db.get(ItemDefinition, old.definition)
+        old_slot = old_definition.equipment_slot or (
+            "weapon" if old_definition.kind == "weapon" else None
+        )
+        if old_slot == slot:
+            old.equipped = False
     item.equipped = True
 
 

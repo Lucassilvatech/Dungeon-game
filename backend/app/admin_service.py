@@ -99,6 +99,10 @@ from . import guild_admin
 ACTIONS.update(guild_admin.ACTIONS)
 PARAMS.update(guild_admin.PARAMS)
 PARAMS["economy.configure"] |= guild_admin.ACKS
+from . import npc_admin
+
+ACTIONS.update(npc_admin.ACTIONS)
+PARAMS.update(npc_admin.PARAMS)
 
 
 def data(row):
@@ -246,6 +250,8 @@ def lock_resources(db, action, target, p):
 
 
 def describe(db, action, target, p):
+    if action in npc_admin.ACTIONS:
+        return npc_admin.describe(db, action, target, p)
     if action in guild_admin.ACTIONS:
         return guild_admin.describe(db, action, target, p)
     if action.startswith("royal."):
@@ -277,6 +283,21 @@ def describe(db, action, target, p):
             or item.location not in ("inventory", "npc")
         ):
             fail("Estoque/preço protegido ou inválido")
+        profile = db.scalar(
+            select(m.NpcProfile).where(m.NpcProfile.account_id == owner)
+        )
+        if profile and profile.id != "guild":
+            from .npc_economy import quantities
+
+            policy = db.get(m.NpcInventoryPolicy, (profile.id, item.definition))
+            if (
+                not policy
+                or quantities(db, owner).get(item.definition, 0) + item.quantity
+                > policy.capacity
+            ):
+                fail("Capacidade ou política do NPC incompatível")
+            if db.get(m.NPCStock, item.id):
+                fail("Use a transferência de estoque existente na economia dos NPCs")
         return {"item": data(item), "npc_account": owner, "price_weight_mg": str(price)}
     if action.startswith("collection."):
         return {"node": data(get(db, m.ResourceNode, target))}
@@ -595,11 +616,19 @@ def confirm(db, actor, id, token):
         fail("STALE_PREVIEW: estado mudou desde a prévia; gere uma nova confirmação")
     apply(db, actor, op)
     db.flush()
+    from .market_pricing import refresh
+
+    if op.action in ("guild.item_prices", "guild.batch_prices"):
+        refresh(db, str(actor.id), op.reason)
     op.after = (
-        guild_admin.describe_after(db, op.action, op.target, op.params)
-        if op.action
-        in ("guild.batch_prices", "guild.item_prices", "guild.mineral_prices")
-        else describe(db, op.action, op.target, op.params)
+        npc_admin.after(db, op)
+        if op.action in npc_admin.ACTIONS
+        else (
+            guild_admin.describe_after(db, op.action, op.target, op.params)
+            if op.action
+            in ("guild.batch_prices", "guild.item_prices", "guild.mineral_prices")
+            else describe(db, op.action, op.target, op.params)
+        )
     )
     op.status = "COMMITTED"
     op.finished_at = utc_now()
@@ -646,6 +675,8 @@ def cancel_auction(db, op, restore=False):
 
 
 def apply(db, actor, op):
+    if op.action in npc_admin.ACTIONS:
+        return npc_admin.apply(db, actor, op)
     if op.action in guild_admin.ACTIONS:
         return guild_admin.apply(db, actor, op)
     if op.action.startswith("royal."):

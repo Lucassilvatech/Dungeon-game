@@ -29,16 +29,19 @@ async def lifespan(app):
     # Deterministic integration tests exercise settle_due directly on their disposable DB.
     from .auctions import sweeper
 
-    task = (
-        None
+    from .npc_production import worker
+
+    tasks = (
+        []
         if os.getenv("TOWER_TEST_DATABASE") == "1"
-        else asyncio.create_task(sweeper())
+        else [asyncio.create_task(sweeper()), asyncio.create_task(worker())]
     )
     try:
         yield
     finally:
-        if task:
+        for task in tasks:
             task.cancel()
+        for task in tasks:
             try:
                 await task
             except asyncio.CancelledError:
@@ -1008,3 +1011,77 @@ def split_lot(
         f"lot-split:{c.id}:{body.request_id}",
     )
     return {"receipt": e.id, "message": "Pepita dividida sem taxa e sem perda."}
+
+
+@app.get("/economy/npcs")
+def npc_list(a=Depends(current_account), db=Depends(get_db)):
+    from . import npc_economy as npc
+    from .models import NpcProfile
+
+    game.character(db, a)
+    return [
+        npc.state(db, row.id)
+        for row in db.scalars(
+            select(NpcProfile).where(NpcProfile.id != "guild").order_by(NpcProfile.id)
+        )
+    ]
+
+
+def npc_owner(db, npc_id):
+    from .models import NpcProfile
+
+    row = db.get(NpcProfile, npc_id)
+    if not row or row.id == "guild":
+        raise HTTPException(404, "NPC inexistente")
+    return row.account_id
+
+
+@app.get("/economy/npcs/{npc_id}/shop")
+def npc_shop(npc_id: str, a=Depends(current_account), db=Depends(get_db)):
+    from .guild_catalog import catalog
+
+    return catalog(db, game.character(db, a), account=npc_owner(db, npc_id))
+
+
+@app.post("/economy/npcs/{npc_id}/quote")
+def npc_shop_quote(
+    npc_id: str, body: CatalogQuoteInput, a=Depends(current_account), db=Depends(get_db)
+):
+    from .guild_catalog import quote
+
+    return quote(
+        db,
+        game.character(db, a),
+        body.quantity,
+        body.operation_type,
+        body.definition_id,
+        body.item_id,
+        account=npc_owner(db, npc_id),
+    )
+
+
+@app.post("/economy/npcs/{npc_id}/trade")
+def npc_shop_trade(
+    npc_id: str, body: CatalogTradeInput, a=Depends(current_account), db=Depends(get_db)
+):
+    from .guild_catalog import trade
+
+    return trade(
+        db,
+        game.character(db, a),
+        body.quantity,
+        body.operation_type,
+        body.quote,
+        str(body.request_id),
+        body.definition_id,
+        body.item_id,
+        account=npc_owner(db, npc_id),
+    )
+
+
+@app.post("/economy/npcs/{npc_id}/interact")
+def npc_interact(npc_id: str, a=Depends(current_account), db=Depends(get_db)):
+    from .npc_economy import require_service
+
+    require_service(db, game.character(db, a), npc_owner(db, npc_id))
+    return {"open_npc_shop": npc_id, "message": "Balcão aberto."}

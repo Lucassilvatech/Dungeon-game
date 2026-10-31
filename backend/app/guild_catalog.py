@@ -12,43 +12,46 @@ COINS = {"coin_large": 10000, "coin_medium": 5000, "coin_small": 1000}
 
 
 def stack_group(d):
-    return d.stackable and not d.unique_item and d.kind == "material"
+    return d.stackable and not d.unique_item and d.kind in ("material", "consumable")
 
 
-def maximum_exact_quantity(available, price, limit):
-    """Search the <=10 residue classes, not each unit of a large stock.
-    With1/5/10 any selected amount>=10 contains a removable subset worth10.
-    Feasibility in each quantity residue is therefore a prefix; binary search it.
-    """
-    lunar.integer(price)
-    lunar.integer(limit)
-    if price == 0:
-        return limit
-    limit = min(
-        limit, sum(available.get(k, 0) * w for k, w in COINS.items()) // (price * 1000)
-    )
-    period = 10 // gcd(price, 10)
-    best = 0
+def maximum_exact_quantity(available, price, limit, fixed_fee=0, minimum=1, step=1):
+    """Find the largest exact physical payment in <=10 multiplier residue classes."""
+    for value in (price, limit, fixed_fee):
+        lunar.integer(value)
+    for value in (minimum, step):
+        lunar.integer(value, True)
 
     def payable(q):
+        if price * q + fixed_fee == 0:
+            return True
         try:
-            lunar.select_coins(available, COINS, price * q * 1000)
+            lunar.select_coins(available, COINS, (price * q + fixed_fee) * 1000)
             return True
         except HTTPException:
             return False
 
+    if not price:
+        candidate = limit // step * step
+        return candidate if candidate >= minimum and payable(candidate) else 0
+    funds = sum(available.get(k, 0) * w for k, w in COINS.items()) // 1000
+    limit = min(limit, max(0, funds - fixed_fee) // price)
+    period = 10 // gcd(price * step, 10)
+    first_multiplier = (minimum + step - 1) // step
+    maximum_multiplier = limit // step
+    best = 0
     for residue in range(period):
-        first = residue or period
-        if first > limit or not payable(first):
+        first = first_multiplier + (residue - first_multiplier) % period
+        if first > maximum_multiplier or not payable(first * step):
             continue
-        low, high = 0, (limit - first) // period
+        low, high = 0, (maximum_multiplier - first) // period
         while low < high:
             mid = (low + high + 1) // 2
-            if payable(first + mid * period):
+            if payable((first + mid * period) * step):
                 low = mid
             else:
                 high = mid - 1
-        best = max(best, first + low * period)
+        best = max(best, (first + low * period) * step)
     return best
 
 
@@ -75,7 +78,9 @@ def capacity_quantity(db, c, d, inventory=None):
     return free + slots * (d.max_stack_size if d.stackable else 1)
 
 
-def sources(db, c, direction, definition_id=None, item_id=None, lock=False):
+def sources(
+    db, c, direction, definition_id=None, item_id=None, lock=False, account="guild"
+):
     if direction not in ("buy", "sell") or (definition_id is None) == (item_id is None):
         fail("Informe um item ou um material do catálogo", 422)
     query = select(m.Item, m.ItemDefinition).join(
@@ -83,7 +88,7 @@ def sources(db, c, direction, definition_id=None, item_id=None, lock=False):
     )
     if direction == "buy":
         query = query.join(m.NPCStock, m.NPCStock.item_id == m.Item.id).where(
-            m.NPCStock.account_id == "guild",
+            m.NPCStock.account_id == account,
             m.Item.owner == None,
             m.Item.location == "npc",
         )
@@ -110,11 +115,15 @@ def sources(db, c, direction, definition_id=None, item_id=None, lock=False):
     return d, [i for i, _ in rows]
 
 
-def quote(db, c, quantity, direction, definition_id=None, item_id=None):
+def quote(
+    db, c, quantity, direction, definition_id=None, item_id=None, account="guild"
+):
     lunar.integer(quantity, True)
     if quantity > MAX_QUANTITY:
         fail("Quantidade excede o limite seguro", 422)
-    d, rows = sources(db, c, direction, definition_id, item_id)
+    if account != "guild" and direction != "buy":
+        fail("Este balcão vende somente seu estoque disponível", 422)
+    d, rows = sources(db, c, direction, definition_id, item_id, account=account)
     if quantity > sum(i.quantity for i in rows) or (
         not stack_group(d) and quantity != 1
     ):
@@ -123,9 +132,10 @@ def quote(db, c, quantity, direction, definition_id=None, item_id=None):
             if direction == "buy"
             else "Você não possui essa quantidade"
         )
-    policy = commerce.item_policy(db, d.id)
-    side = "sell" if direction == "buy" else "buy"
-    total = int(policy[side + "_price_units"]) * quantity
+    from .market_pricing import price as market_price
+
+    price = market_price(db, account, d.id, quantity, direction)
+    total = int(price["total_price_units"])
     remaining = quantity
     selection = []
     for i in rows:
@@ -143,10 +153,7 @@ def quote(db, c, quantity, direction, definition_id=None, item_id=None):
         "name": d.name,
         "quantity": quantity,
         "operation_type": direction,
-        "unit_price_units": policy[side + "_price_units"],
-        "total_price_units": str(total),
-        "price_revision": policy["revision"],
-        "enabled": policy[side + "_enabled"],
+        **price,
         "selection": selection,
         "pool_fingerprint": lunar.fingerprint(
             [[i.id, i.quantity, i.owner, i.location, i.equipped] for i in rows]
@@ -154,12 +161,12 @@ def quote(db, c, quantity, direction, definition_id=None, item_id=None):
     }
     offer["quote_hash"] = lunar.fingerprint(offer)
     offer["payment"] = finance.payment_quote(
-        db, f"player:{c.id}" if direction == "buy" else "guild", total
+        db, f"player:{c.id}" if direction == "buy" else account, total
     )
     return offer
 
 
-def catalog(db, c):
+def catalog(db, c, account="guild"):
     inventory = list(
         db.scalars(
             select(m.Item)
@@ -173,7 +180,7 @@ def catalog(db, c):
             select(m.Item)
             .join(m.NPCStock, m.NPCStock.item_id == m.Item.id)
             .where(
-                m.NPCStock.account_id == "guild",
+                m.NPCStock.account_id == account,
                 m.Item.location == "npc",
                 m.Item.owner == None,
             )
@@ -183,7 +190,10 @@ def catalog(db, c):
     available = lunar.balances(db, f"player:{c.id}")
     debt = finance.debt_mg(db, c)
     result = {"active": finance.active(db), "buy": [], "sell": []}
-    for direction, pool in (("buy", stock), ("sell", inventory)):
+    for direction, pool in (
+        ("buy", stock),
+        ("sell", inventory) if account == "guild" else ("sell", []),
+    ):
         groups = {}
         for i in pool:
             d = defs[i.definition]
@@ -193,11 +203,24 @@ def catalog(db, c):
             groups.setdefault(key, []).append(i)
         for key, rows in groups.items():
             d = defs[rows[0].definition]
-            p = commerce.item_policy(db, d.id)
-            side = "sell" if direction == "buy" else "buy"
+            from .market_pricing import price as market_price
+            from . import models as m2
+
+            profile = db.scalar(
+                select(m2.NpcProfile).where(m2.NpcProfile.account_id == account)
+            )
+            policy = (
+                db.get(m2.NpcInventoryPolicy, (profile.id, d.id))
+                if profile and account != "guild"
+                else None
+            )
+            if account != "guild" and (not policy or not policy.sell_enabled):
+                continue
+            minimum = policy.minimum_lot_size if policy and direction == "buy" else 1
+            p = market_price(db, account, d.id, minimum, direction)
             qty = sum(i.quantity for i in rows)
-            price = int(p[side + "_price_units"])
-            enabled = p[side + "_enabled"]
+            price = int(p["unit_price_units"])
+            enabled = p["enabled"]
             maximum = min(qty, MAX_QUANTITY)
             if not enabled:
                 maximum = 0
@@ -209,6 +232,9 @@ def catalog(db, c):
                         available,
                         price,
                         min(maximum, capacity_quantity(db, c, d, inventory)),
+                        fixed_fee=int(p["fixed_margin_units"]),
+                        minimum=minimum,
+                        step=p["order_step"],
                     )
                 )
             result[direction].append(
@@ -221,7 +247,12 @@ def catalog(db, c):
                     "unit_price_units": str(price),
                     "maximum_quantity": str(maximum),
                     "enabled": enabled,
-                    "price_revision": p["revision"],
+                    "price_revision": p["price_revision"],
+                    "market_revision": p["market_revision"],
+                    "fixed_margin_units": p["fixed_margin_units"],
+                    "minimum_lot_size": p["minimum_lot_size"],
+                    "order_step": p["order_step"],
+                    "minimum_total_price_units": p["total_price_units"],
                     "stackable": stack_group(d),
                 }
             )
@@ -230,10 +261,22 @@ def catalog(db, c):
 
 
 def trade(
-    db, c, quantity, direction, quote_hash, request_id, definition_id=None, item_id=None
+    db,
+    c,
+    quantity,
+    direction,
+    quote_hash,
+    request_id,
+    definition_id=None,
+    item_id=None,
+    account="guild",
 ):
     lunar.mutex(db)
-    key = f"guild-catalog:{c.id}:{request_id}"
+    key = (
+        f"guild-catalog:{c.id}:{request_id}"
+        if account == "guild"
+        else f"shop:{account}:{c.id}:{request_id}"
+    )
     params = {
         "definition_id": definition_id,
         "item_id": item_id,
@@ -241,11 +284,20 @@ def trade(
         "direction": direction,
         "quote": quote_hash,
     }
+    if account != "guild":
+        params["account"] = account
     old = commerce.replay(db, key, c, params)
     if old:
         return old
-    commerce.ensure_active(db, c)
-    offer = quote(db, c, quantity, direction, definition_id, item_id)
+    if account == "guild":
+        commerce.ensure_active(db, c)
+    else:
+        from .npc_economy import require_service
+
+        if not finance.active(db):
+            fail("Cutover necessário")
+        require_service(db, c, account)
+    offer = quote(db, c, quantity, direction, definition_id, item_id, account=account)
     if offer["quote_hash"] != quote_hash:
         fail("STALE_QUOTE: o preço ou estoque mudou. Revise a operação novamente")
     if not offer["enabled"]:
@@ -256,7 +308,9 @@ def trade(
         )
     if direction == "buy" and finance.debt_mg(db, c):
         fail("Quite a dívida antes de comprar")
-    d, rows = sources(db, c, direction, definition_id, item_id, lock=True)
+    d, rows = sources(
+        db, c, direction, definition_id, item_id, lock=True, account=account
+    )
     receive = None
     if direction == "buy":
         from .inventory import ensure_collection_capacity
@@ -274,11 +328,11 @@ def trade(
             ),
         }
     src, dst = (
-        ("guild", f"player:{c.id}")
+        (account, f"player:{c.id}")
         if direction == "sell"
-        else (f"player:{c.id}", "guild")
+        else (f"player:{c.id}", account)
     )
-    finance.ensure(db, "guild")
+    finance.ensure(db, account)
     money = finance.move(
         db,
         src,
@@ -299,6 +353,7 @@ def trade(
             direction,
             int(offer["unit_price_units"]) * chosen["quantity"],
             receive=receive,
+            account=account,
         )
         db.flush()
         movements.append({**chosen, "moved_item_id": moved.id})
@@ -321,4 +376,17 @@ def trade(
             },
         )
     )
+    if account != "guild":
+        from .npc_economy import record
+
+        record(
+            db,
+            key + ":sale",
+            "NPC_SALE",
+            npc=account.split(":", 1)[1],
+            actor=f"player:{c.id}",
+            definition=d.id,
+            quote=offer,
+            **result,
+        )
     return commerce.save(db, key, c, params, result)
