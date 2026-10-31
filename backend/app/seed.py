@@ -95,6 +95,11 @@ def seed():
                     amount=settings.initial_treasury,
                 )
             )
+        # Approved initial material custody only; existing profiles are never reseeded.
+        db.flush()
+        from .npc_economy import initialize
+
+        initialize(db)
 
 
 if __name__ == "__main__":

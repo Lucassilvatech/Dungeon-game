@@ -88,6 +88,7 @@ class ItemDefinition(Base):
         ),
     )
     id: Mapped[str] = mapped_column(String(30), primary_key=True)
+    equipment_slot: Mapped[str | None] = mapped_column(String(20))
     name: Mapped[str] = mapped_column(String(60))
     kind: Mapped[str] = mapped_column(String(20))
     power: Mapped[int] = mapped_column(default=0)
@@ -848,3 +849,70 @@ class GuildTradeReceipt(Base):
     parameters: Mapped[dict] = mapped_column(JSON)
     result: Mapped[dict] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(default=utc_now)
+
+
+class NpcProfile(Base):
+    __tablename__ = "npc_profiles"
+    id: Mapped[str] = mapped_column(String(24), primary_key=True)
+    account_id: Mapped[str] = mapped_column(
+        ForeignKey("lunar_accounts.id"), unique=True
+    )
+    name: Mapped[str] = mapped_column(String(60))
+    enabled: Mapped[bool] = mapped_column(default=True)
+    production_enabled: Mapped[bool] = mapped_column(default=True)
+    purchase_enabled: Mapped[bool] = mapped_column(default=True)
+    sale_enabled: Mapped[bool] = mapped_column(default=True)
+    fixed_margin: Mapped[int] = mapped_column(Gold(), default=0)
+    factors: Mapped[dict] = mapped_column(JSON, default=dict)
+    revision: Mapped[int] = mapped_column(default=1)
+    last_cycle: Mapped[int] = mapped_column(Gold(), default=-1)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+    __table_args__ = (
+        CheckConstraint("fixed_margin >= 0 AND revision > 0 AND last_cycle >= -1"),
+    )
+
+
+class NpcInventoryPolicy(Base):
+    __tablename__ = "npc_inventory_policies"
+    npc_id: Mapped[str] = mapped_column(ForeignKey("npc_profiles.id"), primary_key=True)
+    definition_id: Mapped[str] = mapped_column(
+        ForeignKey("item_definitions.id"), primary_key=True
+    )
+    capacity: Mapped[int] = mapped_column(Gold())
+    reorder_point: Mapped[int] = mapped_column(Gold(), default=0)
+    order_quantity: Mapped[int] = mapped_column(Gold(), default=10)
+    target_stock: Mapped[int] = mapped_column(Gold(), default=0)
+    minimum_lot_size: Mapped[int] = mapped_column(Gold(), default=1)
+    order_step: Mapped[int] = mapped_column(Gold(), default=1)
+    production_enabled: Mapped[bool] = mapped_column(default=True)
+    buy_enabled: Mapped[bool] = mapped_column(default=True)
+    sell_enabled: Mapped[bool] = mapped_column(default=True)
+    revision: Mapped[int] = mapped_column(default=1)
+    status: Mapped[str] = mapped_column(String(40), default="IDLE")
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+    __table_args__ = (
+        CheckConstraint(
+            "capacity >= 0 AND reorder_point >= 0 AND reorder_point <= capacity AND target_stock >= 0 AND target_stock <= capacity AND order_quantity > 0 AND minimum_lot_size > 0 AND order_step > 0 AND revision > 0"
+        ),
+    )
+
+
+class NpcRecipe(Base):
+    __tablename__ = "npc_recipes"
+    result_id: Mapped[str] = mapped_column(
+        ForeignKey("item_definitions.id"), primary_key=True
+    )
+    npc_id: Mapped[str] = mapped_column(ForeignKey("npc_profiles.id"))
+    ingredients: Mapped[dict] = mapped_column(JSON)
+    factor_key: Mapped[str] = mapped_column(String(24))
+    priority: Mapped[int] = mapped_column()
+
+
+class MarketRevision(Base):
+    __tablename__ = "market_revisions"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    fingerprint: Mapped[str] = mapped_column(String(64))
+    snapshot: Mapped[dict] = mapped_column(JSON)
+    actor: Mapped[str] = mapped_column(String(80))
+    reason: Mapped[str] = mapped_column(String(500))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
