@@ -1,6 +1,13 @@
 # Dungeon Game — Web First · consolidação 0.9
 
-## Entrega atual: denominações físicas e comércio da Guilda
+## Entrega atual: loja da Guilda, preços em lote e barraca de recuperação
+
+Branch **feature/guild-shop-recovery-ux-0.9**: loja em grade com pesquisa, estoque físico agregado, TUDO entre pilhas, MÁXIMO com moedas/capacidade reais e confirmação integrada. Administração tem justificativas locais, edição individual e lote atômico com revisões/histórico por item. Recuperação fica na barraca do sudoeste da vila, junto à figura encapuzada; preserva custo200%, custódia e ledger. Migration **e06a9c24f8bd**, sem redefinir preços ou refazer cutover. [Regras/arquitetura](docs/lunar/GUILD_SHOP_RECOVERY_UX.md) · [Entrega e testes](docs/lunar/DELIVERY_GUILD_SHOP_RECOVERY_UX_0.9.md) · [Atualizar/executar no Windows](docs/lunar/OPERATIONAL_GUILD_SHOP_RECOVERY_UX.md).
+
+
+Build Web desta entrega: [baixar ZIP](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/fa0ef6379367a068ed253b2873f974057012ed03/builds/development/0.9.0-web-guild-ux-5d6901c/DungeonGame-Web-0.9-GuildUX.zip) · [SHA256](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/fa0ef6379367a068ed253b2873f974057012ed03/builds/development/0.9.0-web-guild-ux-5d6901c/SHA256SUMS). Requer backend desta branch; não é aplicativo Windows/APK nem jogo offline. Manifesto e CRC verificados. Backend completo: **304 passed,0 failed,0 skipped**; frontend/build e seis scripts Chromium aprovados.
+
+## Base preservada: denominações físicas e comércio da Guilda
 
 Branch **feature/lunar-physical-denominations-guild-commerce-0.9**, continuação da feature/lunar-variable-nuggets-royal-admin-0.9. Pagamentos preservam moedas reais1/5/10 g; falta de troco é erro de domínio, sem normalização/exchange escondido. Guilda tem preços independentes/versionados de compra/venda, flags, estoque finito e comércio bidirecional de itens e pepitas. Administração permite exchange e rebalanceamento **manual 70/20/10 por massa** com prévia/fingerprint/confirm/audit. Migração atual **d91e2ab604c7**; não recompõe carteiras no startup.
 
@@ -21,7 +28,7 @@ RPG persistente com backend autoritativo FastAPI/PostgreSQL, **React/TypeScript/
 
 Encontros opcionais com dois inimigos e seleção de alvo, coleta finita, contratos com orçamento reservado no Tesouro, consultas privadas no Discord (equipamento confirmado da 0.8 desativado na 0.9), métricas/simulações, reconexão e áudio opcional. O máximo procedural agora é raro e alcançável sem refazer inimigos persistidos. [Entrega e validações](docs/DELIVERY_0.8.md) · [Web First](docs/WEB_FIRST.md) · [Grupos](docs/COMBAT_ENCOUNTERS.md) · [Coleta/contratos](docs/COLLECTION_AND_CONTRACTS.md) · [Discord](docs/DISCORD_INTEGRATION.md) · [Balanceamento](docs/BALANCE_REPORT_0.8.md).
 
-Build Web de desenvolvimento: [baixar ZIP](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/3863c2c930502453fb02bee54a6cdad13e757906/builds/development/0.8.0-web-b3a3a51/DungeonGame-Web-0.8.zip) · [SHA256](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/3863c2c930502453fb02bee54a6cdad13e757906/builds/development/0.8.0-web-b3a3a51/SHA256SUMS). Contém frontend estático e requer backend 0.8/proxy; não é executável Windows/APK nem jogo offline.
+Build Web histórico0.8: [baixar ZIP](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/3863c2c930502453fb02bee54a6cdad13e757906/builds/development/0.8.0-web-b3a3a51/DungeonGame-Web-0.8.zip) · [SHA256](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/3863c2c930502453fb02bee54a6cdad13e757906/builds/development/0.8.0-web-b3a3a51/SHA256SUMS). Contém frontend estático e requer backend 0.8/proxy; não é executável Windows/APK nem jogo offline.
 
 A validação externa do bot e testes de carga em produção permanecem pendentes; não antecipados andares, classes, raids ou mercado geral.
 

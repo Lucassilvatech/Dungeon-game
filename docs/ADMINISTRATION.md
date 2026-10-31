@@ -1,5 +1,10 @@
 # Central Administrativa web
 
+## Preços individuais e em lote — Guilda
+
+Cada operação comercial tem justificativa local≥10 caracteres. Salvar este item ou revisar lote; conflitos de revisão rejeitam tudo e preservam rascunhos. Permissão economy.manage, preview, confirmação, UUID e auditoria permanecem. Histórico registra cada política sob UUID comum. Reconhecimento de arbitragem/gratuidade apenas quando risco ativo existe. [Fluxo e schema](lunar/GUILD_SHOP_RECOVERY_UX.md).
+
+
 ## Caixa físico e preços da Guilda
 
 Administração do Rei → Guilda reúne Caixa, Rebalanceamento, Trocar denominações, Preços, Estoque, Histórico de preços e Comércio. Leituras economy.read; royal.exchange/guild.rebalance/guild.item_prices/guild.mineral_prices exigem economy.manage, motivo, prévia, confirmação, UUID/receipt e auditoria. Preços buy/sell independentes; revisão/histórico; flags distintas de preço zero; gratuidade/arbitragem exigem confirmação consciente. Estoque é operação material separada. [Manual Windows/CLI e aplicação inicial V1](lunar/OPERATIONAL_GUILD_COMMERCE.md).

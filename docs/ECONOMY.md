@@ -1,5 +1,10 @@
 > Nota de versão 0.6: o mercado geral descrito abaixo continua proposto. O Banco Central manual, créditos administrativos isolados e o leilão exclusivo de espólios já foram implementados; estado atual e contabilidade estão em [CENTRAL_BANK.md](CENTRAL_BANK.md), [ACCOUNTING.md](ACCOUNTING.md) e [AUCTIONS.md](AUCTIONS.md). Não confundir esse planejamento anterior de mercado com a implementação atual.
 
+## Comércio agregado sem nova economia
+
+TUDO/MAX são projeções; confirmação é autoritativa e atômica sobre Item/NPCStock/LunarHolding existentes. Guilda pode ter12438 unidades; entrada no jogador respeita99 por pilha e capacidade. Nenhum preço, estoque, supply ou carteira é redefinido. Recuperação na vila mantém transferência PLAYER→npc:recovery e custo200%. [Especificação](lunar/GUILD_SHOP_RECOVERY_UX.md).
+
+
 ## Regra operacional atual: peças físicas e liquidez
 
 Total é derivado dos holdings coin_small/medium/large, nunca usado para reconstruí-los.72/1/2 recebendo 3 pequenas torna-se 72/1/5. Pagamentos exatos usam somente estoque do pagador, grandes→médias→pequenas. Sem troco:INSUFFICIENT_DENOMINATIONS, sem efeito. Exchange e rebalance 70/20/10 são explícitos/manuais; não mint. Rewards, escrows, contratos, leilões, recuperação, comércio e dívida passam pela facade física. Taxa compulsória/amortização automática pagam só a parcela representável, sem quebrar moedas; restante continua obrigação. [Especificação e casos](lunar/PHYSICAL_DENOMINATIONS.md).

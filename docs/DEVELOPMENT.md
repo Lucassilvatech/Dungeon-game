@@ -1,5 +1,10 @@
 # Desenvolvimento e validação
 
+## Validação da loja e barraca — 0.9
+
+Testes PostgreSQL em test_shop_recovery_ux.py cobrem agregação/capacidade/moedas, enumeração independente de MAX, concorrência/replay/rollback, lote/revisões/riscos e acesso legado da recuperação. Chromium guild-shop-recovery-ux.cjs usa UX_TEST_DATABASE_URL explícita e TOWER_TEST_DATABASE=1; jamais volume operacional. [Resultados/comandos](lunar/DELIVERY_GUILD_SHOP_RECOVERY_UX_0.9.md) · [Windows](lunar/OPERATIONAL_GUILD_SHOP_RECOVERY_UX.md).
+
+
 ## Validação da consolidação física
 
 Revisão atual d91e2ab604c7: executar upgrade/check somente em PostgreSQL descartável/cópia privada durante desenvolvimento. Suíte: `cd backend` e `TOWER_TEST_DATABASE=1 ../.venv/bin/python -m pytest tests -q`, DATABASE_URL explicitamente de teste. Frontend npm test/build; novo Chromium tests/physical-commerce.cjs exige TOWER_TEST_DATABASE=1 e PHYSICAL_TEST_DATABASE_URL explícitos, com API/Vite ligados à mesma base. Cenários testam desktop/390 px, troca/preços/rebalance, falta de troco dos dois lados, concorrente esgotando estoque, stale quote/preview e minério bidirecional. Scripts de navegador concedem/revogam papel temporário somente em banco privado. `scripts/simulate_guild_liquidity.py` produz LIQUIDITY_SIMULATION.json, sem mudar a meta aprovada. [Comandos/evidências](lunar/DELIVERY_PHYSICAL_COMMERCE_0.9.md).

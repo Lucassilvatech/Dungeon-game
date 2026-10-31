@@ -1,5 +1,10 @@
 # Arquitetura
 
+## Comércio agregado e recuperação na vila — 0.9
+
+guild_catalog reutiliza transfer_item/finance/receipt e mutex; agrupa materiais seguros e preserva equipamento individual. MAX pesquisa classes de pagamento exato1/5/10 e capacidade. guild.batch_prices reutiliza AdminService; histórico tem PK(request_id,policy_key), lote integral rejeitado em conflito. recovery_site centraliza NPC city1(5,30); sala antiga arquivada e links filtrados, sem excluir IDs. [Detalhes](lunar/GUILD_SHOP_RECOVERY_UX.md).
+
+
 ## Denominações e comércio físico atuais
 
 finance.move deixa de chamar compose; seleciona e move peças do pagador sem reescrever o saldo inteiro de nenhuma conta. compose permanece apenas no cutover histórico. guild_commerce.py coordena cotação/checkout/custódia real Item/NPCStock e lotes; guild_admin.py integra preços/exchange/rebalance ao workflow AdminService. Políticas/history/receipts persistem na revisão aditiva d91e2ab604c7. guild_cli.py fornece inspect/preview/fingerprint/apply/audit para operador local com papel válido; nenhuma ação operacional automática. [Regras](lunar/PHYSICAL_DENOMINATIONS.md) · [Comércio](lunar/GUILD_COMMERCE.md).

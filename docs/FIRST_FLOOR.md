@@ -1,5 +1,10 @@
 # Primeiro andar: regras e implementação
 
+## Vila e loja — estado atual 0.9
+
+A recuperação pessoal agora é um serviço discreto na barraca sudoeste da vila, NPC encapuzado(5,30). Aproximação≤1 e interação abrem a interface existente, com custo200% preservado. Não há porta de recuperação na Guilda. Comércio da recepção usa estoque agregado e moedas reais, sem troco automático. [Regras](lunar/GUILD_SHOP_RECOVERY_UX.md). Descrições históricas de recovery_hall abaixo não representam o acesso Web atual.
+
+
 ## Evolução atual 0.8
 
 Web é o cliente principal; combate individual/regras de expedição da 0.7 continuam. Grupos opt-in começam com dois inimigos próximos: uma ação do jogador, seguida pelos sobreviventes em ordem estável de ID. Alvo, HP e recibos persistem; cada inimigo paga XP/loot/direito uma vez. O iniciante deve preferir combate individual até se preparar. [Regras e compatibilidade](COMBAT_ENCOUNTERS.md).

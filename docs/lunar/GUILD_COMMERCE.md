@@ -1,5 +1,10 @@
 # Preços independentes e comércio físico da Guilda
 
+## Interface atual: loja agregada e preços em lote
+
+A Web usa o novo catálogo `/economy/shop/catalog`, somando materiais elegíveis por definição e mantendo equipamento individual. TUDO/MAX, confirmações integradas e edição administrativa individual/em lote estão descritos em [GUILD_SHOP_RECOVERY_UX.md](GUILD_SHOP_RECOVERY_UX.md). Os endpoints por Item abaixo permanecem como compatibilidade. Migration e06a9c24f8bd amplia a identidade de GuildPriceHistory para(request_id,policy_key), preservando registros anteriores e vinculando cada política ao mesmo lote. Preços configurados não são sobrescritos.
+
+
 Políticas de preço são separadas de ItemDefinition. `GuildItemPolicy` guarda definition_id, buy_price_units, sell_price_units, buy_enabled, sell_enabled, revision, updated_at e updated_by. Preços inteiros por unidade para stacks e por peça para equipamento. Não existe margem automática nem fórmula que derive venda da compra.
 
 Migração aditiva **d91e2ab604c7**, após ca343e37b4ca: cria políticas, `GuildPriceHistory` e `GuildTradeReceipt`, com FKs/índices/checks e triggers append-only de histórico/recibos. Amplia a constraint do preço em NPCStock para permitir zero, sem mudar nenhum registro antigo. Políticas iniciais preservam avaliação de compra anterior; revenda histórica só é ativada quando estoque da Guilda tem preço unitário inteiro/unívoco. Ambiguidade mantém venda desativada e preço0 até decisão administrativa. Seed cria somente política ausente; não repõe estoque nem muda políticas existentes.

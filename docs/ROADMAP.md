@@ -1,5 +1,10 @@
 # Roadmap: primeiro andar antes de expandir a Torre
 
+## Loja/ADM/recuperação — evolução atual
+
+Loja agregada, pesquisa, TUDO/MÁXIMO, confirmação integrada, justificativas locais e preços em lote com conflito por revisão. Recuperação pessoal na barraca do sudoeste da vila, sem alterar custo/ownership. Migration e06a9c24f8bd preserva histórico e economia. [Regras](lunar/GUILD_SHOP_RECOVERY_UX.md) · [Validação](lunar/DELIVERY_GUILD_SHOP_RECOVERY_UX_0.9.md). Sem crafting, produção NPC ou preço automático.
+
+
 ## Consolidação física e comércio da Guilda — implementados nesta branch
 
 Denominações independentes, seleção limitada ao caixa real, exchange explícito, rebalanceamento manual 70/20/10, preços independentes/flags/revisões/histórico, estoque finito, compra e venda de itens e lotes inteiros de minério. [Entrega/evidências](lunar/DELIVERY_PHYSICAL_COMMERCE_0.9.md). Cutover operacional informado ativo pelo usuário; não refeito nem rebalanceado automaticamente pelo agente. Próxima etapa separada poderá tratar economia autônoma NPC; produção, consumo, reposição, cadeias econômicas, Boss Global, Echo, músicas e multiplayer avançado não foram antecipados.
@@ -9,7 +14,7 @@ Denominações independentes, seleção limitada ao caixa real, exchange explíc
 
 Implementados: spawn2% configurável; bandas80/15/5; lotes individuais de 100..1000 g; migração física; split inteiro gratuito; preço inicial800 milliunits/g; dez áreas Reais com mint manual, transferências/confisco, burn e injection excepcionais; linhagem e auditoria separando potencial e massa econômica. [Modelo e evidências](lunar/VARIABLE_NUGGETS.md) · [Entrega](lunar/DELIVERY_VARIABLE_NUGGETS_0.9.md).
 
-Cutover implementado e validado em cópia privada; ativação no ambiente operacional real ainda não executada. Nenhum recurso artificial foi inserido no operacional. Boss global, Echo, política automática do rei e produção NPC continuam futuros, sem avanço automático. Discord read-only; Godot congelado.
+Cutover implementado; ativação operacional informada pelo usuário. O agente validou somente cópias privadas, sem refazer conversão. Nenhum recurso artificial foi inserido no operacional. Boss global, Echo, política automática do rei e produção NPC continuam futuros, sem avanço automático. Discord read-only; Godot congelado.
 
 
 > Continuação 0.9: [cutover Lunar e migração dos fluxos financeiros](lunar/CUTOVER.md) implementados na feature branch, com ativação administrativa explícita e validação em cópia privada. A continuação atual adiciona recursos Lunares procedurais, sem boss global ou ecos; ver [lifecycle e validação](lunar/PROCEDURAL_RESOURCES.md). Ambiente operacional preservado.
@@ -18,7 +23,7 @@ Cutover implementado e validado em cópia privada; ativação no ambiente operac
 
 ## Prioridade ativa
 
-1. Cutover implementado e validado em cópia privada; ativação no ambiente operacional real ainda não executada. Recursos procedurais, pepitas variáveis e Administração Real implementados na feature branch; deploy real não executado.
+1. Cutover implementado; ativação operacional informada pelo usuário. O agente validou somente cópias privadas, sem refazer conversão. Recursos procedurais, pepitas variáveis e Administração Real implementados na feature branch; deploy real não executado.
 2. Backend autoritativo e testes de integridade.
 3. Web e Central ADM.
 4. NPCs/estoques/fluxo econômico.

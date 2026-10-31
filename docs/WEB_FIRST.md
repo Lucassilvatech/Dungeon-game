@@ -1,5 +1,10 @@
 # Web First — 0.8
 
+## Loja e recuperação — UX atual 0.9
+
+Comércio em cards responsivos, pesquisa nos dois sentidos, quantidade/TUDO/MAX e total exato. Confirmação integrada sem browser dialogs nas compras/vendas, stale quote exige nova revisão. Recuperação abre pelo NPC encapuzado na vila; consulta remota não permite pagamento à distância. [Especificação](lunar/GUILD_SHOP_RECOVERY_UX.md).
+
+
 ## Carteira e comércio físico consolidados
 
 Web lê quantidades reais das três denominações, separando saldo total e liquidez; não decompõe preço para inventar composição de caixa. Loja permite quantidade por stack, compra/venda por políticas independentes e estoque finito; minério negocia lote inteiro com rates distintos. Admin apresenta preços/histórico, exchange e rebalanceamento manual, com pending e tratamento de stale/sem troco/sem estoque. Testes Chromium desktop/390 px em [entrega atual](lunar/DELIVERY_PHYSICAL_COMMERCE_0.9.md).
