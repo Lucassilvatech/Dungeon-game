@@ -143,8 +143,8 @@ function App() {
       socket?.close();
     };
   }, [token, !!state,connectionEpoch]);
-  async function execute(fn: () => Promise<unknown>) {
-    if (gate.current) return;
+  async function execute(fn: () => Promise<unknown>, propagate=false) {
+    if (gate.current) { if(propagate)throw Error("Aguarde a operação atual terminar."); return; }
     gate.current = true;
     freshness.current++;
     setBusy(true);
@@ -174,7 +174,9 @@ function App() {
         );
       }
       if(sessionStorage.getItem("token"))await refresh(true);
+      return r;
     } catch (e) {
+      if(propagate)throw e;
       setNotice((e as Error).message);
     } finally {
       gate.current = false;
@@ -552,7 +554,7 @@ function App() {
               >
                 ✧ AVENTURA
               </button>
-              {state.room.kind === "GUILD" && (
+              {(state.room.kind === "GUILD" || (state.map.npc_role==="recovery" && state.map.npc && Math.abs(c.x-state.map.npc[0])+Math.abs(c.y-state.map.npc[1])<=4)) && (
                 <button
                   className="secondary"
                   disabled={busy || !!b}
@@ -922,10 +924,10 @@ function App() {
                 <AuctionHouse state={state} busy={busy} action={action} />
               )}
               {tab === "recovery" && (
-                <PersonalRecovery state={state} busy={busy} action={action} />
+                <PersonalRecovery state={state} busy={busy} action={action} transact={(path,body)=>execute(()=>api(path,body),true)} />
               )}
-              {tab==="shop"&&<Shop state={state} busy={busy} action={action}/>}
- {tab==="lunar"&&<LunarWallet busy={busy} action={action}/>}
+              {tab==="shop"&&<Shop state={state} busy={busy} transact={(path,body)=>execute(()=>api(path,body),true)}/>}
+ {tab==="lunar"&&<LunarWallet busy={busy} action={action} transact={(path,body)=>execute(()=>api(path,body),true)}/>}
  {tab==="collection"&&<Gathering state={state} busy={busy} target={target}/>}
  {tab==="contracts"&&<ContractBoard state={state} busy={busy} action={action}/>}
  {tab==="history"&&<><h2>Histórico e notificações</h2><p>Últimas operações do seu personagem. Registros financeiros completos permanecem auditados.</p><ol>{state.events.slice(-20).reverse().map(e=><li key={e.id}>{({ITEM_ADDED:"Item recebido",GUILD_REWARD_CLAIMED:"Recompensa paga",EXPEDITION_STARTED:"Expedição iniciada",EXPEDITION_COMPLETED:"Expedição concluída",EXPEDITION_FLED:"Fuga confirmada",PLAYER_DIED_IN_EXPEDITION:"Resgate após morte",PERSONAL_ITEM_RECOVERED:"Item recuperado",GUILD_DEBT_COLLECTION:"Cobrança da Guilda",ATTRIBUTE_POINT_SPENT:"Atributos distribuídos",FAST_TRAVEL:"Viagem rápida"} as Record<string,string>)[e.kind]??"Progresso registrado"}{e.payload.amount!=null?" · "+String(e.payload.amount)+" moedas":""}</li>)}</ol></>}

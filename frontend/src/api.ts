@@ -107,6 +107,7 @@ export type State = {
     enemies: Enemy[];
     seed?: number;
     npc_name?: string;
+    npc_role?: string;
     decorations?: {
       kind: string;
       x: number;
