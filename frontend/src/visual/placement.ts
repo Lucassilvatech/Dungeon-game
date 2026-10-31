@@ -7,9 +7,10 @@ const key=(x:number,y:number)=>`${x},${y}`;
 export function placementMask(s:Pick<State,'map'|'room'>):Set<string>{
  const m=s.map,mask=new Set<string>(),walls=new Set(m.walls.map(p=>p.join(',')));
  const reserve=(x:number,y:number,r=1)=>{for(let yy=y-r;yy<=y+r;yy++)for(let xx=x-r;xx<=x+r;xx++)mask.add(key(xx,yy));};
- const goals:number[][]=[[2,2],...s.room.exits.map(e=>[e.x,e.y]),...(m.npc?[m.npc]:[]),...(m.service_npcs??[]).map(n=>[n.x,n.y]),...(m.gather_nodes??[]).map(n=>[n.x,n.y]),...(m.lunar_resources??[]).map(n=>[n.x,n.y]),...Object.values(m.monsters)];
+ const goals:number[][]=[[2,2],...s.room.exits.map(e=>[e.x,e.y]),...(m.npc?[m.npc]:[]),...(m.service_npcs??[]).map(n=>[n.x,n.y]),...(m.gather_nodes??[]).map(n=>[n.x,n.y]),...(m.lunar_resources??[]).map(n=>[n.x,n.y]),...(m.spawns?Object.values(m.spawns).map(p=>[p.x,p.y]):Object.values(m.monsters))];
  if(m.portal)goals.push(m.portal);
  goals.forEach(([x,y])=>reserve(x,y,1));
+ for(const b of m.buildings??[])for(let y=b.y;y<b.y+b.height;y++)for(let x=b.x;x<b.x+b.width;x++)mask.add(key(x,y));
  // Required routes from the stable saved spawn; no random decoration along narrow corridors.
  const queue:[[number,number]]|[number,number][]=[[2,2]],parent=new Map<string,string>();parent.set('2,2','');
  for(let i=0;i<queue.length;i++){const [x,y]=queue[i];for(const [dx,dy] of [[1,0],[0,1],[-1,0],[0,-1]]){const a=x+dx,b=y+dy,k=key(a,b);if(a<1||b<1||a>=m.width-1||b>=m.height-1||walls.has(k)||parent.has(k))continue;parent.set(k,key(x,y));queue.push([a,b]);}}

@@ -6,6 +6,10 @@ export function buildingEntrances(s:Pick<State,'map'|'room'>){return (s.map.buil
  const exit=s.room.exits.find(e=>e.x>=b.x&&e.x<b.x+b.width&&Math.abs(e.y-(b.y+b.height))<=1);
  return {building:b,x:exit?.x??b.x+Math.floor((b.width-1)/2),y:exit?.y??b.y+b.height,exitId:exit?.id};
 });}
+/** Clicking the painted facade resolves to the existing server exit, never a new door. */
+export function hitBuildingEntrance(s:Pick<State,'map'|'room'>,worldX:number,worldY:number){
+ return buildingEntrances(s).find(d=>d.exitId!==undefined&&Math.abs(worldX-(d.x*32+16))<=16&&worldY>=d.y*32-48&&worldY<(d.y+1)*32);
+}
 export function cityPaths(s:Pick<State,'map'|'room'>):Set<string>{
  const m=s.map,paths=new Set<string>(),walls=new Set(m.walls.map(p=>p.join(',')));
  if(s.room.kind!=='CITY')return paths;

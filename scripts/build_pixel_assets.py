@@ -93,8 +93,14 @@ for row,name in enumerate(palettes):
     column=0 if name=='grass' else 1 if name=='path' else 3 if name in ('ritual','secret') else 2
     for variant in range(8):
         rr=variant//4
-        crop=terrain.crop((round(column*terrain.width/4),round(rr*terrain.height/2),round((column+1)*terrain.width/4),round((rr+1)*terrain.height/2))).resize((64,64),Image.Resampling.NEAREST)
-        q=variant%4;tile=crop.crop(((q%2)*32,(q//2)*32,(q%2+1)*32,(q//2+1)*32))
+        crop=terrain.crop((round(column*terrain.width/4),round(rr*terrain.height/2),round((column+1)*terrain.width/4),round((rr+1)*terrain.height/2))).resize((128,128),Image.Resampling.NEAREST)
+        q=variant%4;xx,yy=(q%2)*96,(q//2)*96;tile=crop.crop((xx,yy,xx+32,yy+32))
+        if name=='grass':tile=Image.blend(tile,Image.new('RGBA',tile.size,'#526f3d'),0.28)
+        if name in ('cave','crypt'):
+            pixels=tile.load()
+            for yy in range(32):
+                for xx in range(32):
+                    r,g,b,a=pixels[xx,yy];pixels[xx,yy]=(min(255,r+3),max(0,g-9),min(255,b+13),a) if name=='cave' else (min(255,r+10),max(0,g-12),min(255,b+8),a)
         tile=tile.quantize(colors=32,method=Image.Quantize.FASTOCTREE).convert('RGBA')
         tiles.paste(tile,(variant*32,row*64))
 save('tiles',tiles,tileframes)
@@ -208,4 +214,5 @@ for i,name in enumerate(names):
     effects.alpha_composite(im,((i%8)*64,(i//8)*64))
 save('effects',effects,{name:i for i,name in enumerate(names)})
 (ROOT/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
+(ROOT.parents[3]/'frontend/src/visual/atlas.json').write_text(json.dumps(manifest,indent=2)+'\n')
 print(f'Compiled {len(manifest)} original atlases; '+str(sum((ROOT/v['file']).stat().st_size for v in manifest.values()))+' bytes')

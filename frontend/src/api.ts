@@ -103,6 +103,7 @@ export type State = {
   battle: Battle | null;
   unlocked_floor: number;
   map: {
+    spawns?:Record<string,{x:number;y:number;species:string}>;
  lunar_resources?:{id:number;expedition_id:number;name:string;weight_mg:string;x:number;y:number;state:string}[];
  gather_nodes:ResourceNode[];
     enemies: Enemy[];

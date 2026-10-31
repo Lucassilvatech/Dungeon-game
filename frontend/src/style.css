@@ -935,3 +935,12 @@ button:focus-visible,a:focus-visible,input:focus-visible {outline:3px solid #e6c
 .shop-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(265px,100%),1fr));gap:1rem;align-items:stretch}.shop-card{display:flex;flex-direction:column;gap:.65rem;padding:1rem;background:#1d3133;border:1px solid #71836b77;border-radius:8px;min-width:0}.shop-card h4,.shop-card p{margin:0}.shop-card>button:last-child{margin-top:auto}.shop-quantity{display:flex;gap:.3rem;align-items:center;flex-wrap:wrap}.shop-quantity label{flex:1;min-width:50px}.shop-quantity input{width:100%;min-width:0;text-align:center;min-height:44px}.shop-quantity button{padding:.6rem;min-height:44px;min-width:40px}
 .game-dialog{color:#eae4d3;background:#243a3b;border:1px solid #c3a06b;border-radius:10px;width:min(480px,calc(100% - 24px));max-height:85dvh;overflow:auto;padding:1.4rem;box-shadow:0 15px 60px #0008}.game-dialog::backdrop{background:#071518bd}.game-dialog h2{margin-top:0}.dialog-actions{display:flex;justify-content:flex-end;gap:.7rem;flex-wrap:wrap;margin-top:1rem}.game-dialog input{max-width:100%}
 .npc-shop-nav{display:flex;flex-wrap:wrap;gap:.7rem;margin:1rem 0}.npc-shop-nav button{min-height:44px}
+
+/* Pixel-world HUD and native-resolution responsive canvas. */
+.game-shell{border:1px solid #937b51;border-radius:4px;background:#101d26;box-shadow:0 8px 40px #070e1977}
+.status-bar{background:#111d28;border-bottom:2px solid #5f6759}.portrait{background:#192c38;border-radius:2px;box-shadow:inset 0 0 0 2px #101a24}
+.meter progress{height:7px;accent-color:#ce645d}.energy progress{accent-color:#6eb5c5}
+.canvas{width:100%;height:clamp(360px,52vw,600px);aspect-ratio:auto;min-height:0}.canvas canvas{image-rendering:pixelated;image-rendering:crisp-edges;width:auto!important;height:auto!important;max-width:none}
+.stage-chip{border:1px solid #a68e65;background:#142b2de8;border-radius:1px;color:#f0dba7;box-shadow:2px 2px 0 #0b1b23a0}
+.map-tip{background:#14232bd9;border:1px solid #536b64;padding:5px 9px;border-radius:2px}
+@media(max-width:600px){.canvas{height:360px;min-height:0}.status-bar{height:auto;min-height:88px;gap:9px;padding:10px;flex-wrap:wrap}.status-bar .portrait{width:30px;height:34px;font-size:24px}.status-bar .meter{flex:1;min-width:66px}.status-bar .coins{font-size:12px}.status-bar .online{font-size:8px}.stage-chip{max-width:80%;letter-spacing:1px}}

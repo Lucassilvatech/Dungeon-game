@@ -3,7 +3,7 @@
 Three original source paintings were generated for this project with the image generation tool on2026-10-31. No external game sprite, commercial asset pack or reference image was copied into the atlas. The user's three images guide palette, atmosphere and composition only.
 
 - `source/scenery-original.png`: 4×4 cells, three oaks, well, three houses, recovery tent, barrel/crate, ruins/statue, obelisk/crystal, alchemy/forge. Prompt specified original top-down, isolated transparent sprites and equal cells; generated actual resolution1254×1254.
-- `source/bosses-original.png`: 2×2 cells, moss colossus, thorn chief, abyssal warden, basalt drake, original separate silhouettes and armour. Actual1260×1260.
+- `source/bosses-original.png`: 2×2 cells, moss colossus, thorn chief, abyssal warden, basalt drake, original separate silhouettes and armour. Actual1242×1266.
 - `source/terrain-original.png`: 4×2 continuous terrain cells, grass/path/teal ruins/indigo crypt, two variants, no labels/props. Actual1774×887.
 
 `python scripts/build_pixel_assets.py` compiles source artwork using Pillow12.3.0. Requirements: `python -m pip install -r scripts/requirements-art.txt`. Source inputs remain outside public/ and are not shipped to clients. Final assets are `frontend/public/assets/pixel/*.png`; manifest has frame indexes and actual SHA256 hashes.
