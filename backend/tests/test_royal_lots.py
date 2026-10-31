@@ -245,6 +245,14 @@ def test_guild_rate_versions_cash_and_identity(client):
     assert q["price_units"] == "547" and q["rate"] == 800
     body = {"request_id": str(uuid4()), "lot_id": id, "quote": q["quote_hash"]}
     assert client.post("/lunar/guild-sell", headers=h, json=body).status_code == 409
+    # Treasury must explicitly obtain small/medium pieces before funding547.
+    execute(
+        client,
+        ah,
+        "royal.exchange",
+        "treasury",
+        {"inputs": {"coin_large": 1}, "outputs": {"coin_medium": 1, "coin_small": 5}},
+    )
     execute(
         client,
         ah,

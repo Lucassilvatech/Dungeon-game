@@ -1,0 +1,43 @@
+{
+  "seed": 90209,
+  "payments_attempted": 20000,
+  "payments_success": 18525,
+  "payments_failed_change": 1020,
+  "payments_failed_funds": 455,
+  "large_used": 46588,
+  "medium_used": 10660,
+  "small_used": 39802,
+  "time_until_first_change_failure": {
+    "payment_index": 8,
+    "unit": "simulation step, not wall-clock time"
+  },
+  "initial_guild_distribution": {
+    "coin_large": 1365,
+    "coin_medium": 780,
+    "coin_small": 1948
+  },
+  "initial_target_mass_percent": [
+    70,
+    20,
+    10
+  ],
+  "ending_guild_distribution": {
+    "coin_large": 7,
+    "coin_medium": 4,
+    "coin_small": 30
+  },
+  "ending_guild_mass_mg": "120000",
+  "ending_mass_basis_points": {
+    "coin_large": 5833,
+    "coin_medium": 1666,
+    "coin_small": 2500
+  },
+  "total_economic_mass_mg": "19498000",
+  "global_pieces_by_denomination": {
+    "coin_large": 1365,
+    "coin_medium": 780,
+    "coin_small": 1948
+  },
+  "audit_gap_mg": "0",
+  "note": "Synthetic finite-cash scenario, no production forecast. No automatic exchange/rebalance. Approved target unchanged."
+}
