@@ -40,6 +40,12 @@ class Settings(BaseSettings):
     lunar_guild_buy_rate_milliunits_per_gram: int = Field(
         default=800, ge=0, le=1000000000
     )
+    lunar_guild_sell_rate_milliunits_per_gram: int = Field(
+        default=0, ge=0, le=1000000000
+    )
+    lunar_guild_buy_enabled: bool = True
+    lunar_guild_sell_enabled: bool = False
+    lunar_guild_allow_zero_price: bool = False
     royal_admin_extraordinary_controls_enabled: bool = True
     # Legacy configuration keys are compatibility only, never current pricing/generation.
     lunar_resource_weight_distribution: dict[str, int] = Field(

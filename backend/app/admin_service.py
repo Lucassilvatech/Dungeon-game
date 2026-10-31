@@ -94,6 +94,13 @@ ACTIONS.update(royal.ACTIONS)
 PARAMS.update(royal.PARAMS)
 
 
+from . import guild_admin
+
+ACTIONS.update(guild_admin.ACTIONS)
+PARAMS.update(guild_admin.PARAMS)
+PARAMS["economy.configure"] |= guild_admin.ACKS
+
+
 def data(row):
     if row is None:
         return None
@@ -239,6 +246,8 @@ def lock_resources(db, action, target, p):
 
 
 def describe(db, action, target, p):
+    if action in guild_admin.ACTIONS:
+        return guild_admin.describe(db, action, target, p)
     if action.startswith("royal."):
         return royal.describe(db, action, target, p)
     from .finance import active
@@ -417,6 +426,22 @@ def describe(db, action, target, p):
 
         if target in CONFIG:
             validate_setting(target, p.get("value"))
+            if target in guild_admin.commerce.MINERAL_KEYS:
+                before, after, warnings = guild_admin.price_values(
+                    db,
+                    "mineral",
+                    {
+                        target: p["value"],
+                        **{k: v for k, v in p.items() if k in guild_admin.ACKS},
+                    },
+                )
+                return {
+                    "key": target,
+                    "value": runtime_setting(db, target),
+                    "before": before,
+                    "proposed": after,
+                    "warnings": warnings,
+                }
             return {
                 "key": target,
                 "value": runtime_setting(db, target),
@@ -567,7 +592,7 @@ def confirm(db, actor, id, token):
     # refresh expired operation after row lock; all data is server-authoritative.
     before = describe(db, op.action, op.target, op.params)
     if fingerprint(before) != fingerprint(op.before):
-        fail("Estado mudou desde a prévia; gere uma nova confirmação")
+        fail("STALE_PREVIEW: estado mudou desde a prévia; gere uma nova confirmação")
     apply(db, actor, op)
     db.flush()
     op.after = describe(db, op.action, op.target, op.params)
@@ -616,6 +641,8 @@ def cancel_auction(db, op, restore=False):
 
 
 def apply(db, actor, op):
+    if op.action in guild_admin.ACTIONS:
+        return guild_admin.apply(db, actor, op)
     if op.action.startswith("royal."):
         return royal.apply(db, actor, op)
     from . import game
@@ -676,6 +703,17 @@ def apply(db, actor, op):
             fail("Créditos de teste insuficientes")
         r.balance += n if action == "sandbox.grant" else -n
     elif action == "economy.configure":
+        if op.target in guild_admin.commerce.MINERAL_KEYS:
+            return guild_admin.set_prices(
+                db,
+                actor,
+                op,
+                "mineral",
+                {
+                    op.target: p["value"],
+                    **{k: v for k, v in p.items() if k in guild_admin.ACKS},
+                },
+            )
         r = db.get(m.GameSetting, op.target)
         if r:
             r.value = {"value": p["value"], "revision": op.id}

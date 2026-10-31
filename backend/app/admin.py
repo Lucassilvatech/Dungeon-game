@@ -556,3 +556,60 @@ def royal_entries(
             q.order_by(m.LunarEntry.id.desc()).offset(max(offset, 0)).limit(100)
         )
     ]
+
+
+@router.get("/guild/commerce")
+def guild_commerce_admin(offset: int = 0, actor=Depends(principal), db=Depends(get_db)):
+    require(actor, "economy.read")
+    from . import guild_commerce as commerce, guild_admin, finance
+    from .mineral_lots import held, payload
+
+    return {
+        "cash": finance.cash(db, "guild"),
+        "target": [70, 20, 10],
+        "rebalance": (
+            guild_admin.describe(db, "guild.rebalance", "guild", {"initial": True})
+            if finance.active(db)
+            else None
+        ),
+        "items": commerce.admin_catalog(db),
+        "mineral": commerce.mineral_policy(db),
+        "stock": [
+            {
+                "item_id": i.id,
+                "definition": i.definition,
+                "quantity": i.quantity,
+                "name": db.get(m.ItemDefinition, i.definition).name,
+            }
+            for n, i in db.execute(
+                select(m.NPCStock, m.Item)
+                .join(m.Item, m.Item.id == m.NPCStock.item_id)
+                .where(
+                    m.NPCStock.account_id == "guild",
+                    m.Item.location == "npc",
+                    m.Item.owner == None,
+                )
+                .order_by(m.Item.id)
+                .limit(100)
+            )
+        ],
+        "lots": [payload(r) for r in held(db, "guild")],
+        "history": [
+            data(r)
+            for r in db.scalars(
+                select(m.GuildPriceHistory)
+                .order_by(m.GuildPriceHistory.created_at.desc())
+                .offset(max(0, offset))
+                .limit(100)
+            )
+        ],
+        "trades": [
+            data(r)
+            for r in db.scalars(
+                select(m.GuildTradeReceipt)
+                .order_by(m.GuildTradeReceipt.created_at.desc())
+                .offset(max(0, offset))
+                .limit(100)
+            )
+        ],
+    }

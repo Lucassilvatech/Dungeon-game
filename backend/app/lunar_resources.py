@@ -17,6 +17,10 @@ CONFIG = {
     "lunar_resource_spawn_chance_ppm",
     "lunar_resource_weight_bands",
     "lunar_guild_buy_rate_milliunits_per_gram",
+    "lunar_guild_sell_rate_milliunits_per_gram",
+    "lunar_guild_buy_enabled",
+    "lunar_guild_sell_enabled",
+    "lunar_guild_allow_zero_price",
     "royal_admin_extraordinary_controls_enabled",
 }
 
@@ -32,11 +36,17 @@ def validate_setting(name, value):
     if name in (
         "lunar_resource_spawn_enabled",
         "royal_admin_extraordinary_controls_enabled",
+        "lunar_guild_buy_enabled",
+        "lunar_guild_sell_enabled",
+        "lunar_guild_allow_zero_price",
     ):
         valid = type(value) is bool
     elif name == "lunar_resource_spawn_chance_ppm":
         valid = type(value) is int and 0 <= value <= 1000000
-    elif name == "lunar_guild_buy_rate_milliunits_per_gram":
+    elif name in (
+        "lunar_guild_buy_rate_milliunits_per_gram",
+        "lunar_guild_sell_rate_milliunits_per_gram",
+    ):
         valid = type(value) is int and 0 <= value <= 1000000000
     elif name == "lunar_resource_weight_bands":
         valid = isinstance(value, list) and len(value) == 3
@@ -364,74 +374,15 @@ def price(weight_mg, rate):
 
 
 def quotes(db, c):
-    rate = runtime_setting(db, "lunar_guild_buy_rate_milliunits_per_gram")
-    validate_setting("lunar_guild_buy_rate_milliunits_per_gram", rate)
-    setting = db.get(m.GameSetting, "lunar_guild_buy_rate_milliunits_per_gram")
-    revision = setting.value.get("revision", "initial") if setting else "initial"
-    return [
-        {
-            **lots.payload(r),
-            "rate": rate,
-            "price_units": str(price(r.weight_mg, rate)),
-            "guild_balance": str(finance.coin_mg(db, "guild") // 1000),
-            "quote_hash": lunar.fingerprint(
-                [r.id, r.weight_mg, r.owner_account_id, r.state, rate, revision]
-            ),
-        }
-        for r in lots.held(db, f"player:{c.id}")
-    ]
+    from .guild_commerce import mineral_quotes
+
+    return mineral_quotes(db, c, "sell")
 
 
 def sell(db, c, lot_id, quote, request_id):
-    lunar.mutex(db)
-    key = f"lunar-sale:{c.id}:{request_id}"
-    params = [lot_id, quote]
-    old = lots.replay(db, key, params)
-    if old:
-        return {"receipt": old.id, "replayed": True, "message": "Venda já confirmada."}
-    from .game import idle, receptionist
+    from .guild_commerce import mineral_trade
 
-    idle(db, c)
-    receptionist(db, c)
-    if not finance.active(db):
-        fail("Cutover Lunar inativo")
-    offer = next((o for o in quotes(db, c) if o["lot_id"] == lot_id), None)
-    if not offer or offer["quote_hash"] != quote:
-        fail("Pepita inexistente ou cotação alterada")
-    if int(offer["price_units"]) <= 0:
-        fail("Oferta sem pagamento; não há venda gratuita")
-    finance.ensure(db, "guild")
-    finance.move(
-        db, "guild", f"player:{c.id}", int(offer["price_units"]), key + ":coins"
-    )
-    r = lots.get(db, lot_id, f"player:{c.id}")
-    e = lunar.post(
-        db,
-        key,
-        "MINERAL_SALE",
-        f"player:{c.id}",
-        "Venda de pepita por preço comercial por grama",
-        [
-            (f"player:{c.id}", lots.ASSET, -r.weight_mg),
-            ("guild", lots.ASSET, r.weight_mg),
-        ],
-        context={
-            "parameters": params,
-            "lot_ids": [lot_id],
-            "weight_mg": str(r.weight_mg),
-            "rate": offer["rate"],
-            "price_units": offer["price_units"],
-        },
-    )
-    r.owner_account_id = "guild"
-    r.updated_at = utc_now()
-    assert_audit(db)
-    log.info("resource_sale lot=%s weight_mg=%s", r.id, r.weight_mg)
-    return {
-        "receipt": e.id,
-        "replayed": False,
-        "message": "Pepita vendida à Guilda com moedas físicas.",
-    }
+    return mineral_trade(db, c, lot_id, quote, request_id, "sell")
 
 
 def origin_totals(db):
@@ -539,6 +490,7 @@ def metrics(db):
         for e in db.scalars(
             select(m.LunarEntry).where(m.LunarEntry.kind == "MINERAL_SALE")
         )
+        if e.context.get("direction", "sell") == "sell"
     )
     mineral = {}
     for r in lots.held(db):

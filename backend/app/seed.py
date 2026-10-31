@@ -60,6 +60,25 @@ def seed():
                         ),
                     )
                 )
+        # Missing policies only; repeated startup never changes an existing price,
+        # inventory or enabled flag. No stock is generated here.
+        db.flush()
+        from .models import GuildItemPolicy
+
+        for definition in db.scalars(select(ItemDefinition)):
+            if not db.get(GuildItemPolicy, definition.id):
+                db.add(
+                    GuildItemPolicy(
+                        definition_id=definition.id,
+                        buy_price_units=max(0, definition.base_value or 0),
+                        sell_price_units=0,
+                        buy_enabled=definition.id != "sword"
+                        and definition.death_transferable
+                        and (definition.base_value or 0) > 0,
+                        sell_enabled=False,
+                        updated_by="seed:initial-policy",
+                    )
+                )
         if not db.get(Treasury, 1):
             from .finance import active
 

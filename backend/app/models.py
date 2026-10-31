@@ -718,7 +718,7 @@ class NPCStock(Base):
     item_id: Mapped[int] = mapped_column(ForeignKey("items.id"), primary_key=True)
     account_id: Mapped[str] = mapped_column(ForeignKey("lunar_accounts.id"), index=True)
     sale_weight_mg: Mapped[int] = mapped_column(Gold())
-    __table_args__ = (CheckConstraint("sale_weight_mg > 0"),)
+    __table_args__ = (CheckConstraint("sale_weight_mg >= 0"),)
 
 
 class LunarResourceGeneration(Base):
@@ -807,3 +807,44 @@ class LunarMineralLot(Base):
             "(state='HELD' AND consumed_at IS NULL) OR (state<>'HELD' AND consumed_at IS NOT NULL)"
         ),
     )
+
+
+class GuildItemPolicy(Base):
+    __tablename__ = "guild_item_policies"
+    definition_id: Mapped[str] = mapped_column(
+        ForeignKey("item_definitions.id"), primary_key=True
+    )
+    buy_price_units: Mapped[int] = mapped_column(Gold(), default=0)
+    sell_price_units: Mapped[int] = mapped_column(Gold(), default=0)
+    buy_enabled: Mapped[bool] = mapped_column(default=False)
+    sell_enabled: Mapped[bool] = mapped_column(default=False)
+    revision: Mapped[int] = mapped_column(default=1)
+    updated_at: Mapped[datetime] = mapped_column(default=utc_now)
+    updated_by: Mapped[str] = mapped_column(String(80), default="migration")
+    __table_args__ = (
+        CheckConstraint(
+            "buy_price_units >= 0 AND sell_price_units >= 0 AND revision >= 1"
+        ),
+    )
+
+
+class GuildPriceHistory(Base):
+    __tablename__ = "guild_price_history"
+    request_id: Mapped[str] = mapped_column(
+        ForeignKey("admin_operations.id"), primary_key=True
+    )
+    policy_key: Mapped[str] = mapped_column(String(80), index=True)
+    before: Mapped[dict] = mapped_column(JSON)
+    after: Mapped[dict] = mapped_column(JSON)
+    actor_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"))
+    reason: Mapped[str] = mapped_column(String(500))
+    created_at: Mapped[datetime] = mapped_column(default=utc_now)
+
+
+class GuildTradeReceipt(Base):
+    __tablename__ = "guild_trade_receipts"
+    key: Mapped[str] = mapped_column(String(160), primary_key=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id"), index=True)
+    parameters: Mapped[dict] = mapped_column(JSON)
+    result: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(default=utc_now)

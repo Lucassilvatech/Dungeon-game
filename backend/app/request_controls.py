@@ -43,7 +43,7 @@ def policy(path, method):
         return ("gather", 45, 60)
     if path.startswith("/contracts/"):
         return ("contracts", 30, 60)
-    if path.startswith(("/auctions/", "/guild/", "/recovery/")):
+    if path.startswith(("/auctions/", "/guild/", "/recovery/", "/economy/")):
         return ("finance", 30, 60)
     return ("write", 120, 60)
 

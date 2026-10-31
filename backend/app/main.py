@@ -757,98 +757,94 @@ def lunar_exchange(body: LunarExchange, a=Depends(current_account), db=Depends(g
 
 @app.get("/economy/shop")
 def economy_shop(a=Depends(current_account), db=Depends(get_db)):
-    from . import finance, npc_economy
-    from .models import NPCStock, ItemDefinition
+    from .guild_commerce import catalog
 
-    c = game.character(db, a)
-    rows = db.execute(
-        select(NPCStock, Item)
-        .join(Item, Item.id == NPCStock.item_id)
-        .order_by(Item.id)
-        .limit(100)
-    ).all()
-    offers = []
-    for i, d in db.execute(
-        select(Item, ItemDefinition)
-        .join(ItemDefinition, ItemDefinition.id == Item.definition)
-        .where(
-            Item.owner == c.id,
-            Item.location == "inventory",
-            Item.equipped == False,
-            ItemDefinition.death_transferable == True,
-            ItemDefinition.id != "sword",
-            ItemDefinition.base_value > 0,
-        )
-        .limit(100)
-    ):
-        price = d.base_value * i.quantity * 1000
-        offers.append(
-            {
-                "item_id": i.id,
-                "name": d.name,
-                "quantity": i.quantity,
-                "price_weight_mg": str(price),
-                "quote": npc_economy.quote(i, price, "guild"),
-            }
-        )
-    return {
-        "active": finance.active(db),
-        "guild_balance_mg": str(finance.coin_mg(db, "guild")),
-        "offers": offers,
-        "stock": [
-            {
-                "item_id": i.id,
-                "account": s.account_id,
-                "name": db.get(ItemDefinition, i.definition).name,
-                "quantity": i.quantity,
-                "price_weight_mg": str(s.sale_weight_mg),
-                "quote": npc_economy.quote(i, s.sale_weight_mg, s.account_id),
-            }
-            for s, i in rows
-            if i.location == "npc" and i.owner is None
-        ],
-    }
+    return catalog(db, game.character(db, a))
 
 
 class TradeRequest(BaseModel):
     model_config = {"extra": "forbid"}
     request_id: UUID
-    item_id: int = Field(gt=0)
+    item_id: StrictInt = Field(gt=0)
+    quantity: StrictInt | None = Field(default=None, gt=0)
     quote: str = Field(min_length=64, max_length=64)
+
+
+class GuildQuoteRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+    item_id: StrictInt = Field(gt=0)
+    quantity: StrictInt = Field(gt=0)
+    operation_type: Literal["buy", "sell"]
+
+
+@app.post("/economy/shop/quote")
+def guild_item_quote(
+    body: GuildQuoteRequest, a=Depends(current_account), db=Depends(get_db)
+):
+    from .guild_commerce import item_quote
+
+    return item_quote(
+        db, game.character(db, a), body.item_id, body.quantity, body.operation_type
+    )
 
 
 @app.post("/economy/shop/buy")
 def economy_buy(body: TradeRequest, a=Depends(current_account), db=Depends(get_db)):
-    from .npc_economy import sell_to_player
+    from . import guild_commerce, npc_economy
 
     c = game.character(db, a)
-    return sell_to_player(
-        db, c, body.item_id, f"shop:{c.id}:{body.request_id}", body.quote
+    from .models import NPCStock, WorldEvent
+
+    legacy = db.scalar(
+        select(WorldEvent).where(
+            WorldEvent.key == f"npc-sale:shop:{c.id}:{body.request_id}"
+        )
+    )
+    if legacy:
+        if body.quantity is not None:
+            raise HTTPException(422, "Recibo NPC legado não aceita quantidade nova")
+        return npc_economy.sell_to_player(
+            db, c, body.item_id, f"shop:{c.id}:{body.request_id}", body.quote
+        )
+    stock = db.get(NPCStock, body.item_id)
+    if stock and stock.account_id != "guild":
+        if body.quantity is not None:
+            raise HTTPException(422, "Comércio NPC legado transfere o estoque inteiro")
+        return npc_economy.sell_to_player(
+            db, c, body.item_id, f"shop:{c.id}:{body.request_id}", body.quote
+        )
+    return guild_commerce.item_trade(
+        db, c, body.item_id, body.quantity, body.quote, str(body.request_id), "buy"
     )
 
 
 @app.post("/economy/shop/sell")
 def economy_sell(body: TradeRequest, a=Depends(current_account), db=Depends(get_db)):
-    from . import npc_economy, finance
-    from .models import ItemDefinition, WorldEvent
+    from .guild_commerce import item_trade
+    from .models import WorldEvent
 
     c = game.character(db, a)
-    key = f"shop:{c.id}:{body.request_id}"
-    old = db.scalar(select(WorldEvent).where(WorldEvent.key == "npc-buy:" + key))
-    if old:
-        if old.payload["character"] != c.id or old.payload["item"] != body.item_id:
-            raise HTTPException(409, "Chave já usada")
-        return {"replayed": True}
-    item = db.get(Item, body.item_id)
-    if not item:
-        raise HTTPException(404, "Item inexistente")
-    d = db.get(ItemDefinition, item.definition)
-    if not d.base_value or d.base_value <= 0:
-        raise HTTPException(409, "Sem avaliação de compra definida")
-    price = d.base_value * item.quantity * 1000
-    if body.quote != npc_economy.quote(item, price, "guild"):
-        raise HTTPException(409, "Avaliação mudou; atualize a prévia")
-    return npc_economy.buy_from_player(db, c, item.id, "guild", price, key)
+    legacy = db.scalar(
+        select(WorldEvent).where(
+            WorldEvent.key == f"npc-buy:shop:{c.id}:{body.request_id}"
+        )
+    )
+    if legacy:
+        if (
+            body.quantity is not None
+            or legacy.payload.get("character") != c.id
+            or legacy.payload.get("item") != body.item_id
+        ):
+            raise HTTPException(
+                409, "Referência histórica já utilizada com outro item/parâmetros"
+            )
+        return {
+            "replayed": True,
+            "message": "Venda histórica já confirmada; nenhum novo movimento.",
+        }
+    return item_trade(
+        db, c, body.item_id, body.quantity, body.quote, str(body.request_id), "sell"
+    )
 
 
 class DebtPayment(BaseModel):
@@ -894,14 +890,16 @@ def collect_lunar_resource(
 
 @app.get("/lunar/guild-quotes")
 def lunar_guild_quotes(a=Depends(current_account), db=Depends(get_db)):
-    from .lunar_resources import quotes
-    from .finance import active, coin_mg
+    from .guild_commerce import mineral_quotes
+    from .finance import active, coin_mg, cash
 
     c = game.character(db, a)
     return {
         "active": active(db),
         "guild_coin_mg": str(coin_mg(db, "guild")),
-        "quotes": quotes(db, c),
+        "quotes": mineral_quotes(db, c, "sell"),
+        "guild_quotes": mineral_quotes(db, c, "buy"),
+        "guild_cash": cash(db, "guild"),
     }
 
 
@@ -920,6 +918,17 @@ def sell_lunar_mineral(
 
     return sell(
         db, game.character(db, a), body.lot_id, body.quote, str(body.request_id)
+    )
+
+
+@app.post("/lunar/guild-buy")
+def buy_lunar_mineral(
+    body: LunarSaleInput, a=Depends(current_account), db=Depends(get_db)
+):
+    from .guild_commerce import mineral_trade
+
+    return mineral_trade(
+        db, game.character(db, a), body.lot_id, body.quote, str(body.request_id), "buy"
     )
 
 

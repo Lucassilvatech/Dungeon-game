@@ -245,6 +245,31 @@ def exchange(
     params = [id, inputs, outputs]
     old = db.scalar(select(LunarEntry).where(LunarEntry.key == key))
     if old:
+        # Old confirmed exchanges predate explicit parameter receipts. Match the
+        # historical digest exactly; replay never validates against today's stock.
+        if (
+            old.kind == "COIN_DENOMINATION_EXCHANGE"
+            and not old.context
+            and actor is None
+            and reason is None
+        ):
+            combined = defaultdict(int)
+            for sign, values in ((-1, inputs), (1, outputs)):
+                for code, q in values.items():
+                    integer(q, True)
+                    asset = db.get(LunarAsset, code)
+                    if not asset or asset.kind != "coin":
+                        fail("Troca aceita apenas moedas")
+                    combined[(id, code)] += sign * q
+            rows = [
+                {"account": o, "asset": a, "quantity": q}
+                for (o, a), q in sorted(combined.items())
+                if q
+            ]
+            if old.fingerprint == fingerprint(
+                [old.kind, id, "Troca gratuita de denominações", rows, {}, None]
+            ):
+                return old
         if (
             old.context.get("parameters") != params
             or (actor is not None and old.actor != actor)
