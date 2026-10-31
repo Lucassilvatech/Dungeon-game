@@ -32,10 +32,13 @@ jobs:
       - run: npm test
         working-directory: frontend
       - run: python scripts/simulate_lunar.py
+      - run: python scripts/simulate_guild_liquidity.py
       - uses: actions/upload-artifact@v4
         with:
           name: lunar-simulation
-          path: docs/lunar/SIMULATION.json
+          path: |
+            docs/lunar/SIMULATION.json
+            docs/lunar/LIQUIDITY_SIMULATION.json
   chromium:
     runs-on: ubuntu-latest
     services:

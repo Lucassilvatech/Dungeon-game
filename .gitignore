@@ -13,3 +13,4 @@ dist/
 *.exe
 *.pck
 exports/
+/backups/
