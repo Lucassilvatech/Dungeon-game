@@ -151,7 +151,7 @@ def generate(kind, seed=0, theme_index=None, danger_tier=0):
             continue
         if any(abs(x - px) + abs(y - py) < 2 for px, py in reserved):
             continue
-        solid = rng.random() < 0.4
+        solid = rng.random() < 0.4 and kind != "CITY"
         decor = {
             "kind": rng.choice(DECORATIONS.get(theme, DECORATIONS["wild_ruins"])),
             "x": x,
@@ -216,4 +216,7 @@ def generate(kind, seed=0, theme_index=None, danger_tier=0):
         for p in sorted(reach)
         if p[0] > 8 and (p[0] * 17 + p[1] * 11 + seed) % 113 == 0
     ][:6]
+    if kind == "CITY":
+        from .visual_access import repair_city_access
+        d, _ = repair_city_access(d)
     return d

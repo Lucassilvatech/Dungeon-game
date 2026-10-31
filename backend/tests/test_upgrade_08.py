@@ -281,9 +281,25 @@ def test_populated_07_upgrade_preserves_all_original_columns_and_rights():
         after = snapshot()
         # The recovery relocation adds village presentation metadata; all existing
         # world keys and all financial/progression rows must remain unchanged.
-        assert {k: v for k, v in after.items() if k != "rooms"} == {
-            k: v for k, v in before.items() if k != "rooms"
+        assert {
+            k: v for k, v in after.items() if k not in ("rooms", "world_events")
+        } == {k: v for k, v in before.items() if k not in ("rooms", "world_events")}
+        # Every old event is byte-for-byte preserved; allow only the exact new
+        # city accessibility audit receipt, never an unaccounted financial write.
+        assert set(before["world_events"]).issubset(after["world_events"])
+        added_events = [
+            json.loads(row)
+            for row in set(after["world_events"]) - set(before["world_events"])
+        ]
+        assert len(added_events) == 1
+        receipt = added_events[0]
+        assert receipt["kind"] == "VISUAL_ACCESS_REPAIRED"
+        assert receipt["processed"] is True
+        assert receipt["payload"]["room"] == "city1"
+        removed_tiles = {
+            tuple(p) for p in receipt["payload"]["removed_decorative_wall_tiles"]
         }
+        assert removed_tiles
         old_rooms = {json.loads(row)["id"]: json.loads(row) for row in before["rooms"]}
         new_rooms = {json.loads(row)["id"]: json.loads(row) for row in after["rooms"]}
         assert old_rooms.keys() == new_rooms.keys()
@@ -297,17 +313,52 @@ def test_populated_07_upgrade_preserves_all_original_columns_and_rights():
                 assert [d for d in decorations if d["kind"] == "recovery_tent"] == [
                     {"kind": "recovery_tent", "x": 3, "y": 27, "width": 5, "height": 5}
                 ]
-                assert [d for d in decorations if d["kind"] != "recovery_tent"] == [
-                    d
-                    for d in old["data"].get("decorations", [])
-                    if d["kind"] != "recovery_tent"
-                ]
+                expected_decorations = []
+                structural = {
+                    (x, y)
+                    for b in old["data"].get("buildings", [])
+                    for x in range(b["x"], b["x"] + b["width"])
+                    for y in range(b["y"], b["y"] + b["height"])
+                }
+                old_walls = {tuple(p) for p in old["data"]["walls"]}
+                assert removed_tiles.issubset(old_walls)
+                assert not removed_tiles.intersection(structural)
+                for d in old["data"].get("decorations", []):
+                    if d["kind"] == "recovery_tent":
+                        continue
+                    if (d["x"], d["y"]) in removed_tiles:
+                        assert d.get("solid") is True
+                        assert d["kind"] in {
+                            "tree",
+                            "flower",
+                            "barrel",
+                            "bench",
+                            "well",
+                            "bush",
+                            "rock",
+                            "crate",
+                        }
+                        assert d.get("width", 1) == d.get("height", 1) == 1
+                        expected_decorations.append(
+                            {**d, "solid": False, "visual_only": True}
+                        )
+                    else:
+                        expected_decorations.append(d)
+                assert [
+                    d for d in decorations if d["kind"] != "recovery_tent"
+                ] == expected_decorations
+                assert {
+                    tuple(p) for p in updated["data"]["walls"]
+                } == old_walls - removed_tiles
+                assert updated["data"]["visual_access_version"] == 1
                 relocated = {
                     "npc",
                     "npc_name",
                     "npc_role",
                     "recovery_site_version",
                     "decorations",
+                    "walls",
+                    "visual_access_version",
                 }
                 assert {
                     k: v for k, v in updated["data"].items() if k not in relocated
