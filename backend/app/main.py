@@ -762,6 +762,60 @@ def economy_shop(a=Depends(current_account), db=Depends(get_db)):
     return catalog(db, game.character(db, a))
 
 
+@app.get("/economy/shop/catalog")
+def guild_catalog(a=Depends(current_account), db=Depends(get_db)):
+    from .guild_catalog import catalog
+
+    return catalog(db, game.character(db, a))
+
+
+class CatalogQuoteInput(BaseModel):
+    model_config = {"extra": "forbid"}
+    definition_id: str | None = Field(default=None, min_length=1, max_length=30)
+    item_id: StrictInt | None = Field(default=None, gt=0)
+    quantity: StrictInt = Field(gt=0, le=9007199254740991)
+    operation_type: Literal["buy", "sell"]
+
+
+class CatalogTradeInput(CatalogQuoteInput):
+    quote: str = Field(min_length=64, max_length=64)
+    request_id: UUID
+
+
+@app.post("/economy/shop/catalog/quote")
+def guild_catalog_quote(
+    body: CatalogQuoteInput, a=Depends(current_account), db=Depends(get_db)
+):
+    from .guild_catalog import quote
+
+    return quote(
+        db,
+        game.character(db, a),
+        body.quantity,
+        body.operation_type,
+        body.definition_id,
+        body.item_id,
+    )
+
+
+@app.post("/economy/shop/catalog/trade")
+def guild_catalog_trade(
+    body: CatalogTradeInput, a=Depends(current_account), db=Depends(get_db)
+):
+    from .guild_catalog import trade
+
+    return trade(
+        db,
+        game.character(db, a),
+        body.quantity,
+        body.operation_type,
+        body.quote,
+        str(body.request_id),
+        body.definition_id,
+        body.item_id,
+    )
+
+
 class TradeRequest(BaseModel):
     model_config = {"extra": "forbid"}
     request_id: UUID

@@ -76,8 +76,12 @@ def validate_prices(values, mineral=False, acknowledgements=None):
             "POSSIBLE_ARBITRAGE: confirme conscientemente a compra acima da venda", 422
         )
     free = "ZERO_PRICE" in warnings or (
-        mineral and values.get("lunar_guild_allow_zero_price", False)
+        mineral
+        and values.get("lunar_guild_allow_zero_price", False)
+        and ((bo and b < 1000) or (so and s < 1000))
     )
+    if free and "ZERO_PRICE" not in warnings:
+        warnings.append("ZERO_PRICE")
     if free and acknowledgements.get("acknowledge_free") is not True:
         fail(
             "ZERO_PRICE: transferência gratuita exige confirmação administrativa explícita",
@@ -169,10 +173,10 @@ def item_quote(db, c, item_id, quantity, direction):
     return q
 
 
-def transfer_item(db, c, i, qty, direction, total):
+def transfer_item(db, c, i, qty, direction, total, receive=None):
     """Keep equipment identities; partial stack transfer creates an explicit child receipt."""
     stock = db.get(m.NPCStock, i.id)
-    if direction == "buy":
+    if direction == "buy" and receive is None:
         from .inventory import ensure_collection_capacity
 
         ensure_collection_capacity(
@@ -210,26 +214,47 @@ def transfer_item(db, c, i, qty, direction, total):
         d = db.get(m.ItemDefinition, moved.definition)
         remaining = moved.quantity
         if d.stackable:
-            for stack in db.scalars(
-                select(m.Item)
-                .where(
-                    m.Item.owner == c.id,
-                    m.Item.location == "inventory",
-                    m.Item.definition == d.id,
-                    m.Item.equipped == False,
-                    m.Item.id != moved.id,
+            targets = (
+                receive["rows"]
+                if receive is not None
+                else list(
+                    db.scalars(
+                        select(m.Item)
+                        .where(m.Item.owner == c.id, m.Item.location == "inventory")
+                        .order_by(m.Item.id)
+                        .with_for_update()
+                    )
                 )
-                .order_by(m.Item.id)
-                .with_for_update()
-            ):
+            )
+            for stack in targets:
+                if stack.definition != d.id or stack.equipped or stack.id == moved.id:
+                    continue
                 n = min(remaining, max(0, d.max_stack_size - stack.quantity))
                 stack.quantity += n
                 remaining -= n
                 if not remaining:
                     break
         if remaining:
-            moved.quantity = remaining
+            moved.quantity = (
+                min(remaining, d.max_stack_size) if d.stackable else remaining
+            )
+            remaining -= moved.quantity
             moved.owner, moved.location, moved.equipped = c.id, "inventory", False
+            if receive is not None:
+                receive["rows"].append(moved)
+            while remaining:
+                count = min(remaining, d.max_stack_size)
+                extra = m.Item(
+                    owner=c.id,
+                    definition=d.id,
+                    quantity=count,
+                    location="inventory",
+                    equipped=False,
+                )
+                db.add(extra)
+                if receive is not None:
+                    receive["rows"].append(extra)
+                remaining -= count
         else:
             moved.owner, moved.location, moved.equipped = None, "destroyed", False
     return moved
