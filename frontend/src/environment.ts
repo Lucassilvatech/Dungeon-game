@@ -56,7 +56,7 @@ export class Environment {
     for(let xx=0;xx<d.width;xx+=2)this.image((d.x+xx+1)*32,(d.y+(d.height??1))*32,'effects',effects[d.kind==='board'?'sign':d.kind],100+(d.y+(d.height??1))*32,1.5).setOrigin(.5,1);
     continue;
    }
-   if(d.kind==='recovery_tent'){this.prop(d.kind,d.x+(d.width??4)/2-0.5,d.y+(d.height??3)-1);continue;}
+   if(d.kind==='recovery_tent'){this.prop(d.kind,d.x+(d.width??4)/2-0.5,d.y+(d.height??3)-1);this.props[this.props.length-1].image.setDepth(100+(m.npc?.[1]??d.y)*32);continue;}
    const [w,h]=sizes[d.kind]??[1,1];
    if(!flat.has(d.kind)&&!canPlace({...d,x:d.x-Math.floor(w/2),y:d.y-h+1,width:w,height:h},mask,m.width,m.height))continue;
    this.prop(d.kind,d.x,d.y,tileHash(seed,d.x,d.y));
