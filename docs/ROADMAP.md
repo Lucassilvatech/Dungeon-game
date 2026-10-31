@@ -1,8 +1,13 @@
 # Roadmap: primeiro andar antes de expandir a Torre
 
+## Consolidação física e comércio da Guilda — implementados nesta branch
+
+Denominações independentes, seleção limitada ao caixa real, exchange explícito, rebalanceamento manual 70/20/10, preços independentes/flags/revisões/histórico, estoque finito, compra e venda de itens e lotes inteiros de minério. [Entrega/evidências](lunar/DELIVERY_PHYSICAL_COMMERCE_0.9.md). Cutover operacional informado ativo pelo usuário; não refeito nem rebalanceado automaticamente pelo agente. Próxima etapa separada poderá tratar economia autônoma NPC; produção, consumo, reposição, cadeias econômicas, Boss Global, Echo, músicas e multiplayer avançado não foram antecipados.
+
+
 ## Entrega atual: pepitas variáveis e Administração Real
 
-Implementados: spawn2% configurável; bandas80/15/5; lotes individuais de100..1000g; migração física; split inteiro gratuito; preço inicial800 milliunits/g; dez áreas Reais com mint manual, transferências/confisco, burn e injection excepcionais; linhagem e auditoria separando potencial e massa econômica. [Modelo e evidências](lunar/VARIABLE_NUGGETS.md) · [Entrega](lunar/DELIVERY_VARIABLE_NUGGETS_0.9.md).
+Implementados: spawn2% configurável; bandas80/15/5; lotes individuais de 100..1000 g; migração física; split inteiro gratuito; preço inicial800 milliunits/g; dez áreas Reais com mint manual, transferências/confisco, burn e injection excepcionais; linhagem e auditoria separando potencial e massa econômica. [Modelo e evidências](lunar/VARIABLE_NUGGETS.md) · [Entrega](lunar/DELIVERY_VARIABLE_NUGGETS_0.9.md).
 
 Cutover implementado e validado em cópia privada; ativação no ambiente operacional real ainda não executada. Nenhum recurso artificial foi inserido no operacional. Boss global, Echo, política automática do rei e produção NPC continuam futuros, sem avanço automático. Discord read-only; Godot congelado.
 

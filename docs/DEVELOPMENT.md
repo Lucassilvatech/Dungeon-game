@@ -1,5 +1,10 @@
 # Desenvolvimento e validação
 
+## Validação da consolidação física
+
+Revisão atual d91e2ab604c7: executar upgrade/check somente em PostgreSQL descartável/cópia privada durante desenvolvimento. Suíte: `cd backend` e `TOWER_TEST_DATABASE=1 ../.venv/bin/python -m pytest tests -q`, DATABASE_URL explicitamente de teste. Frontend npm test/build; novo Chromium tests/physical-commerce.cjs exige TOWER_TEST_DATABASE=1 e PHYSICAL_TEST_DATABASE_URL explícitos, com API/Vite ligados à mesma base. Cenários testam desktop/390 px, troca/preços/rebalance, falta de troco dos dois lados, concorrente esgotando estoque, stale quote/preview e minério bidirecional. Scripts de navegador concedem/revogam papel temporário somente em banco privado. `scripts/simulate_guild_liquidity.py` produz LIQUIDITY_SIMULATION.json, sem mudar a meta aprovada. [Comandos/evidências](lunar/DELIVERY_PHYSICAL_COMMERCE_0.9.md).
+
+
 > Atualização da continuação 0.9: [cutover operacional, migrações e validação](lunar/CUTOVER.md). O upgrade não converte o ambiente: confirmação administrativa ativa Lunar como fonte única. As descrições financeiras legadas e de conversão inativa abaixo registram a etapa anterior; após a confirmação, holdings Lunar e obrigações separadas são autoritativos. Discord segue estritamente read-only; Godot congelado.
 
 > **Estratégia atual 0.9:** backend autoritativo, **Web como cliente principal**, **Discord estritamente read-only para gameplay**. Godot Windows/Android estão **FROZEN**; APK/EXE não são requisitos deste ciclo. Código/presets/builds e documentação histórica preservados. Ver [GODOT_FREEZE.md](GODOT_FREEZE.md) e [CONSOLIDATION_0.9.md](CONSOLIDATION_0.9.md). Descrições de equipamento confirmado via Discord abaixo são históricas e foram desativadas em 0.9.

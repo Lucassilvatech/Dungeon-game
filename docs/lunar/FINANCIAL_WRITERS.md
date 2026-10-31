@@ -1,5 +1,21 @@
 # Inventário financeiro anterior ao cutover
 
+## Consolidação física atual
+
+`finance.move` agora seleciona peças existentes e preserva cada denominação, sem compose. `compose` é LEGACY, exclusivamente do cutover histórico, que não é refeito. Novos writers reutilizam a mesma economia:
+
+| Arquivo/função | Classificação | Origem/destino e efeito |
+|---|---|---|
+| finance.move/fee/settle_debt | WRITE / LUNAR | Transferência física; dívida/recebível separados, sem mint/troco escondido |
+| lunar.exchange | WRITE / LUNAR | Troca explicitamente confirmada, massa0, inputs reais |
+| guild_admin.apply | ADMIN / LUNAR | Exchange/rebalance manuais; preços/revisões/histórico não movimentam massa |
+| guild_commerce.item_trade | WRITE / LUNAR | Moedas reais pagador→recebedor e Item/NPCStock na direção oposta; atomicidade/receipt |
+| guild_commerce.mineral_trade | WRITE / LUNAR | Moedas reais e mesmo lote inteiro entre jogador/Guilda; sem massa nova |
+| guild_cli | ADMIN / READ / WRITE | Inspect/audit ou workflow preview/fingerprint/confirm existente; não ativa cutover |
+| simulate_guild_liquidity.py | TEST | Fixture isolada; nenhuma escrita operacional |
+
+Rewards, contratos, leilões/escrows, recuperação e NPCs abaixo já convergem para finance.move/economy.ledger e passam a conservar denominações. [Regras e limitações físicas](PHYSICAL_DENOMINATIONS.md).
+
 Base 13ae213; branch nova feature/lunar-cutover-economy-0.9 criada limpa a partir da 0.9 após status/log/fetch. Inventário registrado antes de executar cutover. Main preservada.
 
 ## Writers críticos e decisão de migração

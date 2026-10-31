@@ -1,5 +1,10 @@
 # Discord 0.9 — somente observação
 
+## Denominações físicas e restrições preservadas
+
+Consultas seguem mostrando holdings reais e pepitas próprias, sem reconstruir denominações a partir do total. Nenhum comando buy/sell/exchange/rebalance/mint/transfer/admin/preço foi acrescentado. **Discord remains read-only. Discord cannot control the character.** A suíte completa preserva testes de consultas privadas, ausência de mutação e bloqueio de controles. Discord externo real não foi usado nesta validação.
+
+
 ## Observação de pepitas individuais 0.9
 
 Consultas próprias passam a listar ID, gramas e massa total de LunarMineralLot HELD, além do inventário tradicional e dívida. Não expõem ocorrência potencial nem coordenadas secretas. Mantém transações SQL READ ONLY e bloqueio das rotas de controle. **Discord remains read-only. Discord cannot control the character.** Testes comparam snapshots de domínio antes/depois de cinco consultas; conexão externa real ainda depende de credenciais e não foi declarada validada. [Modelo](lunar/VARIABLE_NUGGETS.md).

@@ -1,5 +1,10 @@
 # Pepitas variáveis 0.9 — implementação e validação
 
+## Continuação física/comercial
+
+Pepitas e geração desta etapa permanecem preservadas. A continuação atual corrige denominações monetárias e amplia compra/venda da Guilda; a composição de pagamento agora vem do estoque real do pagador, sem decomposição ideal automática. Sell rate/flags do minério são independentes do buy rate800. [Entrega atual](DELIVERY_PHYSICAL_COMMERCE_0.9.md) · [Comércio](GUILD_COMMERCE.md). Este documento mantém evidências históricas das pepitas variáveis.
+
+
 Implementação em `feature/lunar-variable-nuggets-royal-admin-0.9`, baseada em `feature/lunar-procedural-resources-0.9`. Backend, migração, gameplay Web, inventário/split, Guilda e [Administração Real completa](ROYAL_ADMINISTRATION.md) implementados. Resultados executados e limitações estão no relatório de entrega vinculado ao final. Não há deploy/ativação automática no banco operacional.
 
 ## Diagnóstico registrado antes da programação

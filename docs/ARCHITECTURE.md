@@ -1,5 +1,10 @@
 # Arquitetura
 
+## Denominações e comércio físico atuais
+
+finance.move deixa de chamar compose; seleciona e move peças do pagador sem reescrever o saldo inteiro de nenhuma conta. compose permanece apenas no cutover histórico. guild_commerce.py coordena cotação/checkout/custódia real Item/NPCStock e lotes; guild_admin.py integra preços/exchange/rebalance ao workflow AdminService. Políticas/history/receipts persistem na revisão aditiva d91e2ab604c7. guild_cli.py fornece inspect/preview/fingerprint/apply/audit para operador local com papel válido; nenhuma ação operacional automática. [Regras](lunar/PHYSICAL_DENOMINATIONS.md) · [Comércio](lunar/GUILD_COMMERCE.md).
+
+
 ## Custódia e Administração Real 0.9
 
 `mineral_lots.py` centraliza minério individual; `LunarMineralLot` HELD é material físico, `LunarHolding` guarda moedas. `mineral_mg` é ativo contábil sem holding. Split/mint/burn parcial criam filhos e encerram pai; transferência conserva identidade. Ledger permanece append-only, e auditoria inclui genealogia, owners, source e Supply.admin_injected_mg separado. Revisão aditiva ca343e37b4ca substitui projeção fungível antiga por lotes sem alterar histórico. `royal.py` integra as operações manuais ao AdminService existente, nunca a uma API financeira paralela. Frontend Royal oferece dez áreas com permissão/preview/confirm/receipt. [Detalhes](lunar/VARIABLE_NUGGETS.md).

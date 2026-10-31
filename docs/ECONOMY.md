@@ -1,8 +1,15 @@
 > Nota de versão 0.6: o mercado geral descrito abaixo continua proposto. O Banco Central manual, créditos administrativos isolados e o leilão exclusivo de espólios já foram implementados; estado atual e contabilidade estão em [CENTRAL_BANK.md](CENTRAL_BANK.md), [ACCOUNTING.md](ACCOUNTING.md) e [AUCTIONS.md](AUCTIONS.md). Não confundir esse planejamento anterior de mercado com a implementação atual.
 
+## Regra operacional atual: peças físicas e liquidez
+
+Total é derivado dos holdings coin_small/medium/large, nunca usado para reconstruí-los.72/1/2 recebendo 3 pequenas torna-se 72/1/5. Pagamentos exatos usam somente estoque do pagador, grandes→médias→pequenas. Sem troco:INSUFFICIENT_DENOMINATIONS, sem efeito. Exchange e rebalance 70/20/10 são explícitos/manuais; não mint. Rewards, escrows, contratos, leilões, recuperação, comércio e dívida passam pela facade física. Taxa compulsória/amortização automática pagam só a parcela representável, sem quebrar moedas; restante continua obrigação. [Especificação e casos](lunar/PHYSICAL_DENOMINATIONS.md).
+
+Guilda compra/vende por políticas independentes/versionadas e estoque real. Minério tem buy/sell rate por grama, sem preço comercial derivado da massa da moeda. Preço/revisão não alteram Supply. Cutover principal informado ativo pelo usuário; nenhuma nova conversão. [Aplicação operacional](lunar/OPERATIONAL_GUILD_COMMERCE.md).
+
+
 ## Economia atual: pepitas individuais e Tesouro Real
 
-Minério reside somente em LunarMineralLot HELD; moedas continuam LunarHolding 1/5/10g, dívida separada. Spawn aprovado2%, pesos100..1000g em faixas80/15/5, decisão persistente sem reroll. Coleta legítima gera DISCOVERED_MINERAL e lote, nunca moeda. Split exato é gratuito. Guilda paga floor(gramas×800/1000) inicialmente, com rate/revisão configuráveis e caixa real; mesmo ID muda de proprietário. Mint manual usa minério do Tesouro e conserva massa; burn/injection são excepcionais, nomeados e auditados.
+Minério reside somente em LunarMineralLot HELD; moedas continuam LunarHolding 1/5/10 g, dívida separada. Spawn aprovado2%, pesos100..1000 g em faixas80/15/5, decisão persistente sem reroll. Coleta legítima gera DISCOVERED_MINERAL e lote, nunca moeda. Split exato é gratuito. Guilda paga floor(gramas×800/1000) inicialmente, com rate/revisão configuráveis e caixa real; mesmo ID muda de proprietário. Mint manual usa minério do Tesouro e conserva massa; burn/injection são excepcionais, nomeados e auditados.
 
 Equação: gênese + descoberta + injeção administrativa − destruição = moedas + lotes HELD. Potencial procedural, dívida e pais consumidos ficam fora dessa soma. [Regras atuais e migração](lunar/VARIABLE_NUGGETS.md). As descrições de carteira assinada/pepitas fixas abaixo são históricas; após cutover não são segunda economia operacional.
 

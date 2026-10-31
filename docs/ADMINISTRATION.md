@@ -1,5 +1,10 @@
 # Central Administrativa web
 
+## Caixa físico e preços da Guilda
+
+Administração do Rei → Guilda reúne Caixa, Rebalanceamento, Trocar denominações, Preços, Estoque, Histórico de preços e Comércio. Leituras economy.read; royal.exchange/guild.rebalance/guild.item_prices/guild.mineral_prices exigem economy.manage, motivo, prévia, confirmação, UUID/receipt e auditoria. Preços buy/sell independentes; revisão/histórico; flags distintas de preço zero; gratuidade/arbitragem exigem confirmação consciente. Estoque é operação material separada. [Manual Windows/CLI e aplicação inicial V1](lunar/OPERATIONAL_GUILD_COMMERCE.md).
+
+
 ## Administração do Rei: interface econômica principal 0.9
 
 O menu **Administração do Rei** oferece Visão geral, Minério, Moedas, Cunhagem, Jogadores, Guilda, Tesouro, Auditoria, Configuração e Histórico administrativo. O Banco Central antigo passa a **Compatibilidade legada**, somente leitura. Leituras economy.read; mutações economy.manage com razão, prévia vinculada ao estado, confirmação, recibo e auditoria. Burn/injection exigem flag e DESTRUIR/INJETAR; não são emissão automática. [Manual completo e execução Windows](lunar/ROYAL_ADMINISTRATION.md). As instruções antigas sobre emissão abstrata do Banco Central abaixo não orientam o fluxo operacional pós-cutover.

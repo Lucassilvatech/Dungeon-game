@@ -1,5 +1,10 @@
 # Tesouro Real e Administração do Rei — 0.9
 
+## Continuação: caixa físico, preços e comércio completos
+
+Exchange auditado, rebalanceamento manual 70/20/10 e tabela de preços/histórico/estoque/comércio integrados à área Guilda. Pagamentos deixam de normalizar contas; exigem moedas reais e valor exato. Compra/venda de itens e minério com rates independentes. [Novo manual operacional/Windows](OPERATIONAL_GUILD_COMMERCE.md), que substitui a branch/comandos desta entrega histórica. Cutover operacional informado ativo pelo usuário, sem repetição automática.
+
+
 Implementado na branch `feature/lunar-variable-nuggets-royal-admin-0.9`. A economia continua única: `LunarHolding` guarda moedas, `LunarMineralLot` guarda minério individual e `LunarDebt` representa obrigação, sem moeda negativa. O Banco Central antigo permanece somente como compatibilidade/histórico, sem ser o Tesouro Real.
 
 ## Web e permissões
