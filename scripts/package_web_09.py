@@ -25,22 +25,22 @@ assert not any(
     for name in files
 )
 info = {
-    "version": "0.9.0-web-guild-ux-development",
+    "version": "0.9.0-web-npc-economy-development",
     "source_commit": commit,
-    "backend_schema": "e06a9c24f8bd",
+    "backend_schema": "7167b684d5f7",
     "files": {name: hashlib.sha256(data).hexdigest() for name, data in files.items()},
 }
-directory = root / "builds/development" / ("0.9.0-web-guild-ux-" + commit[:7])
+directory = root / "builds/development" / ("0.9.0-web-npc-economy-" + commit[:7])
 directory.mkdir(parents=True, exist_ok=True)
-archive = directory / "DungeonGame-Web-0.9-GuildUX.zip"
+archive = directory / "DungeonGame-Web-0.9-NPC-Economy.zip"
 readme = """DUNGEON GAME0.9 — CLIENTE WEB DE DESENVOLVIMENTO
 
 Arquivos estáticos React/TypeScript/Phaser. Requer backend desta branch
-feature/guild-shop-recovery-ux-0.9, PostgreSQL com schema e06a9c24f8bd,
+feature/autonomous-npc-economy-0.9, PostgreSQL com schema 7167b684d5f7,
 proxy /api e WebSocket conforme frontend/nginx.conf.
 
 Para jogar no Windows com Docker Desktop, siga:
-docs/lunar/OPERATIONAL_GUILD_SHOP_RECOVERY_UX.md
+docs/lunar/OPERATIONAL_NPC_ECONOMY.md
 no repositório Lucassilvatech/Dungeon-game. Preserve banco e .env.
 Não refaça cutover ou rebalanceamento para atualizar a interface.
 

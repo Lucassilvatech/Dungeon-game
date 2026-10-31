@@ -1,0 +1,15 @@
+{
+  "version": "0.9.0-web-npc-economy-development",
+  "source_commit": "d3fa50171ed4dd26935181c9b2541ce14820ac8d",
+  "backend_schema": "7167b684d5f7",
+  "files": {
+    "admin.html": "728979b7140b7086df0aee7f1072690e6ff1f0039a8684b4e1a3ecedbcad0b44",
+    "assets/Map-DPt1jfci.js": "7aafaeb3ae757bc7a7ec222f675035a506856f07b1d1841491f36bfdd86fc990",
+    "assets/admin-CR9elRv0.js": "2199b57d295d816aa14533173494b7e6fe068e48f86dd99c74be5fbac1057dce",
+    "assets/admin-DVqEuXoy.css": "4a4feee9995786a7283fa88927d171627b89079fb57ad578ad748ea85b3475f4",
+    "assets/client-BG2DAo-l.js": "ce581f7ea66e20b21cce78b937d18cdb84b8c66c6e867156fe514fdaf4b8b66d",
+    "assets/game-BHAzzfVT.js": "8b23ec7d6867476765c6943b6e0ab17080fb2cf76440a9555486731fe3fce73d",
+    "assets/game-BnRipfnB.css": "e432d0e37bf1cc37916f0ea8d4877e0945ea19f3ef27e22956dad65aff04d755",
+    "index.html": "c3a0608059778f037882da0837d3b8a20b62cd9e587d90d7e5c3504eb563fc24"
+  }
+}
