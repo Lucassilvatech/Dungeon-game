@@ -10,8 +10,8 @@ import type Phaser from "phaser";
  */
 export const VILLAGE_TERRAIN_KEY = "village_reference_terrain";
 const SIZE = 32;
-const GRASS = ["#628a50", "#638c52", "#658e53", "#60884e", "#648d52", "#628b50", "#658c51", "#638b50"];
-const STONE = ["#cbb398", "#cfb99f", "#c9b096", "#d1bba1"];
+const GRASS = ["#5e8950", "#608b50", "#628b50", "#5d8850", "#618c50", "#5f8950", "#638d51", "#608b4f"];
+const STONE = ["#c3a78c", "#cbb398", "#c7ad94", "#d0b89d"];
 
 function drawGrass(ctx: CanvasRenderingContext2D, variant: number) {
   ctx.fillStyle = GRASS[variant];
@@ -25,10 +25,8 @@ function drawGrass(ctx: CanvasRenderingContext2D, variant: number) {
   ctx.fillRect(23, 7, 9, 7);
   // A few discrete blades; no random stones, crates, wells or ground dirt.
   const blades = [
-    [[4, 6], [22, 20]], [[7, 21], [25, 5]],
-    [[13, 12], [28, 27]], [[5, 28], [20, 15]],
-    [[8, 8], [27, 21]], [[12, 26], [26, 11]],
-    [[15, 5], [5, 17]], [[12, 18], [25, 27]],
+    [], [[7, 21]], [], [[5, 28]],
+    [[8, 8]], [], [[15, 5]], [],
   ][variant];
   for (const [x, y] of blades) {
     ctx.fillStyle = "#557b43";
