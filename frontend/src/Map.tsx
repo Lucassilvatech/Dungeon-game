@@ -310,14 +310,19 @@ export function Map({
               Math.abs(a.sprite.y - (e.y + 1) * 32) >
             1;
           if(!a.boss)a.sprite.setFrame(actorFrame(active&&this.targetEnemy===e.id?"hurt":e.state==="IN_COMBAT"?"attack":walking?"walk":"idle",a.dir,frame));
-          else {a.sprite.setAlpha(active&&this.targetEnemy===e.id?.65:1);if(!walking)a.sprite.y=Math.round((e.y+1)*32+(motion.matches?0:Math.sin(time/700+e.id)*2));}
+          else {a.sprite.setAlpha(active&&this.targetEnemy===e.id?.65:1);if(!walking)a.sprite.y=(e.y+1)*32;}
         }
         this.npcs.forEach((sp, i) => {
           const home = this.npcHomes[i];
-          const walking = home.walk && Math.floor(time / 4000) % 2 === 1;
-          const offset = walking ? Math.sin(time / 1150 + i) * 12 : 0;
-          sp.x = home.x + offset;
-          sp.setFrame(actorFrame(walking?"walk":"idle", walking && Math.cos(time / 1150 + i) < 0 ? 1 : 2, frame)).setDepth(100+sp.y);
+          const cycle = (time + i * 137) % 8000;
+          const walking = home.walk && cycle >= 4000;
+          // Smooth out-and-back motion: zero offset at both walk/idle boundaries.
+          const progress = Math.max(0, (cycle - 4000) / 4000);
+          const offset = walking ? Math.sin(progress * Math.PI) * 12 : 0;
+          sp.x = Math.round(home.x + offset);
+          sp.y = home.y;
+          const walkDir: Direction = Math.cos(progress * Math.PI) >= 0 ? 2 : 1;
+          sp.setFrame(actorFrame(walking ? "walk" : "idle", walking ? walkDir : 0, walking ? Math.floor(time / 130) % 4 : frame)).setDepth(100+sp.y);
         });
         const peerIds = new Set(peers.map((p) => p.id));
         this.others.forEach((sp, id) => {
@@ -345,7 +350,7 @@ export function Map({
         g.clear();
         const selected=s.encounter?.selected_enemy_id??s.battle?.enemy_id;
         const target=selected?this.actors.get(selected):undefined;
-        if(target){g.lineStyle(2,0xffd080,.95);g.strokeEllipse(target.sprite.x,target.sprite.y+15,30,14);}
+        if(target){g.lineStyle(2,0xffd080,.95);g.strokeEllipse(target.sprite.x,target.sprite.y-2,30,10);}
         g.fillStyle(0x142b2e, 0.32);
         g.fillEllipse(this.hero.x, this.hero.y - 2, 21, 6);
         for(const a of this.actors.values()){if(a.dying)continue;g.fillEllipse(Math.round(a.sprite.x),Math.round(a.sprite.y-2),a.boss?90:24,a.boss?18:6);}
