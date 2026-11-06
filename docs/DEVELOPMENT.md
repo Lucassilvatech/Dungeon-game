@@ -1,10 +1,53 @@
 # Desenvolvimento e validação
 
+## Refinamento atual: testes e banco
+
+Use [ART_REFINEMENT_LOCAL_WINDOWS](ART_REFINEMENT_LOCAL_WINDOWS.md), com backup, nova branch e upgrade65a7c9e21b04. Auditor independente: `PYTHONPATH=backend python scripts/export_visual_layout_fixtures.py /tmp/visual-layouts.json`, depois `VISUAL_LAYOUT_FIXTURES=/tmp/visual-layouts.json node frontend/tests/placement-audit.cjs`.250 mapas reais/10 tipos; capturas em artifacts/art-refinement. Nunca use o banco operacional para pytest.
+
+
+## Atualização visual e testes isolados
+
+[PIXEL_ART_LOCAL_WINDOWS](PIXEL_ART_LOCAL_WINDOWS.md) contém comandos Git/Docker/backup, frontend, backend completo e Chromium em servidor descartável separado na porta55439. `npm test` inclui22 testes de lógica/rendering e freeze; `scripts/test_visual_stack.py --suite visual|smoke|npc-economy|encounters` cria um novo banco por execução, sem resetar o banco de origem. Pipeline de arte: `python scripts/build_pixel_assets.py` com `scripts/requirements-art.txt`. Não rode testes no operacional.
+
+
+## Validar economia autônoma NPC
+
+test_npc_economy usa PostgreSQL real para receitas, lotes/margens/fatores, mercado, pausa/reposição, capacidade, concorrência/rollback, estoque/money, seed/reinício, consultas e logs. O runner scripts/test_npc_browser_stack.py exige DATABASE_URL/TOWER_TEST_DATABASE=1, cria outro banco e executa worker real+HTTP+Chromium; não migra/reset a base informada. [Comandos/resultados](lunar/DELIVERY_NPC_ECONOMY_0.9.md).
+
+
+## Validação da loja e barraca — 0.9
+
+Testes PostgreSQL em test_shop_recovery_ux.py cobrem agregação/capacidade/moedas, enumeração independente de MAX, concorrência/replay/rollback, lote/revisões/riscos e acesso legado da recuperação. Chromium guild-shop-recovery-ux.cjs usa UX_TEST_DATABASE_URL explícita e TOWER_TEST_DATABASE=1; jamais volume operacional. [Resultados/comandos](lunar/DELIVERY_GUILD_SHOP_RECOVERY_UX_0.9.md) · [Windows](lunar/OPERATIONAL_GUILD_SHOP_RECOVERY_UX.md).
+
+
+## Validação da consolidação física
+
+Revisão atual d91e2ab604c7: executar upgrade/check somente em PostgreSQL descartável/cópia privada durante desenvolvimento. Suíte: `cd backend` e `TOWER_TEST_DATABASE=1 ../.venv/bin/python -m pytest tests -q`, DATABASE_URL explicitamente de teste. Frontend npm test/build; novo Chromium tests/physical-commerce.cjs exige TOWER_TEST_DATABASE=1 e PHYSICAL_TEST_DATABASE_URL explícitos, com API/Vite ligados à mesma base. Cenários testam desktop/390 px, troca/preços/rebalance, falta de troco dos dois lados, concorrente esgotando estoque, stale quote/preview e minério bidirecional. Scripts de navegador concedem/revogam papel temporário somente em banco privado. `scripts/simulate_guild_liquidity.py` produz LIQUIDITY_SIMULATION.json, sem mudar a meta aprovada. [Comandos/evidências](lunar/DELIVERY_PHYSICAL_COMMERCE_0.9.md).
+
+
+> Atualização da continuação 0.9: [cutover operacional, migrações e validação](lunar/CUTOVER.md). O upgrade não converte o ambiente: confirmação administrativa ativa Lunar como fonte única. As descrições financeiras legadas e de conversão inativa abaixo registram a etapa anterior; após a confirmação, holdings Lunar e obrigações separadas são autoritativos. Discord segue estritamente read-only; Godot congelado.
+
+> **Estratégia atual 0.9:** backend autoritativo, **Web como cliente principal**, **Discord estritamente read-only para gameplay**. Godot Windows/Android estão **FROZEN**; APK/EXE não são requisitos deste ciclo. Código/presets/builds e documentação histórica preservados. Ver [GODOT_FREEZE.md](GODOT_FREEZE.md) e [CONSOLIDATION_0.9.md](CONSOLIDATION_0.9.md). Descrições de equipamento confirmado via Discord abaixo são históricas e foram desativadas em 0.9.
+
+## Fluxo atual 0.8
+
+Use branch `feature/web-discord-first-floor-0.8`; preserve main e `godot-client`. Suba PostgreSQL e serviços com os comandos abaixo. Runtime mantém um worker até presença ter broker. Execute apenas suites sequenciais por banco: as fixtures fazem TRUNCATE; paralelismo entre suites exige bancos separados.
+
+No Linux, na raiz: `DATABASE_URL=postgresql+psycopg://USER:PASS@localhost:5432/tower08_test TOWER_TEST_DATABASE=1 PYTHONPATH=backend .venv/bin/python -m pytest backend/tests -q`. Alternativamente rode `../.venv/bin/python -m pytest -q` dentro de backend. O usuário de teste precisa de CREATEDB para testes de migração. `alembic upgrade head` e `alembic check` devem preceder os testes.
+
+Frontend: `npm ci && npm run build` dentro de frontend. Stack Nginx ativa: `node tests/smoke.cjs`, `session.cjs`, `encounters.cjs`, `collection.cjs`, `contracts.cjs`, `admin.cjs` e `events.cjs` (cada caminho em `tests/`). Os testes usam contas próprias persistentes. `contracts.cjs`/ADM/eventos concedem papel temporário pelo CLI e revogam em finally; somente executar no ambiente local de desenvolvimento autorizado. Contratos de teste usam reserva real e cancelamento auditado; não limpe ledger/personagens para desfazer testes.
+
+`scripts/compare_levels_08.py` compara distribuição anterior/revisada com a mesma seed; `scripts/balance_08.py` simula perfis legais; `scripts/benchmark_08.py` mede HTTP/SQL somente em DB explicitamente descartável. Artefatos ficam em docs. Nenhum desses scripts mede conexão Discord, GPU mobile ou carga pública.
+
+Suite funcional isola regras de jogo desabilitando limites pelo monkeypatch da fixture. `test_security_08.py` habilita e testa limites reais concorrentes; produção permanece habilitada. `test_upgrade_08.py` popula schema 0.7 e compara todos os campos antigos após upgrade, inclusive reservas/auditoria/recuperação. Cópia real preservada foi verificada adicionalmente, sem publicar dump/senhas.
+
+Integração externa Discord e execução GitHub Actions não são presumidas a partir de testes locais. Detalhes e resultados finais em [DELIVERY_0.8.md](DELIVERY_0.8.md). Seções seguintes registram implementação histórica.
+
 Python 3.12+, Node 22+, PostgreSQL 17. Execute no checkout existente; tarefas cloud já são isoladas e não precisam de worktrees.
 
 ## Sem containers para aplicação
 
-Crie `.venv` na raiz, instale `backend/requirements.txt` e `discord-bot/requirements.txt`. Disponibilize PostgreSQL e configure `DATABASE_URL` no ambiente do terminal (não no Git). Dentro de `backend`:
+Crie `.venv` na raiz, instale `backend/requirements-dev.txt` (runtime e dependências de teste do bot). Disponibilize PostgreSQL e configure `DATABASE_URL` no ambiente do terminal (não no Git). Dentro de `backend`:
 
 ```powershell
 ..\.venv\Scripts\alembic upgrade head
@@ -45,7 +88,7 @@ npm run test:e2e
 
 `BASE_URL` muda o destino (padrão porta 8080); `CHROMIUM_PATH` permite usar Chromium já instalado; `SMOKE_SCREENSHOT` define onde salvar a captura (padrão: `tower-smoke.png` na pasta temporária do sistema). O teste cria uma conta de teste real e não apaga seu registro. Ele cobre criação, mapa Phaser, equipamento, teclado, combate, loot e persistência ao recarregar.
 
-Validação inicial na nuvem: PostgreSQL real, testes de concorrência, build TypeScript/Vite, build Docker com CA e fluxo Chromium sobre Nginx/Compose. O bot foi importado e seus cinco comandos foram registrados localmente; a API de vínculo/consulta foi testada. Conexão e slash commands no Discord externo continuam pendentes de credenciais. Arte procedural provisória, sem assets externos. O bundle Phaser é grande; otimização de carregamento fica para a próxima etapa.
+Validação inicial na nuvem: PostgreSQL real, testes de concorrência, build TypeScript/Vite, build Docker com CA e fluxo Chromium sobre Nginx/Compose. Na validação histórica, o bot foi importado e seus cinco comandos da época foram registrados localmente; a API de vínculo/consulta foi testada. Conexão e slash commands no Discord externo continuam pendentes de credenciais. Arte procedural provisória, sem assets externos. O bundle Phaser é grande; otimização de carregamento fica para a próxima etapa.
 
 ## Verificação da implementação 2
 
@@ -98,3 +141,44 @@ O worker de vencimentos inicia no lifespan da API; testes desativam o agendament
 Validação final: **99 testes passaram**, sem falhas ou skips (166,91s). Antes da execução completa final, os 40 testes direcionados de morte/economia também passaram, incluindo vencimento concorrente com resgate na Guilda. TypeScript/Vite, imagens Docker, alembic check e smoke Chromium passaram. Reinício Compose down/up sem -v preservou personagens, dívida, pontos, recibos, itens, custódia, lances/reservas, inimigos, expedições, ledger, Tesouro e descobertas. Permanecem o aviso de depreciação TestClient e o aviso de bundle Phaser grande; Discord externo não foi testado.
 
 A comparação operacional com o backup pré-migração confirmou 155 registros de gameplay existentes exatamente preservados (personagens, inventário, definições antigas, inimigos, expedições, batalhas, ledger, descobertas, raids e salas); as novas colunas foram adicionadas e a variação do Tesouro correspondeu às transações auditadas criadas pelo smoke, sem reset de progresso.
+
+
+## Godot, proteção e Central ADM — 0.6
+
+Baseline: **99 testes PostgreSQL passaram** antes das mudanças. Uma primeira regressão ampliada passou com 109; a suite final acrescenta cobertura de recuperação com reservas, sessão/confirmação, XP congelado e upgrade v0.5 populado. Somente bancos descartáveis podem ser usados com TOWER_TEST_DATABASE=1; nunca rode pytest contra o volume do jogo.
+
+Migrações v1, v0.3, v0.4 e v0.5 populadas são exercitadas. O caso v0.5 conserva espada original em custódia, leilão OPEN, maior lance/licitante, ledger, dívida/saldos, nível/XP e recibo de morte; muda só proteção e adiciona estruturas com Banco Central zerado, sem restituição/emissão indiscriminada. Os testes administrativos cobrem papéis/tokens, janela de falhas de login, emissão/retirada/transferência, créditos isolados, stale preview, replay/concorrência, rollback, recuperação/reposição, reembolso, fast travel, NPC distinto e perfis congelados.
+
+Com Compose ativo: `CHROMIUM_PATH=/usr/bin/chromium npm run test:e2e --prefix frontend` mantém o fluxo legado e verifica espada preservada e lances de jogador com fundos conquistados. `CHROMIUM_PATH=/usr/bin/chromium node frontend/tests/admin.cjs` verifica login separado/negação de token normal, todos os módulos, prévia/confirmação/replay, emissão e retirada pareadas com reconciliação, responsividade e revogação. Este último cria conta temporária e usa CLI local no container para conceder/revogar owner; executá-lo requer acesso local ao daemon Docker. Não deixa papel de teste ativo.
+
+Godot: importar com `godot --headless --path godot-client --editor --quit`, depois executar `tests/play_first_floor.gd` com backend/banco isolados (ver GODOT_MIGRATION.md). O teste usa o controlador real e duas contas, não injeta fundos por SQL: o segundo jogador combate, recebe da Guilda e confirma um lance na UI nativa. Diretórios XDG de teste evitam reutilizar token salvo de outra execução. O servidor isolado usa SECRET_CHANCE=0 e WANDER_INTERVAL=100000 para cenário determinístico, sem alterar o jogo real.
+
+Build `npm run build --prefix frontend` verifica entradas game/admin. Imagens usam o overlay cloud com CA da sessão. Exportar Godot requer templates oficiais da mesma versão, texturas ETC2/ASTC habilitadas, JDK/SDK e assinatura de desenvolvimento para APK. Não desative TLS ou validação de checksums para instalar ferramentas. O workflow gera artefatos quando executado; não se confunde sua configuração com CI remoto aprovado.
+
+Avisos anteriores de TestClient/bundle Phaser permanecem. A plataforma cloud teve falta de espaço numa repetição da suíte; somente cache de builds/imagens obsoletas foi removido, sem volumes/banco/.env, antes da nova execução. Esse resultado interrompido não é contado como aprovação. Execução Windows/dispositivo Android e conexão externa Discord permanecem não validadas. Artefatos APK/EXE são builds de desenvolvimento, separados do código versionado.
+
+Validação final 0.6: **114 testes PostgreSQL passaram** (195,80s), com um aviso de depreciação TestClient. Godot real passou em **44 verificações** incluindo lance financiado de segundo jogador; Chromium passou no cliente legado e na Central ADM (todos os módulos, emissão/retirada pareadas, replay, reconciliação, mobile e revogação). TypeScript/Vite, imagens Docker e alembic check passaram. EXE Windows e APK Android foram gerados; pacote embutido Windows foi carregado pelo Godot Linux e assinatura APK v2/v3 foi verificada com SDK 36. Não houve execução nativa em Windows ou dispositivo Android.
+
+Persistência operacional: comparação do backup pré-0.6 confirmou **207 registros existentes preservados**, com somente a proteção prevista e a recuperação individual auditada do item 18 como alterações intencionais; a variação do Tesouro correspondeu ao ledger dos novos fluxos de teste. Reinício Compose down/up sem -v manteve todos os registros de gameplay, custódia, lances, dívida, Banco Central, configurações/perfis e auditoria idênticos. Ao encerrar a validação: reconciliação 0, Banco Central 0 e nenhum papel administrativo temporário ativo.
+
+
+## Mecânicas e distribuição 0.7
+
+Use a mesma suíte em banco descartável: baseline 114; suite final **142 aprovados**, sem skips/falhas (239,07s). As fixtures de anúncios antigos reproduzem explicitamente custódia histórica, sem alterar a regra nova de morte em produção. Novos testes validam sequência/geração/BFS/limites/distribuição, atributos efetivos, 0–5 unidades, recuperação pessoal atômica/concurrente, confisco/marcos, não cobrar dívida duas vezes e ocultação/eventos administrativos.
+
+Godot: `tests/play_first_floor.gd` passou com 42 verificações contra backend isolado; `tests/connection_errors.gd` verifica URL/timeout/TLS/DNS e conexão recusada. Chromium: `node frontend/tests/events.cjs` cria/cancela um evento futuro pela UI e revoga o papel temporário; requer o mesmo acesso local ao Docker do teste ADM. Nunca executar pytest contra o volume operacional.
+
+`python scripts/build_clients.py /diretório/saída` exporta ambos os clientes e gera ZIP/instruções/hashes/manifesto. SDK/configuração e limites de validação estão em PROCEDURAL_ECONOMY_UPDATE.md. Workflows foram realmente executados: exportação remota aprovada e Windows/Defender/nuvem/inicialização headless aprovados. Não confundir inicialização headless com jogo gráfico ou execução em Android.
+
+Smoke completo do cliente legado também passou após atualizar as expectativas de morte. Comparação de reinício manteve registros de gameplay/economia/novas tabelas exatamente iguais; zero papéis ADM temporários ao encerrar. Simulação reproduzível: `scripts/simulate_procedural.py` grava estatísticas e combates isolados em docs/procedural-combat-simulation.json.
+
+## Consolidar e testar 0.9
+
+Branch feature/lunar-web-discord-readonly-0.9 contém a base 0.8 e o trabalho Lunar local. No backend: requirements-dev, upgrade head (7f422c075115 recursos; 59d047e53dc8 cutover; 4a8687e5317c fundação), alembic check, pytest somente em PostgreSQL descartável. Em frontend: npm ci, npm run build, npm test, Chromium smoke e tests/lunar.cjs. O job Chromium usa banco separado e API/Vite HTTP locais; não exporta nativos. scripts/simulate_lunar.py mantém cenários fictícios isolados, não altera banco.
+
+A consulta read-only Discord inclui testes de snapshot completo e bloqueio PostgreSQL de escrita. Rate counters são excluídos do snapshot por serem metadados de segurança. Testes API podem desabilitar limites na fixture; produção os mantém habilitados. O CI preparado não é evidência de execução remota: conferir Actions após PR/manual.
+
+
+## Continuação procedural Lunar 0.9
+
+Head procedural 7f422c075115. Testes de recursos usam PostgreSQL descartável e Chromium; flags 100% e preços de fixture são TEST_DEFAULT, nunca produção. Ver [recursos Lunares](lunar/PROCEDURAL_RESOURCES.md).

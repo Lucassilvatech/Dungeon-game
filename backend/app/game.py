@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, case
 from .models import (
     Character,
     Battle,
@@ -9,7 +9,7 @@ from .models import (
     Ledger,
     WorldEvent,
 )
-from .config import settings
+from .config import settings, runtime_setting
 from .rooms import (
     RoomType,
     DomainEvent,
@@ -24,6 +24,7 @@ from .models import Room, RoomState
 from .world import distance
 from .enemies import instances, target, payload, EnemyState
 from .balance import damage, ENEMIES, NAMES
+from .finance import funds, institution, active as lunar_active
 from .inventory import add_item
 from .models import EnemyInstance
 from .clock import utc_now
@@ -34,6 +35,9 @@ def fail(message, code=409):
 
 
 def character(db, account):
+    from .lunar import mutex
+
+    mutex(db)
     c = db.scalar(
         select(Character).where(Character.account_id == account.id).with_for_update()
     )
@@ -46,8 +50,16 @@ def character(db, account):
 
 
 def active(db, c):
+    from .models import CombatEncounter
+
     return db.scalar(
-        select(Battle).where(Battle.character_id == c.id, Battle.status == "active")
+        select(Battle)
+        .outerjoin(CombatEncounter, Battle.encounter_id == CombatEncounter.id)
+        .where(Battle.character_id == c.id, Battle.status == "active")
+        .order_by(
+            case((CombatEncounter.selected_enemy_id == Battle.enemy_id, 0), else_=1),
+            Battle.id,
+        )
     )
 
 
@@ -66,9 +78,14 @@ def inventory(db, c):
         dict(
             id=i.id,
             name=d.name,
+            definition=d.id,
+            protected=not d.death_transferable or d.id == "sword",
             kind=d.kind,
+            power=d.power,
             quantity=i.quantity,
             equipped=i.equipped,
+            equipment_slot=d.equipment_slot
+            or ("weapon" if d.kind == "weapon" else None),
             location=i.location,
             stackable=d.stackable,
             max_stack_size=d.max_stack_size,
@@ -88,13 +105,23 @@ def snapshot(db, c, wander=False):
 
     reserved = db.scalar(
         select(func.coalesce(func.sum(Auction.highest_bid), 0)).where(
-            Auction.highest_bidder_id == c.id, Auction.status == "OPEN"
+            Auction.highest_bidder_id == c.id, Auction.status.in_(["OPEN", "CLOSED"])
         )
     )
     b = active(db, c)
     enemies = instances(db, c, wander=wander)
     room, data = room_payload(db, c)
     data["enemies"] = [payload(e) for e in enemies]
+    from .resources import state as resource_state
+
+    data["gather_nodes"] = resource_state(db, c)
+    from .lunar_resources import (
+        state as lunar_resource_state,
+        nugget_slots,
+        inventory as lunar_inventory,
+    )
+
+    data["lunar_resources"] = lunar_resource_state(db, c)
     data["monsters"] = {
         e.spawn_key: [e.x, e.y] for e in enemies if e.state != EnemyState.DEAD
     }
@@ -105,10 +132,21 @@ def snapshot(db, c, wander=False):
     }
     from .exploration import raid_state
 
+    from .fast_travel import destinations
+
+    records = pending(db, c)
+    summary = reward_summary_from(records)
+    inventory_rows = inventory(db, c)
     db.flush()
     return {
+        "economy_mode": "LUNAR" if lunar_active(db) else "LEGACY",
+        "guild_balance": str(institution(db, "guild")),
+        "guild_rewards": summary,
+        "reward_records": [battle_data(row) for row in records],
+        "fast_destinations": destinations(db, c),
+        "guild_treasury": str(institution(db, "treasury")),
         "character": {
-            k: getattr(c, k)
+            k: (funds(db, c) if k == "coins" else getattr(c, k))
             for k in (
                 "id",
                 "name",
@@ -125,14 +163,31 @@ def snapshot(db, c, wander=False):
                 "x",
                 "y",
                 "room_id",
+                "adventure_streak",
             )
         },
+        "next_boss_chance": __import__("app.procedural", fromlist=["chance"]).chance(
+            c.adventure_streak
+        ),
+        "attributes": __import__("app.attributes", fromlist=["effective"]).effective(
+            db, c
+        ),
         "death": latest(db, c),
-        "coins_exact": str(c.coins),
+        "coins_exact": str(funds(db, c)),
         "reserved_gold": str(int(reserved)),
-        "inventory": inventory(db, c),
+        "inventory": inventory_rows,
+        "lunar_inventory": lunar_inventory(db, c),
+        "collection_capacity": {
+            "used": len(inventory_rows) + nugget_slots(db, c),
+            "limit": settings.collection_slots,
+        },
         "expedition": expedition,
-        "battle": battle_data(b) if b else None,
+        "battle": battle_data(b, db) if b else None,
+        "encounter_rules": {
+            "max_enemies": settings.encounter_max_enemies,
+            "radius": settings.encounter_radius,
+        },
+        "encounter": __import__("app.encounters", fromlist=["state"]).state(db, c),
         "unlocked_floor": (
             2 if db.scalar(select(WorldEvent).where(WorldEvent.key == "floor:2")) else 1
         ),
@@ -154,8 +209,8 @@ def snapshot(db, c, wander=False):
     }
 
 
-def battle_data(b):
-    return {
+def battle_data(b, db=None):
+    result = {
         k: getattr(b, k)
         for k in (
             "id",
@@ -169,6 +224,15 @@ def battle_data(b):
         )
     }
 
+    if b.encounter_id and db:
+        from .models import CombatEncounter
+
+        g = db.get(CombatEncounter, b.encounter_id)
+        result["encounter_id"] = g.id
+        if g.status == "ACTIVE":
+            result["turn"] = g.turn
+    return result
+
 
 def move(db, c, dx, dy):
     idle(db, c)
@@ -181,6 +245,7 @@ def move(db, c, dx, dy):
     }
     if data.get("npc"):
         blocked.add(tuple(data["npc"]))
+    blocked.update((n["x"], n["y"]) for n in data.get("service_npcs", []))
     if (
         not (0 <= target[0] < data["width"] and 0 <= target[1] < data["height"])
         or target in blocked
@@ -191,6 +256,22 @@ def move(db, c, dx, dy):
 
 def interact(db, c):
     idle(db, c)
+    if current(db, c).id == "auction_hall":
+        npc = current(db, c).data.get("npc")
+        if not npc or distance((c.x, c.y), npc) > 1:
+            fail("Aproxime-se do leiloeiro")
+        return {
+            "message": "Leiloeiro: consulte espólios, detalhes e histórico de lances.",
+            "open_auctions": True,
+        }
+    if current(db, c).id == "city1":
+        from .recovery_site import require_near
+
+        require_near(db, c)
+        return {
+            "message": "A figura encapuzada revela os pertences que guardou para você.",
+            "open_recovery": True,
+        }
     receptionist(db, c)
     return {
         "message": "Recepcionista da Guilda: seus registros estão prontos para conferência.",
@@ -270,10 +351,16 @@ def start_battle(db, c, monster):
     return battle_data(b)
 
 
-def action(db, c, battle_id, turn, action):
+def action(
+    db, c, battle_id, turn, action, *, _encounter=False, counter=True, synchronize=True
+):
     b = db.get(Battle, battle_id)
     if not b or b.character_id != c.id:
         fail("Combate inexistente", 404)
+    if b.encounter_id and not _encounter:
+        from .encounters import action as group_action
+
+        return group_action(db, c, b.encounter_id, turn, b.enemy_id, action)
     if b.status != "active" or b.turn != turn:
         fail("Turno já processado ou combate encerrado")
     if not b.enemy_id:
@@ -289,24 +376,21 @@ def action(db, c, battle_id, turn, action):
         fail("Ação inválida", 422)
     if action == "skill" and c.energy < 2:
         fail("Energia insuficiente")
-    power = (
-        db.scalar(
-            select(ItemDefinition.power)
-            .join(Item, Item.definition == ItemDefinition.id)
-            .where(
-                Item.owner == c.id, Item.equipped == True, Item.location == "inventory"
-            )
-        )
-        or 0
-    )
+    from .attributes import effective
+
+    stats = effective(db, c)
     if action == "skill":
         c.energy -= 2
     dealt = (
         0
         if action == "defend"
-        else damage(c.strength + power, e.defense, c.level, skill=action == "skill")
+        else damage(
+            stats["strength"]["effective"], e.defense, c.level, skill=action == "skill"
+        )
     )
+    before_hp = e.hp
     e.hp = max(0, e.hp - dealt)
+    b.damage_dealt += before_hp - e.hp
     b.hp = e.hp
     b.turn += 1
     event(db, "ENEMY_DAMAGED", c, enemy_id=e.id, damage=dealt, hp=e.hp, battle=b.id)
@@ -314,6 +398,7 @@ def action(db, c, battle_id, turn, action):
     training = e.species == "dummy"
     secret = room.kind == RoomType.SECRET_DUNGEON
     if e.hp == 0:
+        xp_before = c.xp
         # The entire DYING -> DEAD transition and all effects commit atomically.
         e.state = EnemyState.DYING
         e.death_at = utc_now()
@@ -356,11 +441,19 @@ def action(db, c, battle_id, turn, action):
                 )
         else:
             b.reward_amount = (
-                settings.boss_reward if e.species == "boss" else settings.monster_reward
+                runtime_setting(db, "boss_reward")
+                if e.category == "boss"
+                else runtime_setting(db, "monster_reward")
             )
-            c.xp += ENEMIES.get(e.species, ENEMIES["slime"])[4]
+            c.xp += e.xp_reward
         from .attributes import gain_levels
+        from .observability import add
 
+        if not training:
+            add(db, c, monsters_defeated=1, xp_earned=c.xp - xp_before)
+            from .contracts import progress
+
+            progress(db, c, "kill", e.species, 1)
         gain_levels(db, c)
         if not training and (not secret or first):
             event(
@@ -402,14 +495,22 @@ def action(db, c, battle_id, turn, action):
         event(
             db, DomainEvent.COMBAT_FINISHED, c, battle=b.id, result="won", enemy_id=e.id
         )
-    else:
+    elif counter:
         incoming = (
             0
             if training
-            else damage(e.attack, c.defense, e.level, guard=action == "defend")
+            else damage(
+                e.attack,
+                stats["defense"]["effective"],
+                e.level,
+                guard=action == "defend",
+            )
         )
+        actual_received = min(c.hp, incoming)
+        b.damage_received += actual_received
         c.hp = max(0, c.hp - incoming)
         if c.hp == 0:
+            c.adventure_streak = 0
             b.status = "lost"
             e.state = EnemyState.ALIVE
             e.hp = e.max_hp
@@ -432,7 +533,11 @@ def action(db, c, battle_id, turn, action):
     db.flush()
     from .expeditions import sync
 
-    sync(db, c)
+    from .observability import finish_single
+
+    finish_single(db, c, b)
+    if synchronize:
+        sync(db, c)
     return {**battle_data(b), "damage": dealt}
 
 
@@ -463,7 +568,10 @@ def reward_value(b):
 
 
 def reward_summary(db, c):
-    rows = pending(db, c)
+    return reward_summary_from(pending(db, c))
+
+
+def reward_summary_from(rows):
     groups = {}
     for b in rows:
         name = NAMES.get(b.monster, b.monster)
@@ -480,9 +588,10 @@ def pay(db, c, rows):
         fail("Nenhuma recompensa pendente")
     total = sum(reward_value(b) for b in rows)
     treasury = db.scalar(select(Treasury).where(Treasury.id == 1).with_for_update())
-    if total < 0 or treasury.balance < total:
+    if total < 0 or institution(db, "treasury") < total:
         fail("Tesouro sem orçamento; solicite depois")
-    treasury.balance -= total
+    if not lunar_active(db):
+        treasury.balance -= total
     for b in rows:
         b.claimed = True
         from .economy import credit_player_gold
@@ -497,6 +606,13 @@ def pay(db, c, rows):
             enemy_id=b.enemy_id,
             amount=reward_value(b),
         )
+    from .observability import add
+
+    add(db, c, rewards_claimed=total, reward_records_claimed=len(rows))
+    from .procedural_retention import prune
+
+    for room_id in {b.room_id for b in rows}:
+        prune(db, c, room_id)
     return {
         "paid": total,
         "message": f"Recepcionista: {total} moedas pagas por {len(rows)} registros.",
@@ -523,10 +639,26 @@ def equip(db, c, item_id):
     if not item or item.owner != c.id or item.location != "inventory":
         fail("Item indisponível", 404)
     definition = db.get(ItemDefinition, item.definition)
-    if definition.kind != "weapon":
+    slot = definition.equipment_slot or (
+        "weapon" if definition.kind == "weapon" else None
+    )
+    if not slot:
         fail("Item não equipável")
     for old in db.scalars(
         select(Item).where(Item.owner == c.id, Item.equipped == True)
     ):
-        old.equipped = False
+        old_definition = db.get(ItemDefinition, old.definition)
+        old_slot = old_definition.equipment_slot or (
+            "weapon" if old_definition.kind == "weapon" else None
+        )
+        if old_slot == slot:
+            old.equipped = False
     item.equipped = True
+
+
+def unequip(db, c, item_id):
+    idle(db, c)
+    item = db.get(Item, item_id)
+    if not item or item.owner != c.id or item.location != "inventory":
+        fail("Item indisponível", 404)
+    item.equipped = False

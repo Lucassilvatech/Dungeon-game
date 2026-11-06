@@ -16,12 +16,29 @@ def seed():
             from sqlalchemy import text
 
             db.execute(text("SELECT pg_advisory_xact_lock(7312026)"))
+        from .models import CentralBank, MonsterDefinition
+        from .balance import ENEMIES
+        from .procedural import SPECIES
+
+        if not db.get(CentralBank, 1):
+            db.add(CentralBank(id=1, balance=0))
+        for species, stats in ENEMIES.items():
+            if not db.get(MonsterDefinition, species):
+                db.add(
+                    MonsterDefinition(
+                        id=species,
+                        procedural_config=SPECIES.get(species, {}),
+                        **dict(zip(("hp", "attack", "defense", "level", "xp"), stats))
+                    )
+                )
         from .rooms import seed_world
 
         seed_world(db)
         for key, name, kind, power in [
             ("sword", "Espada de aprendiz", "weapon", 3),
             ("crystal", "Cristal da clareira", "material", 0),
+            ("herb", "Folha Luminosa", "material", 0),
+            ("ore", "Minério de Musgo", "material", 0),
         ]:
             if not db.get(ItemDefinition, key):
                 db.add(
@@ -30,7 +47,10 @@ def seed():
                         name=name,
                         kind=kind,
                         power=power,
-                        base_value=100 if key == "sword" else 10,
+                        death_transferable=key != "sword",
+                        base_value={"sword": 100, "crystal": 10, "herb": 5, "ore": 8}[
+                            key
+                        ],
                         stackable=kind == "material",
                         max_stack_size=99 if kind == "material" else 1,
                         description=(
@@ -40,7 +60,32 @@ def seed():
                         ),
                     )
                 )
+        # Missing policies only; repeated startup never changes an existing price,
+        # inventory or enabled flag. No stock is generated here.
+        db.flush()
+        from .models import GuildItemPolicy
+
+        for definition in db.scalars(select(ItemDefinition)):
+            if not db.get(GuildItemPolicy, definition.id):
+                db.add(
+                    GuildItemPolicy(
+                        definition_id=definition.id,
+                        buy_price_units=max(0, definition.base_value or 0),
+                        sell_price_units=0,
+                        buy_enabled=definition.id != "sword"
+                        and definition.death_transferable
+                        and (definition.base_value or 0) > 0,
+                        sell_enabled=False,
+                        updated_by="seed:initial-policy",
+                    )
+                )
         if not db.get(Treasury, 1):
+            from .finance import active
+
+            if active(db):
+                raise RuntimeError(
+                    "Tesouro legado ausente após cutover; não recriar gênese"
+                )
             db.add(Treasury(id=1, balance=settings.initial_treasury))
             db.add(
                 Ledger(
@@ -50,6 +95,11 @@ def seed():
                     amount=settings.initial_treasury,
                 )
             )
+        # Approved initial material custody only; existing profiles are never reseeded.
+        db.flush()
+        from .npc_economy import initialize
+
+        initialize(db)
 
 
 if __name__ == "__main__":

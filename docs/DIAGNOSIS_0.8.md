@@ -1,0 +1,68 @@
+# Diagnóstico anterior à programação — 0.8
+
+Base inspecionada e limpa: `370b14fa09550698d204141318a79b642519b055`, feature/procedural-economy-godot-fixes. Branch nova: feature/web-discord-first-floor-0.8. Main remota: eab42d7e732befb04244e29d5e1615e821c5ea5e. Godot/ADM: b685bd37b8378552d641983f15fc1018eb194ad9. A evolução 0.6 tem 11 commits sobre main; a 0.7 mais 11. Não houve merge entre essas entregas e main. Não existe branch 0.8 remota antes deste trabalho.
+
+Foram lidos os doze documentos obrigatórios, estrutura completa (backend/migrações/testes, frontend/Phaser/admin, bot, Godot, infraestrutura e workflows), modelos, rotas, regras transacionais e testes. Documentos históricos ainda descrevem como atuais regras já substituídas; a entrega deve distinguir versão atual/histórico. Dependências existentes: FastAPI/SQLAlchemy/Alembic/PostgreSQL, React19/Phaser3.88/TypeScript/Vite, discord.py2.5/httpx. Nenhuma reescrita ou serviço novo obrigatório é necessário.
+
+| Sistema | Confirmação no código/testes | Estado anterior |
+|---|---|---|
+| Exploração Web | main.tsx, Map.tsx, pathfinding, smoke Chromium | Implementada: teclado/clique, salas, NPCs, mapas, mobile, reconexão |
+| Personagem/inventário/economia | game/attributes/inventory, suites game/death/admin/procedural | Implementados: atributos efetivos, espada protegida, saldos assinados, pontos, ledger |
+| Expedição/morte/recuperação | expeditions/deaths/recovery/debt e testes concorrentes | Implementados; preservar bloqueios, penalidades e recibos |
+| Leilões/Banco/ADM | auctions/admin_* e testes concorrentes | Implementados com mutex, reservas, prévia/confirmação/auditoria e sandbox isolado |
+| Gerador | procedural.generate, teste que exige máximo 4 no intervalo 1–5 | Defeito confirmado: floor(span*r^expoente) nunca inclui teto se span>0 |
+| Combate | Battle referencia um EnemyInstance; game.action valida turno | Somente individual. Vários sprites/lobby de raid não são encontro múltiplo |
+| Coleta | layouts.resources é metadado; nenhuma rota consome estoques | Não iniciada; add_item não tem limite de slots de coleta |
+| Contratos | sem modelo, rota, reservas ou UI | Não iniciados |
+| Discord | cinco comandos: vincular/personagem/status/inventario/mapa; consultas a /discord/{id}/state | Cliente real compartilhado, porém consultas limitadas, sem operações confirmadas, sem teste externo de credenciais |
+| Sessão e segurança | token digerido/expiração, ADM revoga; sessão normal sem logout; limite somente login ADM | Parcial: adicionar revogação normal e limites persistentes nos endpoints críticos |
+| Presença | connections em memória, consultas a cada ~500ms | Um worker; broker requerido para presença coerente entre workers. Não adicionar Redis sem medir |
+| Métricas/áudio | ledger/eventos/turnos permitem derivação parcial; sem tempos/danos agregados nem áudio opcional | Parcial/não iniciado |
+| Godot | diretório e compatibilidade existentes; builds 0.7 | Preservar byte a byte, sem exportar nesta etapa |
+
+A suite baseline 0.7 foi iniciada em PostgreSQL descartável; o resultado será registrado antes de concluir a etapa 0. Dados operacionais não são usados por pytest. Antes da migração operacional, criar backup e testar atualização de uma cópia 0.7 populada.
+
+## Decisões para implementação incremental
+
+1. Correção de nível por uma cauda superior rara na variável transformada: manter todos os bins antigos, promovendo apenas a pequena cauda do último bin ao teto (0,5% distante, cerca de 1,99% em p=1/k=3). Mesmo RNG/seed; encontros já congelados não mudam. Comparar distribuição/atributos antes/depois; nenhuma mudança arbitrária em HP/taxas/recompensas.
+2. Web permanece React/Phaser. Reduzir polling redundante, tratar sessão/retentativas, histórico e serviço da Guilda; áudio sintetizado opcional, sem assets externos/dependências pesadas.
+3. Grupos pequenos opt-in (padrão 2, limite configurável e alcance explicitado), com wrapper de encontro reutilizando Battle/EnemyInstance/recompensa única. Backend controla ordem personagem→inimigos sobreviventes; nenhum atalho para fugir. Compatibilidade de combate individual preservada.
+4. Métricas agregadas por personagem/dia, não histórico de cada turno procedural permanente. Relatórios/simulações de personagens explícitos; não presumir equilíbrio a partir de README.
+5. Coleta pessoal finita por sala/geração, sem reposição temporal implícita, consumida sob lock; capacidade/stack verificados antes de transferir. Contratos com orçamento previamente debitado do Tesouro para reserva identificada no ledger, pagamento único e cancelamento que devolve saldo não gasto. Sem emissão automática.
+6. Discord primeiro amplia consultas privadas; operações selecionadas usam intenções com confirmação vinculadas ao usuário, expiração/idempotência e as mesmas funções do jogo. Não haverá poderes ADM nem economia paralela. Token/chave externa não foram fornecidos; testes locais devem usar mocks e API real em banco descartável, sem declarar teste em servidor Discord.
+7. Estender permissões/observabilidade ADM pelo fluxo existente. Locks financeiros antes dos personagens; progresso de contratos durante combate/coleta não pode adquirir mutex financeiro depois de segurar personagem. Sessões/rate limiting não devem revelar tokens nem ser anulados por rollback de requisição rejeitada.
+8. Migrações aditivas sem penalidades retroativas; copiar banco 0.7 representativo e comparar campos anteriores. PR preparado, main e Godot intactos, sem merge/force push.
+
+## Registro da etapa 1
+
+A comparação de 60 mil amostras seed-idênticas confirmou: frequência do teto passou de zero para 0,55% em p=0 e 2,10% em p=1; média do slime aumentou apenas 0,0055/0,021 nível nesses extremos. Os atributos/seed continuam calculados no mesmo fluxo RNG; somente a pequena cauda promovida muda o t. Dados congelados de aventuras existentes não são atualizados. Evidência detalhada: level-distribution-0.8.json.
+
+Baseline 0.7 executada: **142 testes aprovados** (209,32s), sem falhas/skips. Correção de níveis: **34 testes direcionados aprovados** (15,65s).
+
+Etapa 2: consultas de recompensas/destinos consolidadas no snapshot, reduzindo polling de quatro requisições para uma; rotas antigas preservadas. Logout normal e de todas as sessões agora revogam no servidor. Web diferencia expedição/sala comum, mostra conexão/retentativa e histórico, ignora respostas obsoletas e limita reconexões. Build TypeScript/Vite e 13 testes PostgreSQL da etapa aprovados; smoke de navegador será executado sobre a stack atualizada antes de avançar.
+
+Smoke da etapa 2 executado e aprovado: cadastro/personagem, movimento, falha de rede com pausa após três tentativas, retentativa manual, polling consolidado e revogação real de sessão com retorno ao login. Backup 0.7 fora do Git antes da atualização; Godot sem alterações.
+
+Etapa 3 concluída/verificada: 40 testes PostgreSQL de encontros+combate legado+expedições aprovados (119,26s), incluindo corrida de turno, alvo, replay, rollback injetado e morte/fuga. Smoke Chromium com grupo natural do primeiro andar aprovado: seleção, rodada, danos e reload. Uma falha inicial era a assinatura do stub de falha injetada no teste; corrigida e suíte repetida. Migração 76be3b21ba40 validada em cópia descartável do backup 0.7: 1155 hashes de linhas/campos originais idênticos. Godot preservado; rota antiga encaminha ações de grupo sem ignorar versão/respostas. Os spawns regionais não foram alterados para forçar grupos: regiões esparsas podem não ter par próximo; a Clareira oferece grupos naturais.
+
+Etapa 4 verificada: 49 testes de métricas+grupos+morte/economia aprovados (49,47s), 54 mil encontros simulados e 60 mil monstros comparados. Dados confirmam risco alto de grupos para novatos; não foram tornados automáticos nem aplicados nerfs arbitrários. Telemetria diária separa treino/admin e não inventa duração histórica. Smoke Web com importação lazy e áudio indisponível aprovado; controles de volume/silêncio persistem sem bloquear jogo. Migração 4f7ba7966ca8 também preservou os 1155 hashes originais na cópia 0.7. Chunk inicial do jogo ~41kB e cliente compartilhado ~186kB; Map/Phaser ~1494kB é adiado até carregar personagem.
+
+### Etapa 5 — coleta e contratos
+
+Coleta pessoal finita em coordenadas já existentes, sem dinheiro nem respawn temporal; capacidade respeita empilhamento e preserva excedentes legados. Contratos usam reserva real `recompensa × vagas`, com débito do Tesouro, ledger, progresso posterior à aceitação, entrega atômica e pagamento único. Retirada preserva direitos concluídos. APIs e painéis Web/ADM reutilizam permissões, prévia, confirmação e auditoria. Migração aditiva `e70ea918061f`: três tabelas novas; 1.155 hashes de campos originais da cópia 0.7 permaneceram idênticos. Regressão executada: 14 testes passaram em 52,89s, incluindo concorrência e prévia obsoleta. Nenhum contrato financeiro é criado implicitamente no seed.
+
+### Etapa 6 — Discord
+
+Quatorze comandos sem registro duplicado: vínculo, doze consultas (incluindo aliases) e equipamento confirmado. Todos usam API/estado real e respostas efêmeras. Confirmações persistentes expiram em 120s, vinculam identidade e prévia e não repetem mutação; nenhum recurso ADM. Consulta de leilões respeita mutex antes do lock de personagem. Credenciais externas ausentes: testes de integração locais e mocks são evidência de código, não de conexão ao serviço Discord. Migração `947647462008` só adiciona recibos; cópia 0.7 preserva os 1.155 hashes originais.
+
+### Etapa 7 — segurança e observação
+
+Cinco testes específicos aprovados em 12,60s: tentativas rejeitadas contam fora do rollback; limite concorrente atômico; identidade por conta apesar de rotação de tokens/proxy compartilhado; login com limite; logs sem credenciais; autenticação WebSocket malformada rejeitada; índices presentes. Fixture geral isola testes de jogo desabilitando limites, sem alterar padrão de produção habilitado. Central ADM já acompanha encontros/coleta/contratos/métricas pelas permissões existentes. Presença continua um worker, três sockets por personagem e mensagens limitadas; broker distribuído é pré-requisito de escala horizontal. Nenhum Redis obrigatório.
+
+### Etapa 8 — validação e ajustes finais
+
+Primeira suite completa: 169 aprovados, cinco falhas. Quatro testes históricos dependiam do cwd para achar alembic.ini; tornados portáveis com cwd explícito. O teste de presença precisava consumir atualizações de posição legitimamente enfileiradas antes da saída da sala; agora exige a atualização autoritativa eventual da sala, mantendo validação de escopo. Os cinco passaram em 14,30s. Nova suite completa: 174 aprovados, dois avisos, 326,64s; nenhum teste pulado. Resultado final no DELIVERY_0.8.
+
+Sete scripts Chromium passaram sobre Nginx/FastAPI/PostgreSQL: smoke, session, encounters, collection, contracts, admin e events. Contrato foi publicado com formulário guiado/prévia/confirmação ADM, aceito e pago pela UI móvel, após coleta por movimento real; reconciliação zero. Label do objetivo ganhou nome acessível explícito. Papéis temporários revogados em finally. Reinício preservou hashes canônicos das 1.553 linhas nas 40 tabelas; health e alembic check passaram. Imagem Discord compilou sem conectar ao serviço.
+
+npm audit encontrou avisos altos do Vite 6.4.1; patch mínimo 6.4.5 eliminou os avisos (zero no audit final), TypeScript/Vite compilou e bundles coincidiram com os testados. Nenhum pacote de produção novo. API GitHub/GraphQL retorna Forbidden pela rede; push Git funciona. PR tem título/descrição revisáveis no repositório, sem fingir número/link de PR criado.

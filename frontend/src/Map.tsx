@@ -2,14 +2,20 @@ import { useEffect, useRef } from "react";
 import Phaser from "phaser";
 import type { State, Enemy } from "./api";
 import type { Peer, Target } from "./types";
-import { createSprites } from "./sprites";
-import { drawEnvironment } from "./environment";
+import { createSprites, preloadSprites, frames } from "./sprites";
+import {actorFrame,appearance,direction,type Direction} from "./visual/appearance";
+import {hitBuildingEntrance} from "./visual/paths";
+import {softwareRenderer} from "./visual/renderer";
+import { Environment } from "./environment";
 type Actor = {
   sprite: Phaser.GameObjects.Sprite;
   label: Phaser.GameObjects.Text;
   lastX: number;
   lastY: number;
   dying: boolean;
+  boss:boolean;
+  scale:number;
+  dir:Direction;
 };
 export function Map({
   state,
@@ -24,14 +30,19 @@ export function Map({
   onMove: (dx: number, dy: number) => void;
   onInteract: () => void;
   onTarget: (t: Target) => void;
-  fx: { seq: number; status: string; enemy_id?: number } | null;
+  fx: { seq: number; status: string; enemy_id?: number; damage?:number } | null;
 }) {
   const el = useRef<HTMLDivElement>(null),
     live = useRef({ state, peers, onMove, onInteract, onTarget, fx });
   live.current = { state, peers, onMove, onInteract, onTarget, fx };
   useEffect(() => {
+    const motion=matchMedia("(prefers-reduced-motion: reduce)");
     class World extends Phaser.Scene {
       room = "";
+      environment:Environment|null=null;
+      heroDir:Direction=0;
+      lastDiagnostic=0;
+      preload(){preloadSprites(this);}
       hero!: Phaser.GameObjects.Sprite;
       back!: Phaser.GameObjects.Graphics;
       ambient!: Phaser.GameObjects.Graphics;
@@ -46,27 +57,28 @@ export function Map({
       targetEnemy = 0;
       removed = new Set<number>();
       npcHomes: { x: number; y: number; walk: boolean }[] = [];
+      recoveryLabel: Phaser.GameObjects.Text|null=null;
       label(x: number, y: number, text: string) {
         return this.add
           .text(x, y, text, {
             fontFamily: "monospace",
-            fontSize: "9px",
+            fontSize: "10px",
             color: "#f5e6be",
-            backgroundColor: "#1d3639bb",
+            backgroundColor: "#10202bdd",
             padding: { x: 4, y: 3 },
           })
           .setOrigin(0.5)
-          .setDepth(100);
+          .setDepth(10000);
       }
       create() {
         createSprites(this);
         this.back = this.add.graphics();
         this.ambient = this.add.graphics().setDepth(1);
-        this.hero = this.add.sprite(80, 80, "hero").setScale(1.5).setDepth(15);
+        this.hero = this.add.sprite(80, 80, "hero").setOrigin(.5,1).setDepth(15);
         this.input.keyboard?.on("keydown", (e: KeyboardEvent) => {
           if (
             e.repeat ||
-            ["INPUT", "TEXTAREA"].includes((e.target as HTMLElement)?.tagName)
+            ["INPUT", "TEXTAREA", "SELECT", "BUTTON"].includes((e.target as HTMLElement)?.tagName)
           )
             return;
           const d: Record<string, number[]> = {
@@ -90,6 +102,18 @@ export function Map({
             x = Math.floor(p.x / 32),
             y = Math.floor(p.y / 32),
             s = live.current.state;
+          const facade=hitBuildingEntrance(s,p.x,p.y);
+          if(facade){live.current.onTarget({x:facade.x,y:facade.y,kind:"exit",id:facade.exitId});return;}
+          // Visual body selection maps back to the existing authoritative actor tile.
+          const bodyHit=(xx:number,yy:number)=>Math.abs(p.x-(xx*32+16))<=16&&p.y>=yy*32-30&&p.y<=yy*32+20;
+          const serviceBody=s.map.service_npcs?.find(n=>bodyHit(n.x,n.y));
+          if(serviceBody){live.current.onTarget({x:serviceBody.x,y:serviceBody.y,kind:"service",serviceId:serviceBody.id});return;}
+          if(s.map.npc&&bodyHit(s.map.npc[0],s.map.npc[1])){live.current.onTarget({x:s.map.npc[0],y:s.map.npc[1],kind:"npc"});return;}
+          const enemyBody=[...this.actors.entries()].sort((a,b)=>b[1].sprite.depth-a[1].sprite.depth).find(([id,a])=>a.sprite.getBounds().contains(p.x,p.y)&&s.map.enemies.some(e=>e.id===id&&e.state==="ALIVE"));
+          if(enemyBody){const e=s.map.enemies.find(e=>e.id===enemyBody[0])!;live.current.onTarget({x:e.x,y:e.y,kind:"monster",monster:String(e.id)});return;}
+          const lunarResource=s.map.lunar_resources?.find(n=>n.x===x&&n.y===y);
+          const resource=s.map.gather_nodes?.find(n=>n.x===x&&n.y===y&&n.enabled&&n.remaining>0);
+          const service = s.map.service_npcs?.find(n=>n.x===x&&n.y===y);
           const exit = s.room.exits.find((e) => e.x === x && e.y === y);
           const enemy = s.map.enemies.find(
               (e) => e.state === "ALIVE" && e.x === x && e.y === y,
@@ -98,14 +122,15 @@ export function Map({
           live.current.onTarget({
             x,
             y,
-            kind: exit
+            kind: service ? "service" : exit
               ? "exit"
               : enemy
                 ? "monster"
                 : npc && npc[0] === x && npc[1] === y
                   ? "npc"
-                  : "ground",
-            id: exit?.id,
+                  : lunarResource ? "lunar" : resource ? "resource" : "ground",
+            id: exit?.id??lunarResource?.id??resource?.id,
+            serviceId: service?.id,
             monster: enemy ? String(enemy.id) : undefined,
           });
         });
@@ -126,86 +151,86 @@ export function Map({
         this.labels.forEach((a) => a.destroy());
         this.labels = [];
         this.npcHomes = [];
+        this.recoveryLabel=null;
         this.removed.clear();
         this.tweens.killTweensOf(this.hero);
-        drawEnvironment(this.back, s);
+        this.environment?.destroy();
+        this.environment=new Environment(this,s);
+        el.current!.dataset.theme=this.environment.theme.id;
         if (s.map.npc) {
           const [x, y] = s.map.npc;
           this.npcs.push(
             this.add
-              .sprite(x * 32 + 16, y * 32 + 12, "npc")
-              .setScale(1.5)
+              .sprite(x * 32 + 16, (y + 1) * 32, s.map.npc_role==="recovery"?"hooded":"npc")
+              .setScale(1).setOrigin(.5,1)
               .setDepth(12),
           );
-          this.npcHomes.push({ x: x * 32 + 16, y: y * 32 + 12, walk: false });
-          this.labels.push(
-            this.label(x * 32 + 16, y * 32 - 17, "E · Recepcionista"),
-          );
+          this.npcHomes.push({ x: x * 32 + 16, y: (y + 1) * 32, walk: false });
+          const caption=this.label(x * 32 + 16,y * 32-45,"E · "+(s.map.npc_name??"Serviço da Guilda"));
+          if(s.map.npc_role==="recovery"){this.recoveryLabel=caption;caption.setVisible(false)}else this.recoveryLabel=null;
+          this.labels.push(caption);
+        }
+        for(const n of s.map.service_npcs??[]){
+          this.npcs.push(this.add.sprite(n.x*32+16,(n.y+1)*32,n.sprite).setScale(1).setOrigin(.5,1).setDepth(12));
+          this.npcHomes.push({x:n.x*32+16,y:(n.y+1)*32,walk:false});
+          this.labels.push(this.label(n.x*32+16,n.y*32-45,n.name));
         }
         for (const n of s.map.npcs || []) {
           this.npcs.push(
             this.add
-              .sprite(n.x * 32 + 16, n.y * 32 + 12, "peer")
-              .setScale(1.5)
+              .sprite(n.x * 32 + 16, (n.y + 1) * 32, "peer")
+              .setScale(1).setOrigin(.5,1)
               .setDepth(11),
           );
           this.npcHomes.push({
             x: n.x * 32 + 16,
-            y: n.y * 32 + 12,
+            y: (n.y + 1) * 32,
             walk: n.walk,
           });
         }
-        for (const e of s.room.exits) {
-          this.back.fillStyle(0x24363a);
-          this.back.fillRect(e.x * 32 + 3, e.y * 32, 26, 32);
-          this.back.lineStyle(3, 0xc0a36f);
-          this.back.strokeRect(e.x * 32 + 2, e.y * 32 - 4, 28, 36);
-          this.labels.push(
-            this.label(
-              e.x * 32 + 16,
-              e.y * 32 - 15,
-              e.known ? e.name : "? Caminho",
-            ),
-          );
-        }
-        this.hero.setPosition(s.character.x * 32 + 16, s.character.y * 32 + 12);
+        for(const e of s.room.exits)this.labels.push(this.label(e.x*32+16,e.y*32-45,e.known?e.name:"? Caminho"));
+        this.hero.setPosition(s.character.x * 32 + 16, (s.character.y + 1) * 32);
         this.lastTile = `${s.character.x},${s.character.y}`;
         this.cameras.main
           .setBounds(0, 0, s.map.width * 32, s.map.height * 32)
           .setZoom(1)
-          .startFollow(this.hero, true, 0.12, 0.12);
-        this.cameras.main.fadeIn(200, 20, 32, 34);
+          .startFollow(this.hero, true, 1, 1);
+        this.cameras.main.roundPixels=true;
+        if(!motion.matches)this.cameras.main.fadeIn(160,12,23,28);
       }
-      createEnemy(e: Enemy) {
-        const sprite = this.add
-          .sprite(e.x * 32 + 16, e.y * 32 + 12, e.species)
-          .setScale(1.5)
-          .setDepth(12);
-        const label = this.label(
-          sprite.x,
-          sprite.y - 27,
-          e.name + " · " + e.level,
-        );
-        this.actors.set(e.id, {
-          sprite,
-          label,
-          lastX: e.x,
-          lastY: e.y,
-          dying: false,
-        });
+      createEnemy(e:Enemy){
+        const look=appearance(e,live.current.state);
+        const bossFrame=({moss_colossus:0,thorn_chief:1,abyssal_warden:2,basalt_drake:3} as Record<string,number>)[look.key.replace("boss_","")];
+        const sprite=this.add.sprite(e.x*32+16,(e.y+1)*32,look.boss?"bosses":look.key,look.boss?bossFrame:0).setOrigin(.5,1).setScale(look.scale).setDepth(100+(e.y+1)*32);
+        if(e.category==="rare")sprite.setTint(0xa8d8e7);
+        const label=this.label(sprite.x,sprite.y-(look.boss?190:look.scale>1?88:56),(e.category_label??"Comum")+" · "+e.name+" · "+e.level).setColor(e.name_color??"#e3eadb");
+        this.actors.set(e.id,{sprite,label,lastX:e.x,lastY:e.y,dying:false,boss:look.boss,scale:look.scale,dir:0});
       }
+      resourceKey="";
+      resourceLabels:Phaser.GameObjects.GameObject[]=[];
       update(time: number) {
         const { state: s, peers, fx } = live.current;
         if (this.room !== s.room.id) this.loadRoom(s);
+        const resourceKey=s.room.id+JSON.stringify([s.map.gather_nodes,s.map.lunar_resources]);
+        if(resourceKey!==this.resourceKey){
+          this.resourceKey=resourceKey;this.resourceLabels.forEach(o=>o.destroy());this.resourceLabels=[];
+          for(const n of s.map.gather_nodes??[]){if(!n.enabled||!n.remaining)continue;
+            this.resourceLabels.push(this.add.image(n.x*32+16,n.y*32+30,"effects",n.definition==="herb"?frames.effects.herb:frames.effects.ore).setScale(.75).setOrigin(.5,1).setDepth(101+n.y*32));
+            this.resourceLabels.push(this.label(n.x*32+16,n.y*32-14,n.name+" · "+n.remaining).setColor("#bfd39a"));
+          }
+          for(const n of s.map.lunar_resources??[]){this.resourceLabels.push(this.add.image(n.x*32+16,n.y*32+30,"effects",frames.effects.lunar).setScale(.75).setOrigin(.5,1).setDepth(101+n.y*32));this.resourceLabels.push(this.label(n.x*32+16,n.y*32-14,(BigInt(n.weight_mg)/1000n)+"g").setColor("#a9deff"));}
+        }
         const frame = Math.floor(time / 220) % 4;
         const c = s.character,
           key = `${c.x},${c.y}`;
         if (key !== this.lastTile) {
+          this.heroDir=direction(c.x*32+16-this.hero.x,(c.y+1)*32-this.hero.y,this.heroDir);
           this.lastTile = key;
+          this.tweens.killTweensOf(this.hero);
           this.tweens.add({
             targets: this.hero,
             x: c.x * 32 + 16,
-            y: c.y * 32 + 12,
+            y: (c.y + 1) * 32,
             duration: 145,
             ease: "Sine.easeOut",
           });
@@ -215,26 +240,17 @@ export function Map({
           this.until = time + 650;
           this.effect = fx.status;
           this.targetEnemy = fx.enemy_id || 0;
-          this.cameras.main.shake(70, 0.0015);
+          if(!motion.matches)this.cameras.main.shake(70, 0.0015);
+          const actor=this.actors.get(fx.enemy_id??0);
+          if(actor&&fx.damage){const text=this.label(actor.sprite.x,actor.sprite.y-44,"−"+fx.damage);text.setColor("#ffdc91");this.tweens.add({targets:text,y:text.y-20,alpha:0,duration:600,onComplete:()=>text.destroy()});}
         }
         const moving =
             Math.abs(this.hero.x - c.x * 32 - 16) +
-              Math.abs(this.hero.y - c.y * 32 - 12) >
+              Math.abs(this.hero.y - (c.y + 1) * 32) >
             1,
           active = time < this.until;
-        this.hero.setFrame(
-          (active
-            ? this.effect === "lost"
-              ? 4
-              : this.until - time < 280
-                ? 3
-                : 2
-            : moving
-              ? 1
-              : 0) *
-            4 +
-            (moving ? Math.floor(time / 90) % 4 : frame),
-        );
+        this.hero.setFrame(actorFrame(active?this.effect==="lost"?"death":this.until-time<280?"hurt":"attack":moving?"walk":"idle",this.heroDir,moving?Math.floor(time/90)%4:frame)).setDepth(100+this.hero.y);
+        if(this.recoveryLabel&&s.map.npc)this.recoveryLabel.setVisible(Math.abs(s.character.x-s.map.npc[0])+Math.abs(s.character.y-s.map.npc[1])<=4);
         const ids = new Set(s.map.enemies.map((e) => e.id));
         this.actors.forEach((a, id) => {
           if (!ids.has(id)) {
@@ -256,9 +272,9 @@ export function Map({
               this.removed.add(e.id);
               a.label.destroy();
               this.tweens.killTweensOf(a.sprite);
-              a.sprite.setFrame(12);
+              if(!a.boss)a.sprite.setFrame(actorFrame("hurt",a.dir,0));
               this.time.delayedCall(140, () => {
-                if (a!.sprite.active) a!.sprite.setFrame(16);
+                if (a!.sprite.active&&!a!.boss) a!.sprite.setFrame(actorFrame("death",a!.dir,0));
               });
               this.tweens.add({
                 targets: a.sprite,
@@ -276,41 +292,37 @@ export function Map({
             continue;
           }
           if (a.lastX !== e.x || a.lastY !== e.y) {
+            a.dir=direction(e.x-a.lastX,e.y-a.lastY,a.dir);
             a.lastX = e.x;
             a.lastY = e.y;
             this.tweens.add({
               targets: a.sprite,
               x: e.x * 32 + 16,
-              y: e.y * 32 + 12,
+              y: (e.y + 1) * 32,
               duration: 600,
               ease: "Sine.easeInOut",
             });
           }
-          a.label.setPosition(a.sprite.x, a.sprite.y - 27);
+          a.label.setPosition(Math.round(a.sprite.x),Math.round(a.sprite.y-(a.boss?190:a.scale>1?88:56)));
+          a.sprite.setDepth(100+a.sprite.y);
           const walking =
             Math.abs(a.sprite.x - e.x * 32 - 16) +
-              Math.abs(a.sprite.y - e.y * 32 - 12) >
+              Math.abs(a.sprite.y - (e.y + 1) * 32) >
             1;
-          a.sprite.setFrame(
-            (active && this.targetEnemy === e.id
-              ? 3
-              : e.state === "IN_COMBAT"
-                ? 2
-                : walking
-                  ? 1
-                  : 0) *
-              4 +
-              frame,
-          );
+          if(!a.boss)a.sprite.setFrame(actorFrame(active&&this.targetEnemy===e.id?"hurt":e.state==="IN_COMBAT"?"attack":walking?"walk":"idle",a.dir,frame));
+          else {a.sprite.setAlpha(active&&this.targetEnemy===e.id?.65:1);if(!walking)a.sprite.y=(e.y+1)*32;}
         }
         this.npcs.forEach((sp, i) => {
           const home = this.npcHomes[i];
-          const walking = home.walk && Math.floor(time / 4000) % 2 === 1;
-          const offset = walking
-            ? Math.sin(((time % 4000) / 4000) * Math.PI) * 26
-            : 0;
-          sp.x = home.x + offset;
-          sp.setFrame((walking ? 1 : 0) * 4 + frame);
+          const cycle = (time + i * 137) % 8000;
+          const walking = home.walk && cycle >= 4000;
+          // Smooth out-and-back motion: zero offset at both walk/idle boundaries.
+          const progress = Math.max(0, (cycle - 4000) / 4000);
+          const offset = walking ? Math.sin(progress * Math.PI) * 12 : 0;
+          sp.x = Math.round(home.x + offset);
+          sp.y = home.y;
+          const walkDir: Direction = Math.cos(progress * Math.PI) >= 0 ? 2 : 1;
+          sp.setFrame(actorFrame(walking ? "walk" : "idle", walking ? walkDir : 0, walking ? Math.floor(time / 130) % 4 : frame)).setDepth(100+sp.y);
         });
         const peerIds = new Set(peers.map((p) => p.id));
         this.others.forEach((sp, id) => {
@@ -323,59 +335,56 @@ export function Map({
           let sp = this.others.get(p.id);
           if (!sp) {
             sp = this.add
-              .sprite(p.x * 32 + 16, p.y * 32 + 12, "peer")
-              .setScale(1.5)
+              .sprite(p.x * 32 + 16, (p.y + 1) * 32, "peer")
+              .setScale(1).setOrigin(.5,1)
               .setDepth(14);
             this.others.set(p.id, sp);
           }
           const walk =
-            Math.abs(sp.x - p.x * 32 - 16) + Math.abs(sp.y - p.y * 32 - 12) > 1;
+            Math.abs(sp.x - p.x * 32 - 16) + Math.abs(sp.y - (p.y + 1) * 32) > 1;
           sp.x = Phaser.Math.Linear(sp.x, p.x * 32 + 16, 0.2);
-          sp.y = Phaser.Math.Linear(sp.y, p.y * 32 + 12, 0.2);
-          sp.setFrame((walk ? 4 : 0) + frame);
+          sp.y = Phaser.Math.Linear(sp.y, (p.y + 1) * 32, 0.2);
+          sp.setFrame(actorFrame(walk?"walk":"idle",0,frame)).setDepth(100+sp.y);
         }
         const g = this.ambient;
         g.clear();
-        g.fillStyle(0x142b2e, 0.25);
-        g.fillEllipse(this.hero.x, this.hero.y + 17, 21, 8);
-        const fires = (s.map.decorations || [])
-          .filter((d) => d.kind === "torch")
-          .slice(0, 12);
-        for (const d of fires) {
-          const x = d.x * 32 + 16,
-            y = d.y * 32 + 8;
-          g.fillStyle(0xffc46d, 0.07);
-          g.fillCircle(x, y, 24 + Math.sin(time / 180 + d.x) * 3);
-          g.fillStyle(0xf5b959);
-          g.fillRect(x - 4, y - 9 + Math.sin(time / 100) * 2, 7, 12);
-          g.fillStyle(0xffe3a0);
-          g.fillRect(x - 2, y - 4, 3, 6);
-        }
-        for (let i = 0; i < 10; i++) {
-          g.fillStyle(0xe8d597, 0.3 + Math.sin(time / 600 + i) * 0.15);
-          g.fillRect(
-            (i * 113 + time / 90) % (s.map.width * 32),
-            (i * 91 + Math.sin(time / 1500 + i) * 12) % (s.map.height * 32),
-            2,
-            2,
-          );
-        }
+        const selected=s.encounter?.selected_enemy_id??s.battle?.enemy_id;
+        const target=selected?this.actors.get(selected):undefined;
+        if(target){g.lineStyle(2,0xffd080,.95);g.strokeEllipse(target.sprite.x,target.sprite.y-2,30,10);}
+        g.fillStyle(0x142b2e, 0.32);
+        g.fillEllipse(this.hero.x, this.hero.y - 2, 21, 6);
+        for(const a of this.actors.values()){if(a.dying)continue;g.fillEllipse(Math.round(a.sprite.x),Math.round(a.sprite.y-2),a.boss?90:24,a.boss?18:6);}
+        for(const sp of [...this.npcs,...this.others.values()])g.fillEllipse(Math.round(sp.x),Math.round(sp.y-2),22,6);
+        this.environment?.update(time,motion.matches,this.hero);
+        if(time-this.lastDiagnostic>1000){this.lastDiagnostic=time;el.current!.dataset.visual=JSON.stringify({theme:this.environment?.theme.id,room:s.room.id,renderer:this.game.renderer.type===Phaser.CANVAS?"CANVAS":"WEBGL",fps:Math.round(this.game.loop.actualFps),objects:this.children.length,lights:this.environment?.lights.length,particles:this.environment?.particles.length,placement:{count:this.environment?.plan.props.length,violations:this.environment?.plan.violations,rejected:this.environment?.plan.rejected},camera:{x:this.cameras.main.scrollX,y:this.cameras.main.scrollY,zoom:1},enemies:[...this.actors.entries()].map(([id,a])=>({id,key:a.sprite.texture.key,frame:a.sprite.frame.name,scale:a.scale,boss:a.boss,hitbox:32}))});}
+
       }
     }
+    const width=()=>Math.max(320,Math.floor(el.current!.clientWidth/2)*2),height=()=>Math.max(300,Math.floor(el.current!.clientHeight/2)*2);
+    let renderer=Phaser.AUTO;
+    const requested=new URLSearchParams(location.search).get("renderer");
+    if(requested==="canvas")renderer=Phaser.CANVAS;
+    else if(requested!=="webgl"){
+      const probe=document.createElement("canvas"),gl=probe.getContext("webgl",{powerPreference:"high-performance",failIfMajorPerformanceCaveat:true});
+      if(!gl)renderer=Phaser.CANVAS;
+      else{const info=gl.getExtension("WEBGL_debug_renderer_info");if(info&&softwareRenderer(String(gl.getParameter(info.UNMASKED_RENDERER_WEBGL))))renderer=Phaser.CANVAS;gl.getExtension("WEBGL_lose_context")?.loseContext();}
+    }
     const game = new Phaser.Game({
-      type: Phaser.AUTO,
-      width: 960,
-      height: 544,
+      type: renderer,
+      width: width(),
+      height: height(),
       parent: el.current!,
       pixelArt: true,
+      antialias:false,
       roundPixels: true,
       backgroundColor: "#273d3c",
       scene: World,
       banner: false,
-      fps: { target: 30 },
-      scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+      fps: { target: 60 },
+      scale: { mode: Phaser.Scale.NONE },
     });
-    return () => game.destroy(true);
+    const observer=new ResizeObserver(()=>{if(game.isBooted)game.scale.resize(width(),height());});observer.observe(el.current!);
+    return () => {observer.disconnect();game.destroy(true);};
   }, []);
   return (
     <div className="canvas" ref={el} aria-label="Mapa jogável da sala atual" />

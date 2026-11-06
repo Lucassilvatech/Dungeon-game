@@ -1,6 +1,60 @@
 # Arquitetura
 
-Monorepo com três processos independentes e PostgreSQL 17. `frontend/src/Map.tsx` renderiza mapa e captura entrada; React apresenta menus e chama `/api`. Vite faz proxy no desenvolvimento; Nginx faz proxy na imagem de produção. Nenhum cliente envia dano, moedas ou atributos calculados.
+## Refinamento artístico e acessibilidade da vila
+
+`planScenery` substitui os caminhos de bypass por zonas explícitas/footprints completos. Ator usa fonte diretamente baseada na referência em frames48×64 (conteúdo32×48). Migration65a7c9e21b04 limpa apenas colisões decorativas legadas de CITY, auditando tiles removidos; estrutura, entidades e economia preservadas. Temas/renderer anteriores reutilizados. [ART_REFINEMENT](ART_REFINEMENT.md).
+
+
+## Renderer Web pixel art0.9
+
+`Map.tsx` conserva entrada/estado de jogo; `Environment` usa terreno em batch por sala e props/atores por profundidade vertical. `visual/` separa temas, aparência, máscaras, caminhos até portas e seleção de renderer. Atlas PNG originais substituem sprites em memória. Câmera responsiva zoom1,60FPS alvo, Canvas para WebGL por software. Detalhes em [PIXEL_ART_OVERHAUL](PIXEL_ART_OVERHAUL.md); a descrição histórica de sprites16×24/escala1.5/30FPS abaixo foi substituída nesta branch.
+
+
+## Produção NPC e revisão de mercado
+
+npc_economy mantém Item/NPCStock e bootstrap auditado; npc_production executa ciclos persistentes, produção e compras reais sob mutex existente. market_pricing centraliza referência/fatores/ceil/margem e MarketRevision imutável. Catálogo/checkout genéricos reutilizam recibos/finance; npc_admin integra AdminService.4 novas tabelas+slot opcional, sem segunda carteira. [Detalhes](lunar/NPC_ECONOMY.md).
+
+
+## Comércio agregado e recuperação na vila — 0.9
+
+guild_catalog reutiliza transfer_item/finance/receipt e mutex; agrupa materiais seguros e preserva equipamento individual. MAX pesquisa classes de pagamento exato1/5/10 e capacidade. guild.batch_prices reutiliza AdminService; histórico tem PK(request_id,policy_key), lote integral rejeitado em conflito. recovery_site centraliza NPC city1(5,30); sala antiga arquivada e links filtrados, sem excluir IDs. [Detalhes](lunar/GUILD_SHOP_RECOVERY_UX.md).
+
+
+## Denominações e comércio físico atuais
+
+finance.move deixa de chamar compose; seleciona e move peças do pagador sem reescrever o saldo inteiro de nenhuma conta. compose permanece apenas no cutover histórico. guild_commerce.py coordena cotação/checkout/custódia real Item/NPCStock e lotes; guild_admin.py integra preços/exchange/rebalance ao workflow AdminService. Políticas/history/receipts persistem na revisão aditiva d91e2ab604c7. guild_cli.py fornece inspect/preview/fingerprint/apply/audit para operador local com papel válido; nenhuma ação operacional automática. [Regras](lunar/PHYSICAL_DENOMINATIONS.md) · [Comércio](lunar/GUILD_COMMERCE.md).
+
+
+## Custódia e Administração Real 0.9
+
+`mineral_lots.py` centraliza minério individual; `LunarMineralLot` HELD é material físico, `LunarHolding` guarda moedas. `mineral_mg` é ativo contábil sem holding. Split/mint/burn parcial criam filhos e encerram pai; transferência conserva identidade. Ledger permanece append-only, e auditoria inclui genealogia, owners, source e Supply.admin_injected_mg separado. Revisão aditiva ca343e37b4ca substitui projeção fungível antiga por lotes sem alterar histórico. `royal.py` integra as operações manuais ao AdminService existente, nunca a uma API financeira paralela. Frontend Royal oferece dez áreas com permissão/preview/confirm/receipt. [Detalhes](lunar/VARIABLE_NUGGETS.md).
+
+
+> Atualização da continuação 0.9: [cutover operacional, migrações e validação](lunar/CUTOVER.md). O upgrade não converte o ambiente: confirmação administrativa ativa Lunar como fonte única. As descrições financeiras legadas e de conversão inativa abaixo registram a etapa anterior; após a confirmação, holdings Lunar e obrigações separadas são autoritativos. Discord segue estritamente read-only; Godot congelado.
+
+> **Estratégia atual 0.9:** backend autoritativo, **Web como cliente principal**, **Discord estritamente read-only para gameplay**. Godot Windows/Android estão **FROZEN**; APK/EXE não são requisitos deste ciclo. Código/presets/builds e documentação histórica preservados. Ver [GODOT_FREEZE.md](GODOT_FREEZE.md) e [CONSOLIDATION_0.9.md](CONSOLIDATION_0.9.md). Descrições de equipamento confirmado via Discord abaixo são históricas e foram desativadas em 0.9.
+
+## Adaptador Discord 0.9
+
+`discord_client.query` utiliza projeções SELECT e transação PostgreSQL REPEATABLE READ/READ ONLY. Não chama game.character/snapshot, expeditions.sync, enemies.instances ou auctions.listing. Portanto não retoma/move personagens, gera recursos, encerra expedições nem liquida leilões. Somente identidade é mutável fora desse adaptador. Segurança de rate limiting grava metadados em transação separada; não é gameplay. `/discord/{id}/state` agora é projeção segura reduzida, mantendo o personagem do usuário. Nenhuma API Web/Godot de gameplay foi removida.
+
+`DiscordOperation` e revisão 947647462008 permanecem para preservar recibos antigos. Nenhuma migração destrutiva: rotas de preview/confirm sempre retornam 410 após validação da chave do bot, inclusive recibos que ainda não expiraram. Bot registra apenas consultas e vinculação; nenhum botão de controle. Leilões observados são relativos ao próprio personagem e nunca liquidados pelo Discord. O worker/fluxo Web continua responsável por transições.
+
+## Histórico de implementação 0.8
+
+Backend autoritativo → Web React/TypeScript/Phaser principal → Discord complementar; Godot preservado. Esta seção e os documentos 0.8 prevalecem sobre descrições históricas das entregas abaixo.
+
+`encounters.py` coordena grupo opt-in, rounds e alvo sobre recibos Battle por inimigo, reaproveitando dano/XP/loot/expedições. `resources.py` fornece estoque pessoal finito por geração e coleção idempotente; `contracts.py` reserva orçamento real, acompanha progresso e conserva direitos concluídos quando publicação é retirada. `observability.py` agrega contadores diários persistentes sem fabricar duração histórica. `discord_client.py` adapta consultas e equipamento confirmado sem estado paralelo; `request_controls.py` conta limites em transação independente e emite logs sem credenciais. [Detalhes de grupos](COMBAT_ENCOUNTERS.md), [coleta/contratos](COLLECTION_AND_CONTRACTS.md), [Discord](DISCORD_INTEGRATION.md).
+
+Snapshot `/state` consolida recompensas, destinos, Tesouro, encontro, capacidade e nós de coleta. Campos antigos permanecem; rotas antigas de combate delegam ao encontro ativo. O legado Godot não apresenta seleção completa de grupos/coleta/contratos: isso é limitação de interface registrada, sem remoção do cliente.
+
+Migrações 0.8 incrementais: `76be3b21ba40` → `4f7ba7966ca8` → `e70ea918061f` → `947647462008` → `4cee57744ea1`. Não há reset/backfill punitivo ou alteração de monstros instanciados. Downgrade automático bloqueado para não destruir direitos/recibos; restauração deve usar backup verificado.
+
+Limites são compartilhados em PostgreSQL. Presença ainda é local: runtime fixa um worker; broker distribuído e coordenação de jobs são pré-requisitos para escala horizontal. Ver [auditoria](SECURITY_AUDIT.md) e [métricas locais](BALANCE_REPORT_0.8.md).
+
+> **Módulos 0.7:** [sequência, geração, retenção, morte/recuperação, dívida e eventos](PROCEDURAL_ECONOMY_UPDATE.md). As regras novas substituem a perda de todos os itens por leilão das versões históricas abaixo.
+
+Monorepo com backend FastAPI, PostgreSQL 17, clientes Godot/web/Discord e entrada web independente para a Central ADM. `frontend/src/Map.tsx` renderiza mapa e captura entrada; React apresenta menus e chama `/api`. Vite faz proxy no desenvolvimento; Nginx faz proxy na imagem de produção. Nenhum cliente envia dano, moedas ou atributos calculados.
 
 `backend/app/main.py`: contratos HTTP e validação Pydantic. `security.py`: PBKDF2 com salt, sessões opacas com hash no banco e validade de sete dias. `game.py`: regras transacionais. `world.py`: mapa autoritativo. `models.py`: persistência SQLAlchemy; migrações Alembic congelam o schema. `seed.py`: catálogo e emissão inicial auditada, idempotente sob lock PostgreSQL.
 
@@ -51,3 +105,26 @@ O lifespan da API inicia sweeper assíncrono, que executa transações independe
 Migração aditiva 039105b3ae1a conserva todos os valores e IDs existentes, altera moedas/recompensas/ledger/Tesouro de INTEGER para NUMERIC, relaxa a carteira até −10.000, permite custódia sem dono e cria auditoria/leilões/atributos. Migração não concede pontos retroativos nem aplica mortes retroativas. Downgrade recusa dados que não cabem no modelo anterior, evitando apagar mortes, dívida, custódia ou pontos; atualização normal usa upgrade e volume preservado.
 
 UI `DeathEconomy.tsx`: resumo persistente com perdas reais, formulário de distribuição em lote, dívida visível e leilão paginado (100 por página). A API oferece GET /auctions, POST /auctions/{id}/bids, POST /auctions/{id}/settle, POST /character/attributes e POST /deaths/{id}/acknowledge. Discord segue compartilhando o estado do mesmo backend; não foram adicionados comandos de leilão/morte nem acesso a banco pelo bot.
+
+
+## Migração incremental 0.6
+
+Na entrega 0.6 Godot foi tratado como cliente principal; essa decisão foi substituída pela Web principal na 0.8 e pelo freeze nativo na 0.9. `godot-client/scripts/api.gd` comunica por HTTP com sessão persistida; `main.gd` coordena menus/comandos e reconexão; `map_view.gd` renderiza pixel art original/câmera/entrada. Presença usa o WebSocket existente. Não há cálculo econômico/combate ou acesso SQL no cliente. Android tem controles maiores e presets; exportações Windows/Android são separadas do teste de execução em Linux.
+
+`fast_travel.py` consulta RoomState de locais permanentes visitados e preserva as guardas de expedição/combate. Nova sala auction_hall e conexão são criadas pelo seed idempotente, sem substituir mapas/saldos existentes. Interact diferencia recepcionista e leiloeiro pelo ID/serviço.
+
+`admin.py` declara rotas, `admin_security.py` sessões/permissões/rate limit, `admin_service.py` operações/locks/prévias/confirmação/auditoria e `admin_economy.py` contas oficiais/métricas. AdminRole não altera Account ou sua carteira. AdminSession é independente de AuthSession; AdminOperation é correlacionada ao ledger e eventos por UUID. AdminTestCredit é isolado de Character.coins. `admin_cli.py` concede/revoga papel em conta existente, com evento auditado e revogação de sessões.
+
+A Central web tem entrada `frontend/admin.html` e bundle `src/admin`, servido em /admin pelo Nginx; compartilha dependências de build, mas não a sessão do jogo. Respostas são vinculadas ao módulo/requisição, impedindo renderizar dados antigos de outro módulo. Sessão Bearer não usa cookies.
+
+CentralBank(id=1) nasce com zero e integra o ledger existente; transferências não emitem, mint/burn são explícitos. Contabilidade e ordem dos locks estão em ACCOUNTING.md. Configuração administrativa é GameSetting com valores allowlisted. MonsterDefinition é persistente e aplicado somente a novas instâncias; EnemyInstance.xp_reward congela também o XP, preservando mortos e batalhas em andamento.
+
+Migração b3057d8109ee é aditiva: protege somente definição sword, cria os modelos ADM/econômicos e congela XP dos inimigos históricos pelos perfis anteriores. Não recupera itens nem reembolsa lances automaticamente. A constraint impede desproteger a espada inicial. Leilões de item protegido são suspensos logicamente até procedimento individual; nenhum original entregue a comprador é retirado silenciosamente.
+
+
+0.7: `attributes.effective` projeta base/bônus/resultado sem mutar bases. `procedural.py` fornece distribuição universal e BFS de conexões; Expedition congela sorteio. `procedural_retention.py` elimina estado transitório ao encerrar, mantendo pendências/recibos e bosses. `recovery.py` separa perda de unidades e recuperação pessoal; `debt.py` executa avaliação/compra de custódia com ledger e marcos acumulados. `world_events.py` valida agenda e aplica multiplicador somente a novos encontros. Operações administrativas reaproveitam mutex, permissões, prévia, confirmação e auditoria. Migração d0fc148417a5 é aditiva; downgrade destrutivo é recusado.
+
+
+## Continuação procedural Lunar 0.9
+
+Decisões imutáveis por expedição e ocorrências Lunar são gravadas na criação; snapshots só leem, coleta introduz massa via ledger e encerramento expira recursos potenciais. Ver [recursos Lunares](lunar/PROCEDURAL_RESOURCES.md).

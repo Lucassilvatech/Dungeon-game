@@ -49,7 +49,7 @@ const path = require("node:path"),
       assert.equal((await response).status(), 200);
       await idle();
     };
-    async function fight(button) {
+    async function fight(button, skill = false) {
       await idle();
       const before = await state();
       await button.click();
@@ -60,7 +60,13 @@ const path = require("node:path"),
         b;
       do {
         await page
-          .getByRole("button", { name: "⚔ Atacar", exact: true })
+          .getByRole("button", {
+            name:
+              skill && (await state()).character.energy >= 2
+                ? "✦ Golpe · 2 energia"
+                : "⚔ Atacar",
+            exact: true,
+          })
           .click();
         await idle();
         turns++;
@@ -87,10 +93,12 @@ const path = require("node:path"),
         s.map.monsters &&
         Object.keys(s.map.monsters).length === 0,
     );
-    assert(!s.map.npc);
+    assert.equal(s.map.npc_role,"recovery");assert.deepEqual(s.map.npc,[5,30]);
     await page.getByRole("button", { name: "▣ Inventário" }).click();
     await page.getByRole("button", { name: "Equipar", exact: true }).click();
-    await page.getByRole("button", { name: "Equipada", exact: true }).waitFor();
+    await page
+      .getByRole("button", { name: "Desequipar", exact: true })
+      .waitFor();
     await page.getByRole("button", { name: "Fechar menu" }).click();
     await shot("city");
     await page.setViewportSize({ width: 390, height: 844 });
@@ -231,9 +239,12 @@ const path = require("node:path"),
     await page.locator("canvas").waitFor();
     await idle();
     assert.equal((await state()).expedition.id, activeId);
-    const first = roomA.map.enemies.find((e) => e.spawn_key === "slime");
+    const first = roomA.map.enemies.find(
+      (e) => e.species === "slime" && e.category !== "miniboss",
+    );
     await fight(
       page.locator(`.encounters button[data-enemy-id="${first.id}"]`),
+      true,
     );
     const beforeFlee = await state();
     assert(beforeFlee.expedition.alive_enemies > 0);
@@ -348,10 +359,12 @@ const path = require("node:path"),
     assert.equal(dead.character.xp, 0);
     assert.equal(dead.character.level, beforeDeath.character.level);
     assert.equal(dead.death.pending_lost_exact, String(pendingBeforeDeath));
-    assert.equal(dead.inventory.length, 0);
-    assert.deepEqual(
-      dead.death.items.map((i) => [i.item_id, i.quantity]).sort(),
-      beforeDeath.inventory.map((i) => [i.id, i.quantity]).sort(),
+    assert(dead.inventory.some((i) => i.definition === "sword" && i.protected));
+    assert(dead.death.items.reduce((sum, i) => sum + i.quantity, 0) <= 5);
+    assert(
+      dead.death.items.every((i) =>
+        ["destroyed", "recovery"].includes(i.destination),
+      ),
     );
     await page
       .getByRole("dialog")
@@ -370,9 +383,22 @@ const path = require("node:path"),
     await idle();
     assert.equal((await state()).death, null);
     await page.getByRole("button", { name: "⚖ Leilão", exact: true }).click();
-    await page.locator(".auction-card").first().waitFor();
-    assert(await page.locator(".auction-card button").first().isDisabled());
-    await shot("death-auctions");
+    const publicLots = await page.evaluate(async () => {
+      const r = await fetch("/api/auctions", {
+        headers: { Authorization: "Bearer " + sessionStorage.getItem("token") },
+      });
+      return r.json();
+    });
+    assert(
+      publicLots.every((a) => a.death_event_id !== dead.death.death_event_id),
+    );
+    await page
+      .getByRole("button", { name: "♜ Recuperação", exact: true })
+      .click();
+    await page
+      .getByRole("heading", { name: "Recuperação pessoal", exact: true })
+      .waitFor();
+    await shot("death-recovery");
 
     // A second real player earns the funds through combat and the receptionist.
     const buyer = await browser.newPage({
@@ -479,42 +505,18 @@ const path = require("node:path"),
     bs = await buyerApi("/state");
     await buyerWalk(...bs.map.npc);
     assert.equal((await buyerApi("/guild/claim", {})).paid, 10);
-    const auctions = await buyerApi("/auctions");
-    const affordable = auctions.find(
-      (a) =>
-        dead.death.items.some((i) => i.auction_id === a.id) &&
-        BigInt(a.opening_price) <= 10n,
-    );
-    assert(affordable);
+    assert.deepEqual(await buyerApi("/recovery"), []);
     await buyer.reload();
-    await buyer.getByRole("button", { name: "⚖ Leilão", exact: true }).click();
-    const input = buyer.getByLabel("Lance no leilão " + affordable.id, {
-      exact: true,
-    });
-    await input.waitFor();
-    await input.fill(affordable.opening_price);
-    await input
-      .locator("xpath=ancestor::form")
-      .getByRole("button", { name: "CONFIRMAR LANCE", exact: true })
+    await buyer
+      .getByRole("button", { name: "♜ Recuperação", exact: true })
       .click();
-    await buyer.waitForFunction(
-      () =>
-        document.querySelector("main")?.getAttribute("aria-busy") === "false",
-    );
-    bs = await buyerApi("/state");
-    assert.equal(bs.reserved_gold, affordable.opening_price);
-    assert.equal(
-      bs.coins_exact,
-      String(10n - BigInt(affordable.opening_price)),
-    );
-    await buyer.screenshot({
-      path: path.join(os.tmpdir(), "first-floor-auction-bid.png"),
-      fullPage: true,
-    });
+    await buyer
+      .getByText("Nenhum item para recuperar.", { exact: true })
+      .waitFor();
     await buyer.close();
     assert.deepEqual(errors, []);
     console.log(
-      "PASS: expanded city/guild/training, mobile, four-turn combat, death removal/rejection, inventory, guild claim, reconnect, committed expedition, API/exit blocking, flee preview/cancel/penalty, two procedural themes, wandering, manual attributes, persistent death summary, medical debt, auction custody and funded player bidding",
+      "PASS: expanded city/guild/training, mobile, four-turn combat, death removal/rejection, inventory, guild claim, reconnect, committed expedition, API/exit blocking, flee preview/cancel/penalty, two procedural themes, wandering, manual attributes, persistent death summary, medical debt, bounded death losses, personal recovery and isolated second-player ownership",
     );
   } finally {
     await browser.close();

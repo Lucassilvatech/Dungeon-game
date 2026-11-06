@@ -1,0 +1,33 @@
+# Segurança e auditoria administrativa
+
+- Sessões ADM opacas e independentes das sessões do jogo; somente digest no banco, validade de 1h e logout com revogação. Token normal ou chave de serviço Discord não concede administração.
+- Papel/permissões verificados no FastAPI em todas as consultas e ações. Role bootstrap/revogação é comando local explícito, sem conta/senha padrão; revoga sessões ADM da conta e grava WorldEvent ADMIN_ROLE_CHANGED. Essas alterações de papel podem ser consultadas em Mundo/eventos, além da auditoria de operações no módulo próprio.
+- Login limitado por conta e origem em janela de 10 minutos (5 falhas), com contadores persistidos mesmo quando login é rejeitado. Resposta genérica não revela existência/papel. Na configuração Docker local o IP observado pode ser o do proxy; antes de uso público configurar proxy confiável/rate limiting de borda para distinguir origens sem aceitar X-Forwarded-For arbitrário.
+- Cabeçalho Authorization Bearer, sem cookies de autenticação administrativa. Chamadas usam JSON; não se depende de ocultar botões. O navegador armazena token na sessão da aba, separado do jogo; senhas nunca ficam no estado persistido.
+- Operações são allowlisted, com campos/valores validados, motivo, prévia imutável por UUID, confirmação explícita e prazo 5min. Estado alterado exige nova prévia. Gasto oficial e item protegido são validados no serviço, não pelo navegador.
+- Logs estruturados de operação confirmada incluem somente identificadores/ação/entidade. Senhas, tokens e hashes de senha não são retornados nas consultas ou auditoria. Antes/depois não contêm Account.password ou credenciais.
+- Não há endpoint de SQL arbitrário nem função de excluir ledger. Nenhum papel administrativo altera automaticamente a progressão ou carteira do próprio personagem. Recursos de teste são isolados.
+- Compose mantém bind 127.0.0.1; publicar acesso externo exige TLS e gestão de credenciais/backup. Sem conexão de produção ou dispositivo remoto presumidos.
+
+Auditoria das mutações é AdminOperation, correlacionada ao ledger/eventos por UUID. Diagnósticos de recuperação são somente leitura até confirmação. Auditoria preserva a diferença entre resgate de custódia e reposição autorizada, incluindo o comprador legítimo protegido de retirada silenciosa. As contas/papéis temporários do teste do navegador são revogados em finally; não fica um administrador de teste ativo.
+
+## Revisão incremental 0.8
+
+Limites de requisição em PostgreSQL (`rate_limit_buckets`), janela fixa e upsert atômico com saturação. A transação do contador é curta e separada da ação: uma rejeição/rollback não apaga a tentativa. Sessões válidas usam conta como identidade, incluindo rotação de tokens; contas diferentes atrás do mesmo proxy não compartilham contador. Credencial de bot válida usa Discord como identidade. IP é somente o endereço da conexão, sem confiar em `X-Forwarded-For`; autenticação/vínculo sem identidade continuam limitados por IP. Configurar proxy de borda para limites por origem real em implantação pública. Janelas fixas permitem rajada na fronteira; não é promessa de taxa deslizante.
+
+Padrões por minuto: leitura 300, movimento 240, combate 90, coleta 45, contratos/finanças/ADM 30, Discord consulta 120/ação 20. Login/registro compartilham 15 tentativas por conexão em 10 minutos. ADM mantém adicionalmente o bloqueio anterior por usuário/IP. `RATE_LIMIT_SCALE` ajusta carga operacional; produção mantém `RATE_LIMITS_ENABLED=true`. Testes funcionais desabilitam somente esse mecanismo para isolar regras de jogo; testes específicos o habilitam e verificam concorrência, rollback e identidades. HTTP 429 informa `Retry-After`.
+
+Logs estruturados `dungeon.requests`: método, **template da rota**, status, duração e identificador gerado no servidor; sem URL/query, corpo, cabeçalhos, IP, token ou senha. Logs do proxy também devem evitar dados sensíveis e ter retenção/acesso controlados. Não habilitar SQL echo ou debug em produção.
+
+Coleta e turnos compartilham lock do personagem; financeiro/ADM usam mutex PostgreSQL antes dos personagens, depois recursos/contratos/Tesouro. Repetição usa recibos persistentes, UUID e unicidade do ledger; prévia ADM rejeita estado alterado. Cancelamento de contrato conserva direitos concluídos. Reserva de contratos integra a reconciliação oficial; sandbox continua isolado. Índices novos cobrem inventário por proprietário/local, combate por personagem/status, contratos ativos e histórico JSON por personagem/ID. Índices convencionais podem bloquear escritores durante criação em bases grandes: medir uma cópia e agendar janela; não há alegação de migração sem bloqueio.
+
+Sessões normais podem ser revogadas individualmente ou em conjunto. Presença revalida sessão a cada ciclo, aceita no máximo três conexões por personagem e rejeita autenticação JSON malformada. Heartbeat até 256 caracteres e transporte Uvicorn até 4KiB por mensagem. **Um worker obrigatório neste lançamento**: mapa de presença ainda é memória local. Antes de múltiplos workers, implementar broker/pub-sub ou registro distribuído de presença, além de propriedade dos jobs; locks/limites financeiros no PostgreSQL já são compartilhados, presença não. Não introduzido Redis obrigatório.
+
+Central ADM continua ligada apenas à interface local padrão do Compose, sem conta padrão. Publicação externa exige TLS, proxy com limites e controles de acesso. Discord não concede papéis nem aceita comandos administrativos. Dependências/testes do bot separados do runtime backend em `requirements-dev.txt`.
+
+Auditoria npm executada ao fechar 0.8 encontrou avisos altos no Vite 6.4.1 de desenvolvimento. Atualização mínima exata para **6.4.5**, com lockfile renovado e `npm audit --json` final: zero vulnerabilidades reportadas. Build TypeScript/Vite passou; hashes dos bundles de jogo/mapa/client/ADM coincidiram com os já validados após a correção do rótulo ADM. Isso é auditoria de dependências conhecidas nessa execução, não certificação contra todo malware. `pip check` não apontou dependências inconsistentes; não equivale a auditoria CVE Python.
+
+
+## Continuação procedural Lunar 0.9
+
+Coleta usa sessão, snapshot SOLO, room/generation, proximidade, capacidade, UUID e locks transacionais. Identidade/decisão e estados terminais são protegidos por triggers; massa/recibos reconciliados. Rate limit financeiro também cobre coleta/venda/split Lunar. Ver [recursos Lunares](lunar/PROCEDURAL_RESOURCES.md).

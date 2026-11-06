@@ -1,0 +1,16 @@
+{
+  "reported_detection": "Trojan:Script/Wacatac.B!ml",
+  "workflow_run_url": "https://github.com/Lucassilvatech/Dungeon-game/actions/runs/40236933256",
+  "workflow_commit": "2d3122b6a3f31fb07c1a5183605b7e999c23972c",
+  "observed_conclusion": "WORKFLOW_RUN_CONCLUSION_SUCCESS",
+  "observed_notice": {
+    "result": "NO_DETECTION_IN_THIS_SCAN",
+    "engine": "1.1.26090.9",
+    "signatures": "1.461.202.0",
+    "CloudMAPS": 2
+  },
+  "zip_sha256": "cbb4dafb3eafb37e12895d9d3b685003f0eaefe68d77fb1aa7ba5525550fe090",
+  "exe_sha256": "c3475a6c1a12a6860559ebc8893104f2b98c05fc002a719b2404a07538eacbc9",
+  "scope": "Same published ZIP/EXE. Workflow requires enabled antivirus, current signatures, advanced cloud protection and successful Microsoft cloud connectivity check before custom scan.",
+  "limitation": "Independent test did not reproduce user detection. Does not override the local quarantine or constitute vendor confirmation of a false positive."
+}

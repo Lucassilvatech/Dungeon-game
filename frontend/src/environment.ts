@@ -1,288 +1,298 @@
 import Phaser from "phaser";
 import type { State } from "./api";
-const palette: Record<string, number[]> = {
-  city: [0x66866a, 0x5f7f66, 0xbcb399, 0x626d64],
-  interior: [0x99714e, 0x8f6747, 0x76543e, 0xd0b087],
-  moss_stone: [0x657b6c, 0x607565, 0x889389, 0x485d55],
-  wild_ruins: [0x607d50, 0x59764b, 0x9c936d, 0x48664d],
-  crystal_bones: [0x535d70, 0x4d5768, 0x7a8494, 0x3b4659],
-  abandoned_wood: [0x80654b, 0x785d46, 0xa48963, 0x544b42],
-};
-export function drawEnvironment(g: Phaser.GameObjects.Graphics, s: State) {
-  const m = s.map,
-    p = palette[m.theme] || palette.wild_ruins,
-    wood = m.theme === "interior" || m.theme === "abandoned_wood";
-  for (let y = 0; y < m.height; y++)
-    for (let x = 0; x < m.width; x++) {
-      const hash = ((x * 73856093) ^ (y * 19349663) ^ (m.seed || 0)) >>> 0;
-      const path =
-        m.theme === "city" &&
-        (Math.abs(x - 10) < 2 || Math.abs(y - 18) < 2 || Math.abs(y - 10) < 1);
-      g.fillStyle(path ? p[2] : (x + y) % 2 ? p[0] : p[1]);
-      g.fillRect(x * 32, y * 32, 32, 32);
-      if (wood) {
-        g.lineStyle(1, p[3], 0.28);
-        g.lineBetween(x * 32, y * 32 + 31, x * 32 + 32, y * 32 + 31);
-        g.lineStyle(1, p[2], 0.4);
-        g.lineBetween(
-          x * 32 + (y % 2 ? 8 : 24),
-          y * 32,
-          x * 32 + (y % 2 ? 8 : 24),
-          y * 32 + 32,
+import { frames } from "./sprites";
+import { resolveTheme, type VisualThemeProfile } from "./visual/themes";
+import { cityPaths, buildingEntrances } from "./visual/paths";
+import { planScenery, type PlannedProp } from "./visual/placement";
+import { ensureVillageTerrain, VILLAGE_TERRAIN_KEY } from "./visual/villageTerrain";
+import { battleGroundSet, battleTileFrame, ensureBattleTerrain, BATTLE_TERRAIN_KEY } from "./visual/battleTerrain";
+type Image = Phaser.GameObjects.Image;
+const scenery = frames.scenery as Record<string, number>,
+  effects = frames.effects as Record<string, number>,
+  tiles = frames.tiles as Record<string, number>;
+export class Environment {
+  objects: Phaser.GameObjects.GameObject[] = [];
+  props: { image: Image; canopy: boolean }[] = [];
+  lights: { image: Image; phase: number; flame?: Image }[] = [];
+  particles: Image[] = [];
+  theme: VisualThemeProfile;
+  plan: ReturnType<typeof planScenery>;
+  constructor(
+    private scene: Phaser.Scene,
+    private state: State,
+  ) {
+    this.theme = resolveTheme(state);
+    this.plan = planScenery(state);
+    this.build();
+  }
+  image(
+    x: number,
+    y: number,
+    atlas: string,
+    frame: number,
+    depth: number,
+    scale = 2,
+  ) {
+    const sp = this.scene.add
+      .image(Math.round(x), Math.round(y), atlas, frame)
+      .setScale(scale)
+      .setDepth(depth);
+    this.objects.push(sp);
+    return sp;
+  }
+  light(x: number, y: number, ritual = false, flame = true) {
+    if (this.lights.length >= 10) return;
+    const im = this.image(
+      x,
+      y,
+      "effects",
+      effects[ritual ? "glow_cyan" : "glow_warm"],
+      8001,
+      4,
+    ).setBlendMode(Phaser.BlendModes.ADD);
+    const fire = flame
+      ? this.image(x, y + 12, "effects", effects.flame_0, 110 + y, 1).setOrigin(
+          0.5,
+          1,
+        )
+      : undefined;
+    this.lights.push({
+      image: im,
+      phase: this.lights.length * 1.73 + (x % 7),
+      flame: fire,
+    });
+  }
+  private prop(p: PlannedProp) {
+    const name =
+      p.kind === "tree" ? "tree_green_0" + ((p.variant % 3) + 1) : p.kind;
+    const sp = this.image(
+      p.x * 32 + 16,
+      (p.y + 1) * 32,
+      name in scenery ? "scenery" : "effects",
+      scenery[name] ?? effects[name] ?? effects.rock,
+      100 + (p.y + 1) * 32,
+      name in scenery ? 2 : 0.75,
+    ).setOrigin(0.5, 1);
+    if (["moss", "flower"].includes(p.kind)) sp.setDepth(2);
+    this.props.push({ image: sp, canopy: p.kind === "tree" });
+    if (p.kind === "crystal" || p.kind === "obelisk")
+      this.light(p.x * 32 + 16, p.y * 32, true, false);
+  }
+  build() {
+    const { map: m, room } = this.state,
+      p = this.theme,
+      paths = cityPaths(this.state),
+      entrances = buildingEntrances(this.state),
+      battleGround = battleGroundSet(p.groundSet, m.theme);
+    if (room.kind === "CITY") ensureVillageTerrain(this.scene);
+    if (battleGround) ensureBattleTerrain(this.scene);
+    const ground = this.scene.add
+      .renderTexture(0, 0, m.width * 32, m.height * 32)
+      .setOrigin(0)
+      .setDepth(0);
+    this.objects.push(ground);
+    const buildings = new Set<string>();
+    for (const b of m.buildings ?? [])
+      for (let y = b.y; y < b.y + b.height; y++)
+        for (let x = b.x; x < b.x + b.width; x++) buildings.add(`${x},${y}`);
+    ground.beginDraw();
+    for (let y = 0; y < m.height; y++)
+      for (let x = 0; x < m.width; x++) {
+        const set = paths.has(`${x},${y}`) ? "path" : p.groundSet;
+        // Large deterministic fields, not a different high-contrast texture at every pixel/tile.
+        const variant =
+          ((Math.floor(x / 3) * 5 + Math.floor(y / 3) * 3 + (m.seed ?? 0)) >>>
+            0) %
+          8;
+        if (room.kind === "CITY") {
+          ground.batchDrawFrame(
+            VILLAGE_TERRAIN_KEY,
+            (set === "path" ? 8 : 0) + variant,
+            x * 32,
+            y * 32,
+          );
+        } else if (battleGround) {
+          ground.batchDrawFrame(
+            BATTLE_TERRAIN_KEY,
+            battleTileFrame(battleGround, variant),
+            x * 32,
+            y * 32,
+          );
+        } else {
+          ground.batchDrawFrame(
+            "tiles",
+            tiles[set + "_" + variant],
+            x * 32,
+            y * 32,
+          );
+        }
+      }
+    for (const [x, y] of m.walls) {
+      if (buildings.has(`${x},${y}`)) continue;
+      const base = p.groundSet === "grass" ? "path" : p.groundSet;
+      if (battleGround) {
+        ground.batchDrawFrame(
+          BATTLE_TERRAIN_KEY,
+          battleTileFrame(battleGround, (x + y) % 8, true),
+          x * 32, y * 32,
         );
-        g.fillStyle(p[3], 0.35);
-        g.fillRect(x * 32 + 4, y * 32 + 9, 17, 1);
-        g.fillRect(x * 32 + 12, y * 32 + 22, 14, 1);
       } else {
-        g.fillStyle(p[2], 0.4);
-        g.fillRect(x * 32 + (hash % 21) + 3, y * 32 + (hash % 19) + 4, 3, 2);
-        g.fillStyle(0xb6c38f, 0.35);
-        if (hash % 5 === 0) {
-          g.fillRect(x * 32 + 7, y * 32 + 22, 1, 4);
-          g.fillRect(x * 32 + 10, y * 32 + 20, 1, 6);
-        }
-        if (path) {
-          g.lineStyle(1, 0x837e6c, 0.5);
-          g.strokeRect(x * 32 + 1, y * 32 + 1, 30, 14);
-          g.strokeRect(x * 32 + 5, y * 32 + 17, 25, 13);
-        }
+        ground.batchDrawFrame("tiles", tiles[base + "_wall_0"], x * 32, y * 32);
       }
     }
-  m.walls.forEach(([x, y]) => {
-    g.fillStyle(0x182e30, 0.2);
-    g.fillRect(x * 32 + 3, y * 32 + 8, 31, 29);
-    g.fillStyle(wood ? 0x6e6660 : p[3]);
-    g.fillRect(x * 32, y * 32, 32, 32);
-    g.fillStyle(wood ? 0xb6a188 : p[2]);
-    g.fillRect(x * 32 + 1, y * 32 + 2, 30, 22);
-    g.lineStyle(1, 0x3c4b45, 0.4);
-    g.lineBetween(x * 32, y * 32 + 13, x * 32 + 32, y * 32 + 13);
-    g.lineBetween(x * 32 + 14, y * 32, x * 32 + 14, y * 32 + 13);
-    g.fillStyle(0xddd0a0, 0.22);
-    g.fillRect(x * 32 + 2, y * 32 + 2, 28, 2);
-  });
-  for (const b of m.buildings || []) {
-    const x = b.x * 32,
-      y = b.y * 32,
-      w = b.width * 32,
-      h = b.height * 32;
-    g.fillStyle(0x152e30, 0.24);
-    g.fillRect(x + 8, y + 10, w, h);
-    g.fillStyle(0xc3a984);
-    g.fillRect(x, y, w, h);
-    g.fillStyle(0x6f4f49);
-    g.fillRect(x - 4, y - 9, w + 8, 65);
-    for (let row = 0; row < 4; row++)
-      for (let col = 0; col < b.width * 2; col++) {
-        g.lineStyle(1, 0xb37c66, 0.55);
-        g.strokeRect(x + col * 16 + (row % 2 ? 5 : 0), y + row * 14, 16, 13);
-      }
-    g.fillStyle(0x5c5549);
-    g.fillRect(x, y + 56, w, 7);
-    for (let a = 1; a < b.width - 1; a += 2) {
-      g.fillStyle(0x644a3b);
-      g.fillRect(x + a * 32, y + h - 28, 21, 24);
-      g.fillStyle(0xf0cf88);
-      g.fillRect(x + a * 32 + 3, y + h - 25, 15, 18);
-      g.lineStyle(2, 0x795b40);
-      g.lineBetween(x + a * 32 + 10, y + h - 25, x + a * 32 + 10, y + h - 7);
+    ground.endDraw();
+    for (const [i, b] of (m.buildings ?? []).entries()) {
+      const door = entrances[i],
+        sp = this.image(
+          door.x * 32 + 16,
+          door.y * 32,
+          "scenery",
+          scenery["house_0" + ((i % 3) + 1)],
+          100 + (b.y + b.height) * 32,
+          2,
+        ).setOrigin(0.5, 1);
+      this.props.push({ image: sp, canopy: false });
     }
-    g.fillStyle(0x67503e);
-    g.fillRect(x + w / 2 - 20, y + h - 42, 40, 33);
-    g.fillStyle(0xc9ae72);
-    g.fillRect(x + w / 2 - 15, y + h - 36, 30, 4);
-  }
-  for (const d of m.decorations || []) drawObject(g, d);
-  if (s.room.kind === "GUILD") {
-    // Original wall trophy: crossed practice blades and a bronze compass shield.
-    const x = 18 * 32,
-      y = 3 * 32;
-    g.fillStyle(0x5d5147);
-    g.fillRect(x - 39, y - 18, 78, 55);
-    g.lineStyle(5, 0xc5b79b);
-    g.lineBetween(x - 30, y + 28, x + 29, y - 11);
-    g.lineBetween(x - 29, y - 11, x + 30, y + 28);
-    g.fillStyle(0xa4874c);
-    g.fillCircle(x, y + 7, 16);
-    g.fillStyle(0x536e70);
-    g.fillCircle(x, y + 7, 10);
-    g.lineStyle(2, 0xe4ce93);
-    g.strokeTriangle(x, y - 1, x - 6, y + 14, x + 6, y + 14);
-  }
-}
-export function drawObject(
-  g: Phaser.GameObjects.Graphics,
-  d: {
-    kind: string;
-    x: number;
-    y: number;
-    width?: number;
-    height?: number;
-    solid?: boolean;
-  },
-) {
-  const x = d.x * 32,
-    y = d.y * 32,
-    w = (d.width || 1) * 32,
-    h = (d.height || 1) * 32;
-  g.fillStyle(0x192f30, 0.18);
-  if (d.kind !== "rug" && d.kind !== "flower" && d.kind !== "moss")
-    g.fillEllipse(x + w / 2 + 3, y + h - 2, w * 0.9, 12);
-  switch (d.kind) {
-    case "rug":
-      g.fillStyle(0x7b4b4b);
-      g.fillRect(x, y, w, h);
-      g.lineStyle(3, 0xd3b678);
-      g.strokeRect(x + 6, y + 6, w - 12, h - 12);
-      g.lineStyle(1, 0xb18b60);
-      for (let z = 12; z < w; z += 16)
-        g.lineBetween(x + z, y + 9, x + z, y + h - 9);
-      break;
-    case "counter":
-    case "table":
-      g.fillStyle(0x4f4038);
-      g.fillRect(x + 2, y + 10, w - 4, h - 8);
-      g.fillStyle(0xae7c4d);
-      g.fillRect(x, y, w, h - 12);
-      g.fillStyle(0xd1a66a);
-      g.fillRect(x + 2, y + 2, w - 4, 4);
-      g.lineStyle(1, 0x6c4934);
-      for (let z = 16; z < w; z += 24)
-        g.lineBetween(x + z, y + 5, x + z, y + h - 14);
-      if (d.kind === "table") {
-        g.fillStyle(0xe2d3a5);
-        g.fillRect(x + w / 2 - 9, y + 7, 18, 13);
-        g.fillStyle(0x5d6f65);
-        g.fillRect(x + 6, y + 8, 7, 8);
-      } else {
-        for (let z = 25; z < w; z += 61) {
-          g.fillStyle(0xdeb77b);
-          g.fillRect(x + z, y + 5, 18, 14);
-          g.fillStyle(0xebe0bd);
-          g.fillRect(x + z + 2, y + 7, 14, 10);
-        }
+    for (const prop of this.plan.props) this.prop(prop);
+    for (const d of this.plan.floorDetails)
+      this.image(
+        (d.x + (d.width ?? 1) / 2) * 32,
+        (d.y + (d.height ?? 1) / 2) * 32,
+        "effects",
+        effects.rug,
+        2,
+        Math.max(2, (d.width ?? 4) / 2),
+      );
+    for (const d of this.plan.fixtures) {
+      const width = d.width ?? 1;
+      for (let xx = 0; xx < width; xx += 2)
+        this.image(
+          (d.x + xx + 1) * 32,
+          (d.y + (d.height ?? 1)) * 32,
+          "effects",
+          effects[d.kind === "board" ? "sign" : d.kind] ?? effects.table,
+          100 + (d.y + (d.height ?? 1)) * 32,
+          width > 1 ? 1.5 : 0.75,
+        ).setOrigin(0.5, 1);
+    }
+    // The server-defined recovery building is a semantic structure, not random decoration.
+    const tent = (m.decorations ?? []).find((d) => d.kind === "recovery_tent");
+    if (room.kind === "CITY" && m.npc_role === "recovery" && tent && m.npc) {
+      const sp = this.image(
+        (tent.x + (tent.width ?? 5) / 2) * 32,
+        (tent.y + (tent.height ?? 5)) * 32,
+        "scenery",
+        scenery.recovery_tent,
+        100 + m.npc[1] * 32,
+        2,
+      ).setOrigin(0.5, 1);
+      this.props.push({ image: sp, canopy: false });
+    }
+    for (const e of room.exits.filter(
+      (e) => !entrances.some((d) => d.exitId === e.id),
+    ))
+      this.image(
+        e.x * 32 + 16,
+        (e.y + 1) * 32,
+        "effects",
+        effects.portal,
+        90 + (e.y + 1) * 32,
+        0.75,
+      ).setOrigin(0.5, 1);
+    if (["BOSS", "SECRET_DUNGEON"].includes(room.kind)) {
+      const boss = m.spawns
+        ? Object.values(m.spawns).find((e) =>
+            ["boss", "warden", "champion"].includes(e.species),
+          )
+        : m.enemies.find(
+            (e) =>
+              ["boss", "warden", "champion"].includes(e.species) ||
+              e.category === "boss",
+          );
+      const x = (boss?.x ?? Math.floor(m.width / 2)) * 32 + 16,
+        y = (boss?.y ?? Math.floor(m.height / 2)) * 32 + 16;
+      const rune = this.image(x, y, "effects", effects.rune, 3, 5);
+      if (battleGround === "boss_frost") rune.setTint(0x8cd5e0);
+      if (battleGround === "boss_ember") rune.setTint(0xea927e);
+      this.light(x, y, battleGround !== "boss_ember", false);
+    }
+    if (p.lightProfile !== "day") {
+      for (let x = 5; x < m.width - 2; x += 8) {
+        if (
+          this.plan.zones.DOOR_ACCESS.has(`${x},1`) ||
+          this.plan.zones.PATH.has(`${x},1`)
+        )
+          continue;
+        this.light(x * 32, 52, false);
+        if (
+          x + 3 < m.width - 2 &&
+          !this.plan.zones.DOOR_ACCESS.has(`${x + 3},1`)
+        )
+          this.image(
+            (x + 3) * 32,
+            58,
+            "effects",
+            effects.banner,
+            125,
+            1,
+          ).setOrigin(0.5, 1);
       }
-      break;
-    case "barrel":
-      g.fillStyle(0xa67c4e);
-      g.fillRoundedRect(x + 5, y + 3, 23, 27, 6);
-      g.lineStyle(2, 0x514a40);
-      g.strokeEllipse(x + 16, y + 6, 21, 7);
-      g.lineBetween(x + 5, y + 12, x + 28, y + 12);
-      g.lineBetween(x + 5, y + 24, x + 28, y + 24);
-      g.lineStyle(1, 0xd0a770);
-      g.lineBetween(x + 12, y + 9, x + 12, y + 28);
-      break;
-    case "crate":
-      g.fillStyle(0xb08b58);
-      g.fillRect(x + 3, y + 6, 27, 24);
-      g.lineStyle(2, 0x6a5239);
-      g.strokeRect(x + 5, y + 8, 23, 20);
-      g.lineBetween(x + 5, y + 8, x + 28, y + 28);
-      g.lineBetween(x + 28, y + 8, x + 5, y + 28);
-      break;
-    case "shelf":
-      g.fillStyle(0x584839);
-      g.fillRect(x + 1, y - 10, w - 2, 40);
-      for (let row = 0; row < 2; row++)
-        for (let i = 0; i < 4; i++) {
-          g.fillStyle([0x80715d, 0x9f6d5d, 0x6d8981, 0xc4ab72][i]);
-          g.fillRect(x + 5 + i * 6, y - 5 + row * 16, 4, 12);
-        }
-      g.fillStyle(0xc09562);
-      g.fillRect(x, y + 9, w, 3);
-      break;
-    case "board":
-      g.fillStyle(0x6b4b36);
-      g.fillRect(x, y, w, h);
-      g.fillStyle(0xb69d69);
-      g.fillRect(x + 4, y + 4, w - 8, h - 8);
-      for (let i = 0; i < Math.max(2, w / 24); i++) {
-        g.fillStyle(0xe9dcaf);
-        g.fillRect(x + 9 + i * 22, y + 11, 14, 25);
-        g.lineStyle(1, 0x947e5d);
-        g.lineBetween(x + 11 + i * 22, y + 17, x + 20 + i * 22, y + 17);
-      }
-      break;
-    case "tree":
-      g.fillStyle(0x846347);
-      g.fillRect(x + 12, y, 8, 30);
-      g.fillStyle(0x315841);
-      g.fillRect(x - 3, y - 20, 37, 28);
-      g.fillStyle(0x4e7951);
-      g.fillRect(x + 1, y - 29, 30, 27);
-      g.fillStyle(0x769661);
-      g.fillRect(x + 7, y - 32, 18, 14);
-      break;
-    case "bush":
-    case "moss":
-      g.fillStyle(0x4f754d);
-      g.fillRoundedRect(x + 2, y + 16, 29, 13, 5);
-      g.fillStyle(0x8ba86a);
-      g.fillRect(x + 9, y + 13, 12, 6);
-      break;
-    case "flower":
-      g.fillStyle(0x426847);
-      g.fillRect(x + 12, y + 13, 3, 14);
-      g.fillStyle(0xe7b794);
-      g.fillRect(x + 8, y + 10, 12, 5);
-      g.fillRect(x + 12, y + 6, 4, 13);
-      g.fillStyle(0xf3d292);
-      g.fillRect(x + 12, y + 10, 4, 5);
-      break;
-    case "crystal":
-      g.fillStyle(0x51657f);
-      g.fillTriangle(x + 5, y + 28, x + 14, y + 1, x + 24, y + 28);
-      g.fillStyle(0x9ccac9);
-      g.fillTriangle(x + 14, y + 1, x + 14, y + 27, x + 24, y + 28);
-      g.fillStyle(0xc9ece0);
-      g.fillRect(x + 14, y + 9, 2, 10);
-      break;
-    case "bones":
-      g.lineStyle(3, 0xc9c4a5);
-      g.lineBetween(x + 6, y + 24, x + 26, y + 13);
-      g.fillStyle(0xddd6b6);
-      g.fillRect(x + 6, y + 12, 9, 7);
-      break;
-    case "banner":
-      g.fillStyle(0xb29156);
-      g.fillRect(x + 5, y - 6, 23, 4);
-      g.fillStyle(0x546d7b);
-      g.fillRect(x + 8, y - 2, 17, 27);
-      g.fillTriangle(x + 8, y + 25, x + 25, y + 25, x + 16, y + 32);
-      g.fillStyle(0xd9c28b);
-      g.fillRect(x + 14, y + 6, 5, 10);
-      break;
-    case "chair":
-    case "bench":
-      g.fillStyle(0x6f5037);
-      g.fillRect(x + 4, y + 13, 24, 15);
-      g.fillStyle(0xb78d55);
-      g.fillRect(x + 3, y + 9, 26, 7);
-      g.fillRect(x + 4, y - 2, 24, 8);
-      break;
-    case "statue":
-      g.fillStyle(0x969d92);
-      g.fillRect(x + 9, y - 5, 14, 24);
-      g.fillStyle(0xc0c1a5);
-      g.fillRect(x + 10, y - 12, 12, 10);
-      g.fillStyle(0x747e76);
-      g.fillRect(x + 4, y + 20, 25, 11);
-      break;
-    case "torch":
-      g.fillStyle(0x806344);
-      g.fillRect(x + 13, y + 7, 5, 21);
-      break;
-    case "well":
-      g.fillStyle(0x6e7873);
-      g.fillEllipse(x + 16, y + 17, 31, 24);
-      g.fillStyle(0x36515d);
-      g.fillEllipse(x + 16, y + 13, 22, 10);
-      break;
-    default:
-      g.fillStyle(0x858c7e);
-      g.fillRoundedRect(x + 3, y + 10, 26, 19, 5);
-      g.fillStyle(0xadb297);
-      g.fillRect(x + 8, y + 9, 14, 5);
+      this.objects.push(
+        this.scene.add
+          .rectangle(
+            0,
+            0,
+            m.width * 32,
+            m.height * 32,
+            0x080d20,
+            p.ambientProfile,
+          )
+          .setOrigin(0)
+          .setDepth(8000),
+      );
+    }
+    for (let i = 0; i < 6; i++)
+      this.particles.push(
+        this.image(
+          (i * 137) % (m.width * 32),
+          (i * 83) % (m.height * 32),
+          "effects",
+          effects.smoke,
+          8002,
+          0.25,
+        ).setAlpha(0.15),
+      );
+  }
+  update(time: number, reduced: boolean, hero: Phaser.GameObjects.Sprite) {
+    const view = this.scene.cameras.main.worldView;
+    for (const l of this.lights) {
+      l.image
+        .setVisible(Phaser.Geom.Rectangle.Overlaps(view, l.image.getBounds()))
+        .setAlpha(reduced ? 0.8 : 0.8 + Math.sin(time / 240 + l.phase) * 0.1);
+      l.flame?.setFrame(
+        effects[
+          "flame_" + (reduced ? 0 : Math.floor(time / 140 + l.phase) % 4)
+        ],
+      );
+    }
+    for (const [i, sp] of this.particles.entries()) {
+      sp.setVisible(!reduced && this.theme.lightProfile !== "day");
+      if (!reduced)
+        sp.setPosition(
+          Math.round((i * 137 + time / 150) % (this.state.map.width * 32)),
+          Math.round((i * 83 + time / 350) % (this.state.map.height * 32)),
+        );
+    }
+    for (const { image, canopy } of this.props)
+      if (canopy)
+        image.setAlpha(
+          image.getBounds().contains(hero.x, hero.y - 15) && hero.y < image.y
+            ? 0.55
+            : 1,
+        );
+  }
+  destroy() {
+    this.objects.forEach((o) => o.destroy());
+    this.objects = [];
   }
 }

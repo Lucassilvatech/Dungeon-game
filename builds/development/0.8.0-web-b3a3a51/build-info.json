@@ -1,0 +1,15 @@
+{
+  "version": "0.8.0-web-development",
+  "source_commit": "b3a3a51f3b051cf4e874bb5a4f3fcbc7eddc9fcb",
+  "backend_schema": "4cee57744ea1",
+  "files": {
+    "admin.html": "21af8066ae2b4c71a841768913f24e42fc0661024c8f2e3a448c1b4c8e599408",
+    "assets/Map-BF3YKp55.js": "e3e899aceb6dbd85ab0a167ca6ebd6055806ae2bee0bc225ee128b9e09528547",
+    "assets/admin-8AmZC1iL.js": "c0dd573281b6287841d10dedb495a930884fa3952ec12d9483007ae244faf19d",
+    "assets/admin-C8PLfLlO.css": "45c0781dabf20c63f28c9ff9a4ba42c4de4db872de35e96c8b8caf190d8e8c6f",
+    "assets/client-BG2DAo-l.js": "ce581f7ea66e20b21cce78b937d18cdb84b8c66c6e867156fe514fdaf4b8b66d",
+    "assets/game-BBW0fj3c.js": "540b51bf514bd645b3c97db8b8229835682373d2e542a37cc8dba56af10f09b7",
+    "assets/game-C6d_an7D.css": "1f04c6133b6a99c439554c699805424818cab00b8163c796240471af1d5f4198",
+    "index.html": "136362ad676a9addc902c538b6bc656af1d5aa3cb26bbdcb5b478da22f99684c"
+  }
+}

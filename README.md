@@ -1,13 +1,93 @@
-# Dungeon Game — primeiro andar
+# Dungeon Game — Web First · consolidação 0.9
 
-RPG persistente com FastAPI, PostgreSQL, React/TypeScript, Phaser e cliente Discord. Esta versão aperfeiçoa exclusivamente o **primeiro andar**. Não expande andares superiores nem raids. Arte e sprites originais gerados pelo projeto, sem assets das referências comerciais.
+## Entrega atual: refinamento direto das referências
+
+Branch **feature/pixel-art-cohesion-refinement-0.9**, base **cadbe5b**. Personagens reconstruídos usando diretamente a referência: cabeças quadradas, olhos pequenos e roupas azul/verde/roxo/marrom. Terreno mais limpo, bosques e detalhes agrupados, zonas rígidas para todos os props e correção das colisões decorativas antigas da vila. Migration incremental **65a7c9e21b04**, sem reset de personagem/economia. A referência vertical9:16 é apenas imagem; a Web permanece responsiva. [Direção e regras](docs/ART_REFINEMENT.md) · [Entrega e validação](docs/ART_REFINEMENT_DELIVERY_0.9.md) · [Executar no Windows](docs/ART_REFINEMENT_LOCAL_WINDOWS.md).
+
+Build atual: [baixar Web ZIP](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/65fe31e11e58e58d06c9332363e21802d496805d/builds/development/0.9.0-web-art-refinement-7bcbde1/DungeonGame-Web-0.9-Art-Refinement.zip) · [SHA256](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/65fe31e11e58e58d06c9332363e21802d496805d/builds/development/0.9.0-web-art-refinement-7bcbde1/SHA256SUMS).343 testes backend/26 frontend, build e quatro roteiros Chromium PASS.250 mapas reais auditados; capturas e métricas no relatório.
+
+## Entrega anterior: overhaul visual Web pixel art
+
+Branch **feature/pixel-art-visual-overhaul-0.9**, base **2ae4446** da economia NPC. Vila, ruínas e secret/boss têm arte original, temas próprios, atores direcionais, bosses com silhuetas independentes, sombras/luzes/tochas e viewport responsivo. Caminhos chegam diretamente às portas; clicar na fachada usa a entrada real do backend. Nenhuma mudança na economia ou no banco; Discord read-only e Godot congelado. [Arquitetura visual](docs/PIXEL_ART_OVERHAUL.md) · [Relatório/evidências](docs/DELIVERY_PIXEL_ART_0.9.md) · [COMO EXECUTAR LOCALMENTE — Windows PowerShell](docs/PIXEL_ART_LOCAL_WINDOWS.md).
+
+Build visual: [baixar ZIP Web](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/31bdc7aac0611d959685cb43f8bbe811a2cb5f12/builds/development/0.9.0-web-pixel-art-041587f/DungeonGame-Web-0.9-Pixel-Art.zip). Requer backend desta branch/schema7167; não gera EXE/APK. Backend339 passed, frontend22 passed, build e quatro suítes Chromium PASS; métricas Canvas60FPS nos cinco ambientes amostrados.
+
+## Entrega anterior: economia autônoma dos NPCs
+
+Branch **feature/autonomous-npc-economy-0.9**, continuação da UX66e88e5. Alquimista/Ferreiro produzem consumindo estoque físico; Comerciante trabalha em lotes, com caixa e mercadoria finitos. Preços derivados e margens fixas são calculados no backend, persistem por revisão e chegam às lojas/ADM. Worker independente da UI, reposição paga e configurações com prévia/confirmação/auditoria. Migration **7167b684d5f7**, sem reset/reconversão monetária. Comerciante começa em zero, conforme decisão do usuário. [Regras/receitas](docs/lunar/NPC_ECONOMY.md) · [Entrega e testes](docs/lunar/DELIVERY_NPC_ECONOMY_0.9.md) · [Windows e validação manual](docs/lunar/OPERATIONAL_NPC_ECONOMY.md).
+
+
+Build Web NPC: [baixar ZIP](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/5945b42cfad79f74904b4fb29097fe3549101703/builds/development/0.9.0-web-npc-economy-d3fa501/DungeonGame-Web-0.9-NPC-Economy.zip) · [SHA256](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/5945b42cfad79f74904b4fb29097fe3549101703/builds/development/0.9.0-web-npc-economy-d3fa501/SHA256SUMS). Requer backend/schema7167b684d5f7. Backend final339 passed/0 failed/0 skipped; frontend/build e7 scripts Chromium aprovados.
+
+## Entrega anterior: loja da Guilda, preços em lote e barraca de recuperação
+
+Branch **feature/guild-shop-recovery-ux-0.9**: loja em grade com pesquisa, estoque físico agregado, TUDO entre pilhas, MÁXIMO com moedas/capacidade reais e confirmação integrada. Administração tem justificativas locais, edição individual e lote atômico com revisões/histórico por item. Recuperação fica na barraca do sudoeste da vila, junto à figura encapuzada; preserva custo200%, custódia e ledger. Migration **e06a9c24f8bd**, sem redefinir preços ou refazer cutover. [Regras/arquitetura](docs/lunar/GUILD_SHOP_RECOVERY_UX.md) · [Entrega e testes](docs/lunar/DELIVERY_GUILD_SHOP_RECOVERY_UX_0.9.md) · [Atualizar/executar no Windows](docs/lunar/OPERATIONAL_GUILD_SHOP_RECOVERY_UX.md).
+
+
+Build Web desta entrega: [baixar ZIP](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/fa0ef6379367a068ed253b2873f974057012ed03/builds/development/0.9.0-web-guild-ux-5d6901c/DungeonGame-Web-0.9-GuildUX.zip) · [SHA256](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/fa0ef6379367a068ed253b2873f974057012ed03/builds/development/0.9.0-web-guild-ux-5d6901c/SHA256SUMS). Requer backend desta branch; não é aplicativo Windows/APK nem jogo offline. Manifesto e CRC verificados. Backend completo: **304 passed,0 failed,0 skipped**; frontend/build e seis scripts Chromium aprovados.
+
+## Base preservada: denominações físicas e comércio da Guilda
+
+Branch **feature/lunar-physical-denominations-guild-commerce-0.9**, continuação da feature/lunar-variable-nuggets-royal-admin-0.9. Pagamentos preservam moedas reais1/5/10 g; falta de troco é erro de domínio, sem normalização/exchange escondido. Guilda tem preços independentes/versionados de compra/venda, flags, estoque finito e comércio bidirecional de itens e pepitas. Administração permite exchange e rebalanceamento **manual 70/20/10 por massa** com prévia/fingerprint/confirm/audit. Migração atual **d91e2ab604c7**; não recompõe carteiras no startup.
+
+O usuário informa que o cutover principal já está ativo no ambiente operacional dele; esta entrega não o refaz. Validação do agente somente em bancos descartáveis/cópia privada, sem aplicar rebalanceamento operacional. [Relatório atual](docs/lunar/DELIVERY_PHYSICAL_COMMERCE_0.9.md) · [Comandos Windows, backup e aplicação manual](docs/lunar/OPERATIONAL_GUILD_COMMERCE.md) · [Regras físicas](docs/lunar/PHYSICAL_DENOMINATIONS.md) · [Comércio/preços](docs/lunar/GUILD_COMMERCE.md). Descrições de cutover ainda inativo abaixo são registros das entregas anteriores, não instruções para repetir conversão.
+
+
+**Backend autoritativo → Web principal → Discord somente observação.** Windows/Android Godot estão congelados; APK/EXE não são requisitos. [Freeze nativo](docs/GODOT_FREEZE.md) · [Consolidação 0.9](docs/CONSOLIDATION_0.9.md) · [Estado real Lunar](docs/lunar/IMPLEMENTATION.md).
+
+A continuação `feature/lunar-cutover-economy-0.9` implementa o [cutover financeiro auditado](docs/lunar/CUTOVER.md): 1 moeda antiga = 1 g, gênese separada, carteira operacional Lunar, dívida/recebível e escrows físicos. O upgrade não ativa conversão; confirmação administrativa é obrigatória. O banco operacional foi preservado; conversão validada apenas em cópias privadas. A Web oferece painel Lunar com saldo físico/pepitas e divisão para estoque elegível, sem contabilizar o legado duas vezes. `/equipar` foi removido do bot, endpoints antigos retornam 410; consultas Discord não executam movimentação, geração ou liquidação financeira. Identidade/vinculação permanece.
+
+Entrega histórica de pepitas **`feature/lunar-variable-nuggets-royal-admin-0.9`**, baseada em `feature/lunar-procedural-resources-0.9`: [pepitas individuais variáveis](docs/lunar/VARIABLE_NUGGETS.md), spawn aprovado **2%**, faixas **80/15/5** (100–200/201–700/701–1000 g), divisão livre e Guilda a **800 milliunits/g** iniciais. [Tesouro Real/Administração do Rei](docs/lunar/ROYAL_ADMINISTRATION.md) oferece dez áreas, cunhagem manual, transferências, burn/injection explícitos e auditoria. Migração **ca343e37b4ca** preserva a massa e o ledger; coleta não cria moedas. [Entrega e testes](docs/lunar/DELIVERY_VARIABLE_NUGGETS_0.9.md). Discord observa e Godot permanece congelado.
+
+> O build Windows 0.6 de desenvolvimento recebeu relato de bloqueio “vírus detectado” e está em investigação. Não desative o antivírus ou crie exclusão. [Status e verificações](docs/security/WINDOWS_BUILD_TRIAGE.md).
+
+RPG persistente com backend autoritativo FastAPI/PostgreSQL, **React/TypeScript/Phaser como cliente principal Web**, Discord observacional e Central Administrativa Web. Godot Windows/Android permanece preservado, sem novos builds nesta etapa. Esta versão aperfeiçoa exclusivamente o **primeiro andar**. Não expande andares superiores nem raids. Arte e sprites originais gerados pelo projeto, sem assets das referências comerciais.
+
+## Evolução 0.8
+
+Encontros opcionais com dois inimigos e seleção de alvo, coleta finita, contratos com orçamento reservado no Tesouro, consultas privadas no Discord (equipamento confirmado da 0.8 desativado na 0.9), métricas/simulações, reconexão e áudio opcional. O máximo procedural agora é raro e alcançável sem refazer inimigos persistidos. [Entrega e validações](docs/DELIVERY_0.8.md) · [Web First](docs/WEB_FIRST.md) · [Grupos](docs/COMBAT_ENCOUNTERS.md) · [Coleta/contratos](docs/COLLECTION_AND_CONTRACTS.md) · [Discord](docs/DISCORD_INTEGRATION.md) · [Balanceamento](docs/BALANCE_REPORT_0.8.md).
+
+Build Web histórico0.8: [baixar ZIP](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/3863c2c930502453fb02bee54a6cdad13e757906/builds/development/0.8.0-web-b3a3a51/DungeonGame-Web-0.8.zip) · [SHA256](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/3863c2c930502453fb02bee54a6cdad13e757906/builds/development/0.8.0-web-b3a3a51/SHA256SUMS). Contém frontend estático e requer backend 0.8/proxy; não é executável Windows/APK nem jogo offline.
+
+A validação externa do bot e testes de carga em produção permanecem pendentes; não antecipados andares, classes, raids ou mercado geral.
+
+## Histórico 0.7 e downloads nativos preservados
+
+Atributos efetivos compartilhados entre status e combate; sequência/boss 1–10%; gerador universal; perdas de morte até cinco unidades; recuperação pessoal; confisco por dívida; ocultação/arquivamento de leilões e agenda de eventos ADM. [Relatório de entrega, instalação, testes e pendências](docs/DELIVERY_0.7.md) · [Regras técnicas](docs/PROCEDURAL_ECONOMY_UPDATE.md).
+
+Builds históricos **0.7**, sem exportação nova em 0.8: [Windows x64](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/b17d07bc16fc14a0767c99f66cc6a139f0235739/builds/development/0.7.0-bd480e0/DungeonGame-Windows-x64.zip) · [Android APK](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/b17d07bc16fc14a0767c99f66cc6a139f0235739/builds/development/0.7.0-bd480e0/DungeonGame-Android.apk). Downloads integrais confirmados com HTTP 200 e SHA256; isso verifica integridade, não ausência de malware. Backend atualizado obrigatório.
+
+## Revisar esta evolução sem alterar a main
+
+A entrega visual atual está em **feature/pixel-art-cohesion-refinement-0.9**, continuação da `feature/pixel-art-visual-overhaul-0.9`, para revisão por PR; a main permanece estável e não houve merge automático. Guarde alterações locais antes de trocar de branch. Para testar o código desta entrega:
+
+```powershell
+git fetch origin
+git switch feature/pixel-art-cohesion-refinement-0.9
+```
+
+Use os comandos de execução abaixo na branch selecionada. Não use reset/force push ou apague volumes para atualizar.
+
+## Cliente principal Web e Central Administrativa
+
+Abra a Web pela porta 8080 após subir a stack. Teclado e clique/toque movimentam por rotas válidas; painéis apresentam personagem, inventário, exploração, Guilda, leilões, recuperação, histórico, coleta e contratos. Encontros em grupo são opcionais e perigosos para iniciantes. Áudio começa silenciado. Contratos são publicados por administrador autorizado com dinheiro real reservado, sem publicações financeiras automáticas no seed.
+
+## Cliente Godot preservado
+
+Abra `godot-client/project.godot` no Godot **4.6.3 Standard** e execute. Android físico exige configurar servidor alcançável antes de entrar. Windows local usa API `http://127.0.0.1:8080/api`; Android permite configurar URL e controles por toque (emulador: `http://10.0.2.2:8080/api`, aparelho físico: endereço HTTPS alcançável). Os presets exportam `.exe` Windows x86-64 e APK Android; ambos foram gerados nesta nuvem. Inicialização nativa Windows/headless passou no CI; jogo em janela/login Windows e dispositivo Android permanecem **não validados**. O fluxo jogável passou no motor Godot Linux/headless. [Cliente, controles, exportação e testes](docs/GODOT_MIGRATION.md).
+
+Central ADM: `http://localhost:8080/admin`, com entrada web e sessão independentes. Não há administrador/senha padrão: crie uma conta normal e conceda um papel explicitamente pelo [procedimento local](docs/ADMINISTRATION.md). O personagem administrativo continua normal. O cliente Web principal está em `http://localhost:8080`.
+
+Implementado: viagem rápida validada somente a locais permanentes visitados, Salão de Leilões na Guilda, informações/histórico reais dos anúncios, proteção permanente da Espada de Aprendiz (`sword`), diagnóstico e recuperação individual auditada, módulos administrativos e Banco Central manual com contabilidade e créditos de teste isolados. Não foram implementados andares superiores ou habilidades futuras.
 
 ## Windows: executar ou atualizar
+
+Comandos completos para esta branch e primeiro acesso ADM em [Execução local da entrega](docs/lunar/ROYAL_ADMINISTRATION.md#execução-local-no-windows-powershell).
 
 Com Git e Docker Desktop/WSL2 instalados, dentro do checkout:
 
 ```powershell
-git pull origin main
+git pull --ff-only
 if (!(Test-Path .env)) { Copy-Item .env.example .env }
 docker compose up --build -d
 ```
@@ -31,11 +111,11 @@ Não apague `.env` nem use `docker compose down -v` para atualizar. O startup ap
 9. Derrote todos para marcar **EXPEDIÇÃO CONCLUÍDA** e liberar **RETORNAR** ou **NOVA AVENTURA**, preservando XP, itens e recompensas.
 10. Para sair antes, escolha **FUGIR DA AVENTURA**. A confirmação mostra valores reais: perde-se 50% do total monetário pendente na Guilda (inclusive registros de outras salas), arredondando a perda para cima; todo o XP do nível atual é zerado. **Nível, atributos conquistados, moedas já recebidas e itens permanecem.** A fuga encerra a expedição e retorna à cidade. Exemplo: 301 pendentes → 150 restantes, 151 perdidas.
 
-11. **Morrer em Aventura procedural é diferente de fugir:** encerra a expedição como FAILED, zera todo o XP atual e todas as recompensas monetárias pendentes da Guilda, e transfere todos os itens físicos carregados (inclusive equipados e stacks) para custódia de leilão. Itens estruturais marcados como não transferíveis são preservados. O resumo de morte persiste em F5 até você confirmar **RETORNAR À CIDADE**; o resgate já ocorreu no backend.
-12. A taxa médica padrão provisória é **100 moedas por morte** (`MEDICAL_FEE_BASE`). Ela pode deixar o saldo negativo. Saldo 50 − taxa 100 = −50. Pagamentos futuros e devoluções de lances compensam automaticamente esse mesmo saldo, sem outra moeda de dívida: −500 +300 = −200; −500 +800 = 300.
+11. **Morrer em Aventura procedural é diferente de fugir:** encerra a expedição como FAILED, zera todo o XP atual e todas as recompensas monetárias pendentes da Guilda, e sorteia a perda de 0 a 5 unidades elegíveis. Comuns são destruídos; raros/únicos ficam no NPC de recuperação pessoal, por 200% do valor-base, sem leilão público. A **Espada de Aprendiz** e itens estruturais marcados como não transferíveis são preservados. A proteção vale para novos e antigos personagens, pela identidade estável da definição, sem proteger outras espadas. O resumo de morte persiste em F5 até você confirmar **RETORNAR À CIDADE**; o resgate já ocorreu no backend.
+12. A taxa médica padrão é **100 unidades por morte** (`MEDICAL_FEE_BASE`). Após o cutover Lunar, saldo 30/taxa 100 transfere somente30 ao Tesouro e registra70 de dívida/recebível, sem moeda negativa nem crédito fictício. Pagamentos futuros amortizam a obrigação pela facade econômica.
 13. O saldo nunca fica abaixo de **−10.000**. Cada morte que alcance ou tente ultrapassar esse limite reduz o nível em até 10, com mínimo 1. Em mortes futuras no limite, aplica novamente uma única penalidade por morte. Normalmente, morrer só zera XP e mantém o nível. O respawn restaura toda a vida e energia; `RESPAWN_HP_PERCENT` permite ajustar a porcentagem de vida apenas para esse resgate procedural.
 14. Na aba **Leilão**, apenas personagens de contas autenticadas podem dar lances. O início é `max(MIN_AUCTION_START_PRICE, ceil(valor_base × quantidade / 5))`; espada vale 100 (início 20), cristal vale 10 por unidade (20 cristais iniciam em 40). Valores são provisórios, definidos no backend. Sem valor base confiável, usa-se o mínimo configurado, padrão 1. Duração provisória: **24 horas**, configurável em `AUCTION_DURATION_HOURS`.
-15. O maior lance fica reservado: sai do saldo disponível e aparece como ouro em custódia. Ser superado devolve a reserva; aumentar seu próprio lance cobra só a diferença. Saldo disponível ≤0 impede lance, mesmo com uma reserva anterior. Não há teto comercial de lance; PostgreSQL NUMERIC e valores decimais em texto na UI preservam inteiros grandes. Ao terminar, o vencedor recebe o mesmo item/stack; o valor vai para o Tesouro (ou sink configurado), nunca para quem morreu. Sem lances, fica **UNSOLD**, arquivado em custódia, sem destruição automática. Não existe compra por NPC.
+15. O maior lance fica reservado: sai do saldo disponível e aparece como ouro em custódia. Ser superado devolve a reserva; aumentar seu próprio lance cobra só a diferença. Saldo disponível ≤0 impede lance, mesmo com uma reserva anterior. Não há teto comercial de lance; PostgreSQL NUMERIC e valores decimais em texto na UI preservam inteiros grandes. Ao terminar, o vencedor recebe o mesmo item/stack; o valor vai para o Tesouro (ou sink configurado), nunca novamente para o antigo proprietário. Sem lances, fica **UNSOLD**, arquivado em custódia, sem destruição automática. Itens confiscados por dívida foram avaliados e compensados antes da venda; não há compra de leilões por NPC.
 16. Na aba **Personagem**, distribua **1 ponto por novo nível** entre os atributos existentes: **Força e Defesa**. Prepare um ou vários pontos e confirme em lote. Eles acumulam; não há respec nesta etapa. A vida máxima continua derivada do nível. Ao perder níveis, consomem-se pontos não gastos primeiro; o restante vira `attribute_point_debt`, quitado por ganhos futuros antes de conceder novos pontos. Os atributos escolhidos permanecem.
 
 ### Política de migração dos atributos
@@ -60,7 +140,7 @@ docker compose logs backend
 docker compose down
 ```
 
-`down` conserva o volume. Migração atual: **039105b3ae1a**, que adiciona morte, saldo negativo limitado, custódia/leilões e pontos de atributo; amplia os campos monetários para NUMERIC sem truncar valores. A anterior, 904ca715f282, adicionou expedições persistentes e perigo regional. A migração anterior de stacks/inimigos é 11ac6a18a976. Aventuras antigas ocupadas são adotadas como ativas; histórico abandonado é arquivado sem aplicar penalidade retroativa. Contas, inventário, equipamentos, saldos, XP, inimigos mortos e batalhas em andamento são preservados. Faça backup dos dados importantes antes de atualizar.
+`down` conserva o volume. Migração atual: **d91e2ab604c7** (políticas comerciais/recibos/histórico, sem recompor carteiras; anterior **ca343e37b4ca**) (pepitas individuais, massa preservada, injeção administrativa segregada; decisões 7f422c075115 e cutover59d047e53dc8 preservados, sem ativação implícita); base 0.8: **4cee57744ea1** (0.8: grupos, métricas, coleta/contratos, recibos Discord e limites/índices; todas aditivas). A base 0.7 é **d0fc148417a5** (sequência, recuperação pessoal, confisco e eventos; dados anteriores preservados). A anterior é **b3057d8109ee**, que protege a espada inicial, cria sessões/papéis/auditoria administrativa, Banco Central inicialmente zerado, configurações e perfis persistentes de monstros, preservando os inimigos existentes e seu XP. A anterior, 039105b3ae1a, adicionou morte, dívida, custódia/leilões, pontos de atributo e NUMERIC. A anterior, 904ca715f282, adicionou expedições persistentes e perigo regional. A migração anterior de stacks/inimigos é 11ac6a18a976. Aventuras antigas ocupadas são adotadas como ativas; histórico abandonado é arquivado sem aplicar penalidade retroativa. Contas, inventário, equipamentos, saldos, XP, inimigos mortos e batalhas em andamento são preservados. Faça backup dos dados importantes antes de atualizar.
 
 ## Discord e limites atuais
 
@@ -72,7 +152,7 @@ docker compose --profile discord up --build -d
 
 Na aba Personagem, gere código de cinco minutos e use `/vincular` no bot; `/personagem`, `/status`, `/inventario` e `/mapa` consultam dados reais. A conexão externa depende das credenciais e não foi validada nesta entrega.
 
-A prioridade adicional escolhida no roadmap foi sinalização de perigo e feedback de exploração; combate ainda é individual por alvo. A lista de instâncias prepara encontros com grupos, mas combate contra vários alvos simultâneos e raids coletivas não estão implementados. Presença visual usa um único worker; exige broker antes de escalar. O leilão atual é exclusivo de espólios de morte. Coleta, contratos, mercado geral e economia avançada permanecem futuros. Antes de exposição pública, completar TLS, rate limiting e gestão de sessões. O bundle Phaser ainda merece otimização.
+A prioridade adicional escolhida no roadmap foi sinalização de perigo e feedback de exploração; combate ainda é individual por alvo. A lista de instâncias prepara encontros com grupos, mas combate contra vários alvos simultâneos e raids coletivas não estão implementados. Presença visual usa um único worker; exige broker antes de escalar. O leilão recebe confisco por dívida e conserva anúncios históricos de morte. Dívida ≥1000 permite tentativa independente, sem limite de cinco itens, com avaliação/abatimento/excedente e novo marco de +1000 de dívida adicional. Coleta, contratos, mercado geral e economia avançada permanecem futuros. Antes de exposição pública, completar TLS, rate limiting e gestão de sessões. O bundle Phaser ainda merece otimização.
 
 ## Configuração provisória desta etapa
 
@@ -87,4 +167,14 @@ Ajuste `.env` antes de subir a stack; `docker compose up --build -d` aplica sem 
 | AUCTION_PROCEEDS_DESTINATION | treasury | `treasury` ou `sink`, gravado ao criar o leilão |
 | AUCTION_SWEEP_SECONDS | 30 | Intervalo de resolução automática de vencidos |
 
-Leilões mantêm prazo/preço/destino originalmente gravados. A reserva de um lance feito antes da morte continua em custódia; não é item carregado nem saldo disponível para pagar a taxa médica. Se devolvida depois, amortiza a dívida. O custo efetivo da taxa é limitado pelo piso do saldo; a parte que excederia −10.000 é registrada como `waived`, e a penalidade de níveis ocorre uma vez. O Tesouro recebe somente o débito efetivamente aplicado ao saldo, preservando a soma contábil dos saldos assinados e reservas.
+Leilões mantêm prazo/preço/destino originalmente gravados. A reserva de um lance feito antes da morte continua em custódia; não é item carregado nem saldo disponível para pagar a taxa médica. Se devolvida depois, amortiza a dívida. O custo efetivo da taxa é limitado pelo piso do saldo; a parte que excederia −10.000 é registrada como `waived`, e a penalidade de níveis ocorre uma vez. Após o cutover, o Tesouro recebe apenas moedas realmente disponíveis; a parcela financiada vira dívida/recebível, sem criar massa. As descrições de saldo assinado são compatibilidade legada.
+
+## Administração Real e compatibilidade legada
+
+A interface econômica principal é **Tesouro Real / Administração do Rei**; o Banco Central antigo é histórico/compatibilidade, somente leitura no menu atual. Operações operacionais seguem [o fluxo Lunar](docs/lunar/ROYAL_ADMINISTRATION.md). As descrições antigas de emissão pelo Banco Central abaixo registram a fase legada.
+
+O painel consulta dados reais de jogadores/contas, inventário/custódia, monstros/instâncias, Guilda/Tesouro, leilões/lances, mundo/eventos e auditoria. Operações mutáveis exigem permissão de domínio, justificativa, prévia do estado/impacto e confirmação em até 5 minutos. Backend rejeita sessão normal, confirmação repetida com dados diferentes, prévia obsoleta, fundos insuficientes e transferência de recursos de teste.
+
+Banco Central começa com **reserva 0**, sem emissão retroativa. Transferência debita a conta de origem; emissão/retirada alteram oferta explicitamente e deixam ledger único por UUID. A tela distingue dinheiro disponível, dívida assinada, reservas, escrow e obrigações, apresenta reconciliação, riqueza e fluxos por período. Sugestões não executam emissão automática. Contador administrativo sandbox nunca vira ouro ou lance de jogador.
+
+Espadas históricas em custódia têm negociação suspensa, sem devolução indiscriminada. Administrador identifica item/donos/lances e pode recuperar o mesmo ID com reembolso da reserva ou autorizar reposição se houve comprador legítimo, preservando seu item. [Leilões e recuperação](docs/AUCTIONS.md) · [Viagem rápida](docs/FAST_TRAVEL.md) · [Central ADM](docs/ADMINISTRATION.md) · [Banco Central](docs/CENTRAL_BANK.md) · [Contabilidade](docs/ACCOUNTING.md) · [Segurança/auditoria](docs/SECURITY_AUDIT.md).

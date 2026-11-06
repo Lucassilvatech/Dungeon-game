@@ -1,5 +1,5 @@
 from .clock import utc_now
-from datetime import datetime
+from datetime import datetime, date
 from sqlalchemy import (
     UniqueConstraint,
     Index,
@@ -8,6 +8,7 @@ from sqlalchemy import (
     Integer,
     ForeignKey,
     DateTime,
+    Date,
     Boolean,
     CheckConstraint,
     JSON,
@@ -66,6 +67,13 @@ class Character(Base):
     coins: Mapped[int] = mapped_column(Gold(), default=0)
     unspent_attribute_points: Mapped[int] = mapped_column(default=0, server_default="0")
     attribute_point_debt: Mapped[int] = mapped_column(default=0, server_default="0")
+    created_at: Mapped[datetime | None] = mapped_column(DateTime, default=utc_now)
+    last_level_at: Mapped[datetime | None] = mapped_column(DateTime)
+    adventure_streak: Mapped[int] = mapped_column(default=0, server_default="0")
+    debt_accrued: Mapped[int] = mapped_column(Gold(), default=0, server_default="0")
+    debt_next_collection: Mapped[int] = mapped_column(
+        Gold(), default=0, server_default="0"
+    )
     room_id: Mapped[str] = mapped_column(
         ForeignKey("rooms.id"), default="city1", server_default="city1"
     )
@@ -73,8 +81,14 @@ class Character(Base):
 
 class ItemDefinition(Base):
     __tablename__ = "item_definitions"
-    __table_args__ = (CheckConstraint("max_stack_size > 0"),)
+    __table_args__ = (
+        CheckConstraint("max_stack_size > 0"),
+        CheckConstraint(
+            "id != 'sword' OR NOT death_transferable", name="starter_sword_protected"
+        ),
+    )
     id: Mapped[str] = mapped_column(String(30), primary_key=True)
+    equipment_slot: Mapped[str | None] = mapped_column(String(20))
     name: Mapped[str] = mapped_column(String(60))
     kind: Mapped[str] = mapped_column(String(20))
     power: Mapped[int] = mapped_column(default=0)
@@ -82,6 +96,10 @@ class ItemDefinition(Base):
     death_transferable: Mapped[bool] = mapped_column(
         default=True, server_default="true"
     )
+    rarity: Mapped[str] = mapped_column(
+        String(20), default="common", server_default="common"
+    )
+    unique_item: Mapped[bool] = mapped_column(default=False, server_default="false")
     stackable: Mapped[bool] = mapped_column(default=False, server_default="false")
     max_stack_size: Mapped[int] = mapped_column(default=1, server_default="1")
     description: Mapped[str] = mapped_column(String(200), default="", server_default="")
@@ -92,7 +110,7 @@ class Item(Base):
     __table_args__ = (
         CheckConstraint("quantity > 0"),
         CheckConstraint(
-            "(location != 'auction' OR (owner IS NULL AND NOT equipped)) AND (owner IS NOT NULL OR location = 'auction')",
+            "(location NOT IN ('auction','recovery','destroyed') OR (owner IS NULL AND NOT equipped)) AND (owner IS NOT NULL OR location IN ('auction','recovery','destroyed','npc'))",
             name="item_custody",
         ),
     )
@@ -117,6 +135,15 @@ class Battle(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     character_id: Mapped[int] = mapped_column(ForeignKey("characters.id"))
     enemy_id: Mapped[int | None] = mapped_column(ForeignKey("enemy_instances.id"))
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, default=utc_now)
+    damage_dealt: Mapped[int] = mapped_column(default=0, server_default="0")
+    damage_received: Mapped[int] = mapped_column(default=0, server_default="0")
+    metrics_recorded: Mapped[bool] = mapped_column(
+        default=False, server_default="false"
+    )
+    encounter_id: Mapped[int | None] = mapped_column(
+        ForeignKey("combat_encounters.id"), index=True
+    )
     monster: Mapped[str] = mapped_column(String(20))
     hp: Mapped[int] = mapped_column()
     turn: Mapped[int] = mapped_column(default=0)
@@ -223,9 +250,13 @@ class EnemyInstance(Base):
     generation: Mapped[int] = mapped_column(default=0)
     spawn_key: Mapped[str] = mapped_column(String(40))
     species: Mapped[str] = mapped_column(String(20))
+    category: Mapped[str] = mapped_column(
+        String(20), default="common", server_default="common"
+    )
     state: Mapped[str] = mapped_column(String(20), default="ALIVE")
     hp: Mapped[int] = mapped_column()
     max_hp: Mapped[int] = mapped_column()
+    xp_reward: Mapped[int] = mapped_column(default=0, server_default="0")
     level: Mapped[int] = mapped_column(default=1)
     attack: Mapped[int] = mapped_column(default=6)
     defense: Mapped[int] = mapped_column(default=2)
@@ -253,6 +284,9 @@ class Expedition(Base):
     character_id: Mapped[int] = mapped_column(ForeignKey("characters.id"), index=True)
     room_id: Mapped[str] = mapped_column(ForeignKey("rooms.id"), unique=True)
     seed: Mapped[int] = mapped_column()
+    boss_chance: Mapped[int] = mapped_column(default=100, server_default="100")
+    boss_rolled: Mapped[bool] = mapped_column(default=False, server_default="false")
+    special_boss: Mapped[bool] = mapped_column(default=False, server_default="false")
     status: Mapped[str] = mapped_column(String(20), default="ACTIVE")
     started_at: Mapped[datetime] = mapped_column(default=utc_now)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime)
@@ -288,7 +322,13 @@ class Auction(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     item_id: Mapped[int] = mapped_column(ForeignKey("items.id"))
     quantity: Mapped[int] = mapped_column()
-    death_event_id: Mapped[int] = mapped_column(ForeignKey("death_events.id"))
+    death_event_id: Mapped[int | None] = mapped_column(ForeignKey("death_events.id"))
+    hidden: Mapped[bool] = mapped_column(default=False, server_default="false")
+    archived: Mapped[bool] = mapped_column(default=False, server_default="false")
+    origin: Mapped[str] = mapped_column(
+        String(30), default="expedition_death", server_default="expedition_death"
+    )
+    assessed_value: Mapped[int] = mapped_column(Gold(), default=0, server_default="0")
     former_owner_id: Mapped[int] = mapped_column(ForeignKey("characters.id"))
     opening_price: Mapped[int] = mapped_column(Gold())
     highest_bid: Mapped[int] = mapped_column(Gold(), default=0)
@@ -312,3 +352,567 @@ class AuctionBid(Base):
     request_id: Mapped[str] = mapped_column(String(36))
     amount: Mapped[int] = mapped_column(Gold())
     created_at: Mapped[datetime] = mapped_column(default=utc_now)
+
+
+class AdminRole(Base):
+    __tablename__ = "admin_roles"
+    account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"), primary_key=True)
+    role: Mapped[str] = mapped_column(String(20))
+
+
+class AdminSession(Base):
+    __tablename__ = "admin_sessions"
+    token: Mapped[str] = mapped_column(String(64), primary_key=True)
+    account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"))
+    expires: Mapped[datetime] = mapped_column(DateTime)
+
+
+class AdminLoginAttempt(Base):
+    __tablename__ = "admin_login_attempts"
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    failures: Mapped[int] = mapped_column(default=0)
+    window_start: Mapped[datetime] = mapped_column(default=utc_now)
+
+
+class AdminOperation(Base):
+    __tablename__ = "admin_operations"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    actor_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"), index=True)
+    action: Mapped[str] = mapped_column(String(60))
+    target: Mapped[str] = mapped_column(String(80))
+    params: Mapped[dict] = mapped_column(JSON)
+    reason: Mapped[str] = mapped_column(String(500))
+    before: Mapped[dict] = mapped_column(JSON)
+    after: Mapped[dict | None] = mapped_column(JSON)
+    confirmation_hash: Mapped[str] = mapped_column(String(64))
+    status: Mapped[str] = mapped_column(String(20), default="PREVIEW")
+    created_at: Mapped[datetime] = mapped_column(default=utc_now)
+    expires: Mapped[datetime] = mapped_column(DateTime)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+
+class CentralBank(Base):
+    __tablename__ = "central_bank"
+    __table_args__ = (CheckConstraint("balance >= 0"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    balance: Mapped[int] = mapped_column(Gold(), default=0)
+
+
+class AdminTestCredit(Base):
+    __tablename__ = "admin_test_credits"
+    __table_args__ = (CheckConstraint("balance >= 0"),)
+    account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"), primary_key=True)
+    balance: Mapped[int] = mapped_column(Gold(), default=0)
+
+
+class GameSetting(Base):
+    __tablename__ = "game_settings"
+    key: Mapped[str] = mapped_column(String(60), primary_key=True)
+    value: Mapped[dict] = mapped_column(JSON)
+
+
+class MonsterDefinition(Base):
+    __tablename__ = "monster_definitions"
+    __table_args__ = (
+        CheckConstraint(
+            "hp > 0 AND attack >= 0 AND defense >= 0 AND level >= 1 AND xp >= 0"
+        ),
+    )
+    id: Mapped[str] = mapped_column(String(20), primary_key=True)
+    procedural_config: Mapped[dict] = mapped_column(
+        JSON, default=dict, server_default="{}"
+    )
+    hp: Mapped[int] = mapped_column()
+    attack: Mapped[int] = mapped_column()
+    defense: Mapped[int] = mapped_column()
+    level: Mapped[int] = mapped_column()
+    xp: Mapped[int] = mapped_column()
+
+
+class RecoveryItem(Base):
+    __tablename__ = "recovery_items"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id"), index=True)
+    item_id: Mapped[int] = mapped_column(ForeignKey("items.id"))
+    death_event_id: Mapped[int] = mapped_column(ForeignKey("death_events.id"))
+    price: Mapped[int] = mapped_column(Gold())
+    recovered_at: Mapped[datetime | None] = mapped_column(DateTime)
+    request_id: Mapped[str | None] = mapped_column(String(36))
+    __table_args__ = (
+        UniqueConstraint("death_event_id", "item_id"),
+        CheckConstraint("price >= 0"),
+    )
+
+
+class DebtCollection(Base):
+    __tablename__ = "debt_collections"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id"), index=True)
+    accrued_checkpoint: Mapped[int] = mapped_column(Gold())
+    debt_before: Mapped[int] = mapped_column(Gold())
+    debt_after: Mapped[int] = mapped_column(Gold())
+    assessed: Mapped[int] = mapped_column(Gold())
+    surplus: Mapped[int] = mapped_column(Gold())
+    items: Mapped[list] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(default=utc_now)
+
+
+class ScheduledWorldEvent(Base):
+    __tablename__ = "scheduled_world_events"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    name: Mapped[str] = mapped_column(String(100))
+    description: Mapped[str] = mapped_column(String(500))
+    region: Mapped[str] = mapped_column(String(80))
+    floor_id: Mapped[int] = mapped_column(ForeignKey("floors.id"))
+    effect: Mapped[str] = mapped_column(String(30))
+    intensity: Mapped[int] = mapped_column()
+    conditions: Mapped[str] = mapped_column(String(200))
+    starts_at: Mapped[datetime] = mapped_column(DateTime)
+    ends_at: Mapped[datetime] = mapped_column(DateTime)
+    cancelled_at: Mapped[datetime | None] = mapped_column(DateTime)
+    operation_id: Mapped[str] = mapped_column(
+        ForeignKey("admin_operations.id"), unique=True
+    )
+
+
+class CombatEncounter(Base):
+    __tablename__ = "combat_encounters"
+    __table_args__ = (
+        UniqueConstraint("character_id", "request_id"),
+        CheckConstraint("turn >= 0 AND size >= 2 AND size <= 3"),
+        CheckConstraint("status IN ('ACTIVE','WON','LOST','FLED')"),
+        Index(
+            "uq_active_combat_encounter",
+            "character_id",
+            unique=True,
+            postgresql_where=text("status = 'ACTIVE'"),
+        ),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id"), index=True)
+    room_id: Mapped[str] = mapped_column(ForeignKey("rooms.id"))
+    request_id: Mapped[str] = mapped_column(String(36))
+    enemy_ids: Mapped[list] = mapped_column(JSON)
+    selected_enemy_id: Mapped[int] = mapped_column()
+    size: Mapped[int] = mapped_column()
+    turn: Mapped[int] = mapped_column(default=0)
+    status: Mapped[str] = mapped_column(String(20), default="ACTIVE")
+    metrics_recorded: Mapped[bool] = mapped_column(
+        default=False, server_default="false"
+    )
+    damage_dealt: Mapped[int] = mapped_column(default=0)
+    damage_received: Mapped[int] = mapped_column(default=0)
+    last_round: Mapped[list] = mapped_column(JSON, default=list)
+    started_at: Mapped[datetime] = mapped_column(default=utc_now)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+
+class GameplayDay(Base):
+    __tablename__ = "gameplay_days"
+    character_id: Mapped[int] = mapped_column(
+        ForeignKey("characters.id"), primary_key=True
+    )
+    day: Mapped[date] = mapped_column(Date, primary_key=True, index=True)
+    counters: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class ResourceNode(Base):
+    __tablename__ = "resource_nodes"
+    __table_args__ = (
+        UniqueConstraint("character_id", "room_id", "generation", "node_key"),
+        CheckConstraint("capacity > 0 AND remaining >= 0 AND remaining <= capacity"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id"), index=True)
+    room_id: Mapped[str] = mapped_column(ForeignKey("rooms.id"), index=True)
+    generation: Mapped[int] = mapped_column(default=0)
+    node_key: Mapped[str] = mapped_column(String(40))
+    definition: Mapped[str] = mapped_column(ForeignKey("item_definitions.id"))
+    x: Mapped[int] = mapped_column()
+    y: Mapped[int] = mapped_column()
+    capacity: Mapped[int] = mapped_column()
+    remaining: Mapped[int] = mapped_column()
+    enabled: Mapped[bool] = mapped_column(default=True, server_default="true")
+
+
+class GuildContract(Base):
+    __tablename__ = "guild_contracts"
+    __table_args__ = (
+        CheckConstraint(
+            "required > 0 AND reward > 0 AND reserved >= 0 AND slots > 0 AND taken >= 0 AND taken <= slots"
+        ),
+        CheckConstraint("kind IN ('kill','collect','deliver')"),
+        CheckConstraint("status IN ('OPEN','CANCELLED','COMPLETED')"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100))
+    description: Mapped[str] = mapped_column(String(500))
+    kind: Mapped[str] = mapped_column(String(20))
+    target: Mapped[str] = mapped_column(String(30))
+    required: Mapped[int] = mapped_column()
+    reward: Mapped[int] = mapped_column(Gold())
+    slots: Mapped[int] = mapped_column()
+    taken: Mapped[int] = mapped_column(default=0)
+    reserved: Mapped[int] = mapped_column(Gold(), default=0)
+    status: Mapped[str] = mapped_column(String(20), default="OPEN", index=True)
+    created_at: Mapped[datetime] = mapped_column(default=utc_now)
+    operation_id: Mapped[str | None] = mapped_column(ForeignKey("admin_operations.id"))
+
+
+class CharacterContract(Base):
+    __tablename__ = "character_contracts"
+    __table_args__ = (
+        UniqueConstraint("character_id", "contract_id"),
+        UniqueConstraint("character_id", "request_id"),
+        CheckConstraint("progress >= 0"),
+        CheckConstraint("status IN ('ACTIVE','PAID','CANCELLED')"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id"), index=True)
+    contract_id: Mapped[int] = mapped_column(
+        ForeignKey("guild_contracts.id"), index=True
+    )
+    request_id: Mapped[str] = mapped_column(String(36))
+    progress: Mapped[int] = mapped_column(default=0)
+    status: Mapped[str] = mapped_column(String(20), default="ACTIVE", index=True)
+    accepted_at: Mapped[datetime] = mapped_column(default=utc_now)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime)
+    claim_request_id: Mapped[str | None] = mapped_column(String(36))
+
+
+class DiscordOperation(Base):
+    __tablename__ = "discord_operations"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"), index=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id"), index=True)
+    discord_id: Mapped[str] = mapped_column(String(30))
+    item_id: Mapped[int] = mapped_column(ForeignKey("items.id"))
+    equipped: Mapped[bool] = mapped_column(Boolean)
+    before: Mapped[dict] = mapped_column(JSON)
+    confirmation_hash: Mapped[str] = mapped_column(String(64))
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    status: Mapped[str] = mapped_column(String(20), default="PREVIEW")
+    result: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    __table_args__ = (CheckConstraint("status IN ('PREVIEW','APPLIED')"),)
+
+
+class RateLimitBucket(Base):
+    __tablename__ = "rate_limit_buckets"
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    window: Mapped[int] = mapped_column()
+    count: Mapped[int] = mapped_column()
+    __table_args__ = (CheckConstraint("count > 0"),)
+
+
+Index("ix_battles_character_status", Battle.character_id, Battle.status, Battle.claimed)
+Index("ix_items_owner_location", Item.owner, Item.location)
+Index(
+    "ix_world_events_character_recent",
+    WorldEvent.payload["character"].as_integer(),
+    WorldEvent.id,
+)
+Index(
+    "ix_contract_acceptance_active",
+    CharacterContract.character_id,
+    CharacterContract.status,
+    CharacterContract.contract_id,
+)
+
+
+class LunarAsset(Base):
+    __tablename__ = "lunar_assets"
+    code: Mapped[str] = mapped_column(String(30), primary_key=True)
+    kind: Mapped[str] = mapped_column(String(20))
+    weight_mg: Mapped[int] = mapped_column(Gold())
+    __table_args__ = (
+        CheckConstraint("kind IN ('nugget','coin')"),
+        CheckConstraint("weight_mg > 0"),
+    )
+
+
+class LunarAccount(Base):
+    __tablename__ = "lunar_accounts"
+    id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    kind: Mapped[str] = mapped_column(String(20))
+    character_id: Mapped[int | None] = mapped_column(
+        ForeignKey("characters.id"), unique=True
+    )
+    __table_args__ = (
+        CheckConstraint(
+            "kind IN ('player','npc','guild','treasury','escrow','expedition')"
+        ),
+    )
+
+
+class LunarHolding(Base):
+    __tablename__ = "lunar_holdings"
+    account_id: Mapped[str] = mapped_column(
+        ForeignKey("lunar_accounts.id"), primary_key=True
+    )
+    asset_code: Mapped[str] = mapped_column(
+        ForeignKey("lunar_assets.code"), primary_key=True
+    )
+    quantity: Mapped[int] = mapped_column(Gold(), default=0)
+    __table_args__ = (CheckConstraint("quantity >= 0"),)
+
+
+class LunarEntry(Base):
+    __tablename__ = "lunar_entries"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    key: Mapped[str] = mapped_column(String(160), unique=True)
+    kind: Mapped[str] = mapped_column(String(40), index=True)
+    actor: Mapped[str] = mapped_column(String(80))
+    reason: Mapped[str] = mapped_column(String(500))
+    fingerprint: Mapped[str] = mapped_column(String(64))
+    postings: Mapped[list] = mapped_column(JSON)
+    context: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(default=utc_now)
+
+
+class LunarSupply(Base):
+    __tablename__ = "lunar_supply"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    admin_injected_mg: Mapped[int] = mapped_column(
+        Gold(), default=0, server_default="0"
+    )
+    discovered_mg: Mapped[int] = mapped_column(Gold(), default=0)
+    legacy_backing_mg: Mapped[int] = mapped_column(Gold(), default=0)
+    destroyed_mg: Mapped[int] = mapped_column(Gold(), default=0)
+    minted_mg: Mapped[int] = mapped_column(Gold(), default=0)
+    coin_burned_mg: Mapped[int] = mapped_column(Gold(), default=0)
+    config: Mapped[dict] = mapped_column(JSON, default=dict)
+    __table_args__ = (
+        CheckConstraint("id = 1"),
+        CheckConstraint("admin_injected_mg >= 0", name="nonnegative_admin_injection"),
+        CheckConstraint(
+            "discovered_mg >= 0 AND legacy_backing_mg >= 0 AND destroyed_mg >= 0 AND minted_mg >= 0 AND coin_burned_mg >= 0"
+        ),
+    )
+
+
+class LunarCutover(Base):
+    __tablename__ = "lunar_cutovers"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    request_id: Mapped[str] = mapped_column(String(36), unique=True)
+    fingerprint: Mapped[str] = mapped_column(String(64))
+    actor: Mapped[str] = mapped_column(String(80))
+    reason: Mapped[str] = mapped_column(String(500))
+    converted_at: Mapped[datetime] = mapped_column(default=utc_now)
+    report: Mapped[dict] = mapped_column(JSON)
+    __table_args__ = (CheckConstraint("id = 1"),)
+
+
+class LunarDebt(Base):
+    __tablename__ = "lunar_debts"
+    character_id: Mapped[int] = mapped_column(
+        ForeignKey("characters.id"), primary_key=True
+    )
+    creditor: Mapped[str] = mapped_column(
+        ForeignKey("lunar_accounts.id"), default="treasury"
+    )
+    weight_mg: Mapped[int] = mapped_column(Gold(), default=0)
+    __table_args__ = (CheckConstraint("weight_mg >= 0"),)
+
+
+class NPCStock(Base):
+    __tablename__ = "npc_stocks"
+    item_id: Mapped[int] = mapped_column(ForeignKey("items.id"), primary_key=True)
+    account_id: Mapped[str] = mapped_column(ForeignKey("lunar_accounts.id"), index=True)
+    sale_weight_mg: Mapped[int] = mapped_column(Gold())
+    __table_args__ = (CheckConstraint("sale_weight_mg >= 0"),)
+
+
+class LunarResourceGeneration(Base):
+    """Immutable decision, including no spawn. Solo eligibility never follows RaidMember."""
+
+    __tablename__ = "lunar_resource_generations"
+    expedition_id: Mapped[int] = mapped_column(
+        ForeignKey("expeditions.id"), primary_key=True
+    )
+    room_id: Mapped[str] = mapped_column(ForeignKey("rooms.id"), unique=True)
+    generation: Mapped[int] = mapped_column()
+    version: Mapped[str] = mapped_column(String(40))
+    group_snapshot: Mapped[dict] = mapped_column(JSON)
+    config_snapshot: Mapped[dict] = mapped_column(JSON)
+    decision_hash: Mapped[str] = mapped_column(String(64))
+    spawned: Mapped[bool] = mapped_column()
+    created_at: Mapped[datetime] = mapped_column(default=utc_now)
+
+
+class LunarResourceOccurrence(Base):
+    __tablename__ = "lunar_resource_occurrences"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    expedition_id: Mapped[int] = mapped_column(
+        ForeignKey("lunar_resource_generations.expedition_id"), index=True
+    )
+    room_id: Mapped[str] = mapped_column(ForeignKey("rooms.id"), index=True)
+    generation: Mapped[int] = mapped_column()
+    spawn_key: Mapped[str] = mapped_column(String(40))
+    asset_code: Mapped[str | None] = mapped_column(ForeignKey("lunar_assets.code"))
+    weight_mg: Mapped[int] = mapped_column(Gold())
+    x: Mapped[int] = mapped_column()
+    y: Mapped[int] = mapped_column()
+    state: Mapped[str] = mapped_column(String(20), default="AVAILABLE", index=True)
+    collected_by: Mapped[int | None] = mapped_column(
+        ForeignKey("characters.id"), index=True
+    )
+    collected_at: Mapped[datetime | None] = mapped_column(DateTime)
+    receipt_key: Mapped[str | None] = mapped_column(String(160), unique=True)
+    created_at: Mapped[datetime] = mapped_column(default=utc_now)
+    __table_args__ = (
+        UniqueConstraint("expedition_id", "generation", "spawn_key"),
+        CheckConstraint(
+            "weight_mg >= 100000 AND weight_mg <= 1000000 AND mod(weight_mg,1000) = 0",
+            name="variable_resource_weight",
+        ),
+        CheckConstraint("x >= 0 AND y >= 0 AND generation >= 0"),
+        CheckConstraint("state IN ('AVAILABLE','COLLECTED','EXPIRED')"),
+        CheckConstraint(
+            "(state = 'COLLECTED' AND collected_by IS NOT NULL AND collected_at IS NOT NULL AND receipt_key IS NOT NULL) OR (state <> 'COLLECTED' AND collected_by IS NULL AND collected_at IS NULL AND receipt_key IS NULL)"
+        ),
+    )
+
+
+class LunarMineralLot(Base):
+    __tablename__ = "lunar_mineral_lots"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    weight_mg: Mapped[int] = mapped_column(Gold())
+    owner_account_id: Mapped[str] = mapped_column(
+        ForeignKey("lunar_accounts.id"), index=True
+    )
+    origin_occurrence_id: Mapped[int | None] = mapped_column(
+        ForeignKey("lunar_resource_occurrences.id"), index=True
+    )
+    parent_lot_id: Mapped[int | None] = mapped_column(
+        ForeignKey("lunar_mineral_lots.id"), index=True
+    )
+    state: Mapped[str] = mapped_column(String(20), default="HELD", index=True)
+    source_entry_id: Mapped[int | None] = mapped_column(ForeignKey("lunar_entries.id"))
+    split_operation_id: Mapped[int | None] = mapped_column(
+        ForeignKey("lunar_entries.id")
+    )
+    mint_operation_id: Mapped[int | None] = mapped_column(
+        ForeignKey("lunar_entries.id")
+    )
+    burn_operation_id: Mapped[int | None] = mapped_column(
+        ForeignKey("lunar_entries.id")
+    )
+    created_at: Mapped[datetime] = mapped_column(default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(default=utc_now)
+    consumed_at: Mapped[datetime | None] = mapped_column(DateTime)
+    details: Mapped[dict] = mapped_column(JSON, default=dict)
+    __table_args__ = (
+        CheckConstraint("weight_mg >= 1000 AND mod(weight_mg,1000) = 0"),
+        CheckConstraint("state IN ('HELD','SPLIT','MINTED','BURNED')"),
+        CheckConstraint(
+            "(state='HELD' AND consumed_at IS NULL) OR (state<>'HELD' AND consumed_at IS NOT NULL)"
+        ),
+    )
+
+
+class GuildItemPolicy(Base):
+    __tablename__ = "guild_item_policies"
+    definition_id: Mapped[str] = mapped_column(
+        ForeignKey("item_definitions.id"), primary_key=True
+    )
+    buy_price_units: Mapped[int] = mapped_column(Gold(), default=0)
+    sell_price_units: Mapped[int] = mapped_column(Gold(), default=0)
+    buy_enabled: Mapped[bool] = mapped_column(default=False)
+    sell_enabled: Mapped[bool] = mapped_column(default=False)
+    revision: Mapped[int] = mapped_column(default=1)
+    updated_at: Mapped[datetime] = mapped_column(default=utc_now)
+    updated_by: Mapped[str] = mapped_column(String(80), default="migration")
+    __table_args__ = (
+        CheckConstraint(
+            "buy_price_units >= 0 AND sell_price_units >= 0 AND revision >= 1"
+        ),
+    )
+
+
+class GuildPriceHistory(Base):
+    __tablename__ = "guild_price_history"
+    request_id: Mapped[str] = mapped_column(
+        ForeignKey("admin_operations.id"), primary_key=True
+    )
+    policy_key: Mapped[str] = mapped_column(String(80), index=True, primary_key=True)
+    before: Mapped[dict] = mapped_column(JSON)
+    after: Mapped[dict] = mapped_column(JSON)
+    actor_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"))
+    reason: Mapped[str] = mapped_column(String(500))
+    created_at: Mapped[datetime] = mapped_column(default=utc_now)
+
+
+class GuildTradeReceipt(Base):
+    __tablename__ = "guild_trade_receipts"
+    key: Mapped[str] = mapped_column(String(160), primary_key=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id"), index=True)
+    parameters: Mapped[dict] = mapped_column(JSON)
+    result: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(default=utc_now)
+
+
+class NpcProfile(Base):
+    __tablename__ = "npc_profiles"
+    id: Mapped[str] = mapped_column(String(24), primary_key=True)
+    account_id: Mapped[str] = mapped_column(
+        ForeignKey("lunar_accounts.id"), unique=True
+    )
+    name: Mapped[str] = mapped_column(String(60))
+    enabled: Mapped[bool] = mapped_column(default=True)
+    production_enabled: Mapped[bool] = mapped_column(default=True)
+    purchase_enabled: Mapped[bool] = mapped_column(default=True)
+    sale_enabled: Mapped[bool] = mapped_column(default=True)
+    fixed_margin: Mapped[int] = mapped_column(Gold(), default=0)
+    factors: Mapped[dict] = mapped_column(JSON, default=dict)
+    revision: Mapped[int] = mapped_column(default=1)
+    last_cycle: Mapped[int] = mapped_column(Gold(), default=-1)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+    __table_args__ = (
+        CheckConstraint("fixed_margin >= 0 AND revision > 0 AND last_cycle >= -1"),
+    )
+
+
+class NpcInventoryPolicy(Base):
+    __tablename__ = "npc_inventory_policies"
+    npc_id: Mapped[str] = mapped_column(ForeignKey("npc_profiles.id"), primary_key=True)
+    definition_id: Mapped[str] = mapped_column(
+        ForeignKey("item_definitions.id"), primary_key=True
+    )
+    capacity: Mapped[int] = mapped_column(Gold())
+    reorder_point: Mapped[int] = mapped_column(Gold(), default=0)
+    order_quantity: Mapped[int] = mapped_column(Gold(), default=10)
+    target_stock: Mapped[int] = mapped_column(Gold(), default=0)
+    minimum_lot_size: Mapped[int] = mapped_column(Gold(), default=1)
+    order_step: Mapped[int] = mapped_column(Gold(), default=1)
+    production_enabled: Mapped[bool] = mapped_column(default=True)
+    buy_enabled: Mapped[bool] = mapped_column(default=True)
+    sell_enabled: Mapped[bool] = mapped_column(default=True)
+    revision: Mapped[int] = mapped_column(default=1)
+    status: Mapped[str] = mapped_column(String(40), default="IDLE")
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+    __table_args__ = (
+        CheckConstraint(
+            "capacity >= 0 AND reorder_point >= 0 AND reorder_point <= capacity AND target_stock >= 0 AND target_stock <= capacity AND order_quantity > 0 AND minimum_lot_size > 0 AND order_step > 0 AND revision > 0"
+        ),
+    )
+
+
+class NpcRecipe(Base):
+    __tablename__ = "npc_recipes"
+    result_id: Mapped[str] = mapped_column(
+        ForeignKey("item_definitions.id"), primary_key=True
+    )
+    npc_id: Mapped[str] = mapped_column(ForeignKey("npc_profiles.id"))
+    ingredients: Mapped[dict] = mapped_column(JSON)
+    factor_key: Mapped[str] = mapped_column(String(24))
+    priority: Mapped[int] = mapped_column()
+
+
+class MarketRevision(Base):
+    __tablename__ = "market_revisions"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    fingerprint: Mapped[str] = mapped_column(String(64))
+    snapshot: Mapped[dict] = mapped_column(JSON)
+    actor: Mapped[str] = mapped_column(String(80))
+    reason: Mapped[str] = mapped_column(String(500))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)

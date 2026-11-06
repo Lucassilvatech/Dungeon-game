@@ -1,0 +1,410 @@
+{
+  "samples_per_profile": 10000,
+  "formula_07": "low+floor(span*u), u=r^(1/(1+k*p))",
+  "formula_08": "high if span>0 and u>=0.995 else low+floor(span*u)",
+  "frozen_instances": "unchanged",
+  "results": {
+    "slime:0": {
+      "before": {
+        "level": {
+          "min": 1,
+          "max": 4,
+          "mean": 2.5112,
+          "max_frequency": 0.0
+        },
+        "hp": {
+          "min": 24,
+          "max": 34,
+          "mean": 29.0313,
+          "max_frequency": 0.0
+        },
+        "attack": {
+          "min": 6,
+          "max": 8,
+          "mean": 6.8309,
+          "max_frequency": 0.0639
+        },
+        "defense": {
+          "min": 2,
+          "max": 3,
+          "mean": 2.3758,
+          "max_frequency": 0.3758
+        },
+        "xp": {
+          "min": 30,
+          "max": 40,
+          "mean": 35.0358,
+          "max_frequency": 0.0
+        }
+      },
+      "after": {
+        "level": {
+          "mean": 2.5167,
+          "min": 1,
+          "max": 5,
+          "max_frequency": 0.0055
+        },
+        "hp": {
+          "mean": 29.042,
+          "min": 24,
+          "max": 36,
+          "max_frequency": 0.001
+        },
+        "attack": {
+          "mean": 6.8337,
+          "min": 6,
+          "max": 8,
+          "max_frequency": 0.0667
+        },
+        "defense": {
+          "mean": 2.376,
+          "min": 2,
+          "max": 3,
+          "max_frequency": 0.376
+        },
+        "xp": {
+          "mean": 35.0465,
+          "min": 30,
+          "max": 42,
+          "max_frequency": 0.0009
+        }
+      },
+      "level_mean_delta": 0.00550000000000006
+    },
+    "slime:0.5": {
+      "before": {
+        "level": {
+          "min": 1,
+          "max": 4,
+          "mean": 3.3145,
+          "max_frequency": 0.0
+        },
+        "hp": {
+          "min": 24,
+          "max": 34,
+          "mean": 31.3172,
+          "max_frequency": 0.0
+        },
+        "attack": {
+          "min": 6,
+          "max": 8,
+          "mean": 7.2026,
+          "max_frequency": 0.2282
+        },
+        "defense": {
+          "min": 2,
+          "max": 3,
+          "mean": 2.7529,
+          "max_frequency": 0.7529
+        },
+        "xp": {
+          "min": 30,
+          "max": 40,
+          "mean": 37.3217,
+          "max_frequency": 0.0
+        }
+      },
+      "after": {
+        "level": {
+          "mean": 3.3287,
+          "min": 1,
+          "max": 5,
+          "max_frequency": 0.0142
+        },
+        "hp": {
+          "mean": 31.3451,
+          "min": 24,
+          "max": 36,
+          "max_frequency": 0.0031
+        },
+        "attack": {
+          "mean": 7.2099,
+          "min": 6,
+          "max": 8,
+          "max_frequency": 0.2355
+        },
+        "defense": {
+          "mean": 2.7529,
+          "min": 2,
+          "max": 3,
+          "max_frequency": 0.7529
+        },
+        "xp": {
+          "mean": 37.3495,
+          "min": 30,
+          "max": 42,
+          "max_frequency": 0.0039
+        }
+      },
+      "level_mean_delta": 0.014200000000000212
+    },
+    "slime:1": {
+      "before": {
+        "level": {
+          "min": 1,
+          "max": 4,
+          "mean": 3.6262,
+          "max_frequency": 0.0
+        },
+        "hp": {
+          "min": 25,
+          "max": 34,
+          "mean": 32.2861,
+          "max_frequency": 0.0
+        },
+        "attack": {
+          "min": 6,
+          "max": 8,
+          "mean": 7.3969,
+          "max_frequency": 0.3995
+        },
+        "defense": {
+          "min": 2,
+          "max": 3,
+          "mean": 2.9127,
+          "max_frequency": 0.9127
+        },
+        "xp": {
+          "min": 31,
+          "max": 40,
+          "mean": 38.2937,
+          "max_frequency": 0.0
+        }
+      },
+      "after": {
+        "level": {
+          "mean": 3.6472,
+          "min": 1,
+          "max": 5,
+          "max_frequency": 0.021
+        },
+        "hp": {
+          "mean": 32.3267,
+          "min": 25,
+          "max": 36,
+          "max_frequency": 0.0067
+        },
+        "attack": {
+          "mean": 7.4058,
+          "min": 6,
+          "max": 8,
+          "max_frequency": 0.4084
+        },
+        "defense": {
+          "mean": 2.9127,
+          "min": 2,
+          "max": 3,
+          "max_frequency": 0.9127
+        },
+        "xp": {
+          "mean": 38.3351,
+          "min": 31,
+          "max": 42,
+          "max_frequency": 0.0068
+        }
+      },
+      "level_mean_delta": 0.02100000000000035
+    },
+    "goblin:0": {
+      "before": {
+        "level": {
+          "min": 2,
+          "max": 4,
+          "mean": 3.0114,
+          "max_frequency": 0.0
+        },
+        "hp": {
+          "min": 30,
+          "max": 41,
+          "mean": 35.4988,
+          "max_frequency": 0.0
+        },
+        "attack": {
+          "min": 7,
+          "max": 9,
+          "mean": 7.7768,
+          "max_frequency": 0.0339
+        },
+        "defense": {
+          "min": 3,
+          "max": 4,
+          "mean": 3.3384,
+          "max_frequency": 0.3384
+        },
+        "xp": {
+          "min": 40,
+          "max": 51,
+          "mean": 45.5155,
+          "max_frequency": 0.0
+        }
+      },
+      "after": {
+        "level": {
+          "mean": 3.0169,
+          "min": 2,
+          "max": 5,
+          "max_frequency": 0.0055
+        },
+        "hp": {
+          "mean": 35.5155,
+          "min": 30,
+          "max": 44,
+          "max_frequency": 0.001
+        },
+        "attack": {
+          "mean": 7.78,
+          "min": 7,
+          "max": 9,
+          "max_frequency": 0.0371
+        },
+        "defense": {
+          "mean": 3.3394,
+          "min": 3,
+          "max": 4,
+          "max_frequency": 0.3394
+        },
+        "xp": {
+          "mean": 45.5326,
+          "min": 40,
+          "max": 54,
+          "max_frequency": 0.0008
+        }
+      },
+      "level_mean_delta": 0.00550000000000006
+    },
+    "goblin:0.5": {
+      "before": {
+        "level": {
+          "min": 2,
+          "max": 4,
+          "mean": 3.5838,
+          "max_frequency": 0.0
+        },
+        "hp": {
+          "min": 30,
+          "max": 41,
+          "mean": 38.0733,
+          "max_frequency": 0.0
+        },
+        "attack": {
+          "min": 7,
+          "max": 9,
+          "mean": 8.0848,
+          "max_frequency": 0.1196
+        },
+        "defense": {
+          "min": 3,
+          "max": 4,
+          "mean": 3.725,
+          "max_frequency": 0.725
+        },
+        "xp": {
+          "min": 40,
+          "max": 51,
+          "mean": 48.0862,
+          "max_frequency": 0.0
+        }
+      },
+      "after": {
+        "level": {
+          "mean": 3.598,
+          "min": 2,
+          "max": 5,
+          "max_frequency": 0.0142
+        },
+        "hp": {
+          "mean": 38.1162,
+          "min": 30,
+          "max": 44,
+          "max_frequency": 0.0025
+        },
+        "attack": {
+          "mean": 8.0955,
+          "min": 7,
+          "max": 9,
+          "max_frequency": 0.1303
+        },
+        "defense": {
+          "mean": 3.7256,
+          "min": 3,
+          "max": 4,
+          "max_frequency": 0.7256
+        },
+        "xp": {
+          "mean": 48.1296,
+          "min": 40,
+          "max": 54,
+          "max_frequency": 0.0037
+        }
+      },
+      "level_mean_delta": 0.014199999999999768
+    },
+    "goblin:1": {
+      "before": {
+        "level": {
+          "min": 2,
+          "max": 4,
+          "mean": 3.7923,
+          "max_frequency": 0.0
+        },
+        "hp": {
+          "min": 31,
+          "max": 41,
+          "mean": 39.1247,
+          "max_frequency": 0.0
+        },
+        "attack": {
+          "min": 7,
+          "max": 9,
+          "mean": 8.2126,
+          "max_frequency": 0.2167
+        },
+        "defense": {
+          "min": 3,
+          "max": 4,
+          "mean": 3.8875,
+          "max_frequency": 0.8875
+        },
+        "xp": {
+          "min": 41,
+          "max": 51,
+          "mean": 49.1284,
+          "max_frequency": 0.0
+        }
+      },
+      "after": {
+        "level": {
+          "mean": 3.8133,
+          "min": 2,
+          "max": 5,
+          "max_frequency": 0.021
+        },
+        "hp": {
+          "mean": 39.1886,
+          "min": 31,
+          "max": 44,
+          "max_frequency": 0.0061
+        },
+        "attack": {
+          "mean": 8.229,
+          "min": 7,
+          "max": 9,
+          "max_frequency": 0.2331
+        },
+        "defense": {
+          "mean": 3.8877,
+          "min": 3,
+          "max": 4,
+          "max_frequency": 0.8877
+        },
+        "xp": {
+          "mean": 49.1915,
+          "min": 41,
+          "max": 54,
+          "max_frequency": 0.0054
+        }
+      },
+      "level_mean_delta": 0.020999999999999908
+    }
+  }
+}

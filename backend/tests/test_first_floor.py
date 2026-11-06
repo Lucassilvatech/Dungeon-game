@@ -168,7 +168,8 @@ def test_healer_removed_and_safe_rest(client):
     assert client.post("/interact", json={}, headers=h).status_code == 409
     assert client.post("/rest", json={}, headers=h).status_code == 409
     navigate(client, h, "city1")
-    assert state(client, h)["map"]["npc"] is None
+    assert state(client, h)["map"]["npc_role"] == "recovery"
+    assert client.post("/interact", json={}, headers=h).status_code == 409
     assert client.post("/rest", json={}, headers=h).status_code == 200
 
 

@@ -4,10 +4,11 @@ from sqlalchemy import select
 from .models import DeathEvent, Expedition, Room, Battle
 from .clock import utc_now
 from .rooms import RoomType, event, enter
-from .config import settings
+from .config import settings, runtime_setting
 from .economy import medical_fee, DEBT_LIMIT
+from .finance import funds, debt_units
 from .attributes import penalize_levels
-from .auctions import create_from_death
+from .recovery import lose
 
 
 def resolve(db, c, battle):
@@ -55,9 +56,14 @@ def resolve(db, c, battle):
         amount=lost,
         adjustments=adjustments,
     )
+    from .observability import add
+
+    add(db, c, deaths=1)
     xp_lost = c.xp
     c.xp = 0
-    fee = medical_fee(db, c, settings.medical_fee_base, death.id, expedition.id)
+    fee = medical_fee(
+        db, c, runtime_setting(db, "medical_fee_base"), death.id, expedition.id
+    )
     penalty = dict(
         level_before=c.level,
         level_after=c.level,
@@ -65,7 +71,7 @@ def resolve(db, c, battle):
         unspent_consumed=0,
         attribute_debt_added=0,
     )
-    at_limit = c.coins == -DEBT_LIMIT
+    at_limit = debt_units(db, c) == DEBT_LIMIT
     if at_limit:
         penalty = penalize_levels(c)
         event(
@@ -76,7 +82,11 @@ def resolve(db, c, battle):
             death_event_id=death.id,
             **penalty,
         )
-    items = create_from_death(db, c, death)
+    items = lose(db, c, death)
+    c.adventure_streak = 0
+    from .debt import collect
+
+    collection = collect(db, c)
     expedition.status = "FAILED"
     expedition.finished_at = utc_now()
     receipt = dict(
@@ -85,8 +95,9 @@ def resolve(db, c, battle):
         xp_lost=xp_lost,
         pending_lost=lost,
         pending_lost_exact=str(lost),
-        balance_after_exact=str(c.coins),
+        balance_after_exact=str(funds(db, c)),
         items=items,
+        debt_collection_id=collection.id if collection else None,
         debt_limit_reached=at_limit,
         **penalty,
     )
@@ -105,6 +116,9 @@ def resolve(db, c, battle):
     c.hp = max(1, max_hp * settings.respawn_hp_percent // 100)
     c.energy = 10
     db.flush()
+    from .procedural_retention import prune
+
+    prune(db, c, room.id)
     return receipt
 
 

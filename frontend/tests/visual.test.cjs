@@ -1,0 +1,394 @@
+const { test } = require("node:test"),
+  assert = require("node:assert/strict"),
+  fs = require("node:fs"),
+  path = require("node:path"),
+  ts = require("typescript"),
+  Module = require("node:module");
+const cache = {};
+function load(file) {
+  file = path.resolve(__dirname, "../src/visual", file + ".ts");
+  if (cache[file]) return cache[file].exports;
+  const m = new Module(file, module);
+  cache[file] = m;
+  m.filename = file;
+  m.paths = module.paths;
+  const original = m.require.bind(m);
+  m.require = (id) =>
+    id.startsWith(".")
+      ? load(
+          path.relative(
+            path.resolve(__dirname, "../src/visual"),
+            path.resolve(path.dirname(file), id),
+          ),
+        )
+      : original(id);
+  m._compile(
+    ts.transpileModule(fs.readFileSync(file, "utf8"), {
+      compilerOptions: {
+        module: ts.ModuleKind.CommonJS,
+        target: ts.ScriptTarget.ES2022,
+      },
+    }).outputText,
+    file,
+  );
+  return m.exports;
+}
+const { resolveTheme, tileHash, THEMES } = load("themes"),
+  { appearance, actorFrame, direction } = load("appearance"),
+  { placementMask, canPlace } = load("placement");
+const state = (kind = "PROCEDURAL", theme = "moss_stone") => ({
+  room: { id: "test-room", kind, exits: [{ x: 28, y: 12 }] },
+  map: {
+    width: 32,
+    height: 24,
+    seed: 158,
+    walls: [],
+    monsters: { slime: [8, 8] },
+    npc: [10, 5],
+    service_npcs: [{ x: 20, y: 5 }],
+    portal: [25, 10],
+    gather_nodes: [{ x: 20, y: 18 }],
+    lunar_resources: [{ x: 23, y: 18 }],
+    theme,
+  },
+});
+for (const [k, theme] of Object.entries({
+  CITY: "SAFE_VILLAGE",
+  GUILD: "SAFE_GUILD",
+  TRAINING: "SAFE_GUILD",
+  BUILDING_INTERIOR: "SAFE_GUILD",
+  BOSS: "BOSS_RITUAL",
+  SECRET_DUNGEON: "SECRET_DUNGEON",
+}))
+  test("real room " + k + " resolves " + theme, () =>
+    assert.equal(resolveTheme(state(k)).id, theme),
+  );
+test("all legacy environmental profiles have distinct authored ground", () => {
+  assert.deepEqual(
+    ["moss_stone", "wild_ruins", "crystal_bones", "abandoned_wood"].map(
+      (k) => resolveTheme(state("PROCEDURAL", k)).groundSet,
+    ),
+    ["moss", "ruins", "cave", "crypt"],
+  );
+});
+test("bosses have independent artwork, size and fixed tile hitbox", () => {
+  const s = state();
+  for (const species of ["boss", "warden", "champion"]) {
+    const b = appearance({ species, spawn_key: "key", category: "boss" }, s),
+      common = appearance(
+        { species: "slime", spawn_key: "key", category: "common" },
+        s,
+      );
+    assert.notEqual(b.key, common.key);
+    assert(b.width * b.scale > common.width * common.scale * 2);
+    assert.equal(b.hitbox, 32);
+  }
+});
+test("fixed boss identities do not vary by seed", () => {
+  for (const species of ["boss", "warden"]) {
+    const a = appearance({ species, spawn_key: "x" }, state());
+    const b = state();
+    b.map.seed = 999;
+    assert.equal(a.key, appearance({ species, spawn_key: "x" }, b).key);
+  }
+});
+test("procedural boss reloads use identical appearance", () => {
+  const s = state(),
+    e = { species: "champion", spawn_key: "guardian:2", category: "boss" };
+  assert.deepEqual(
+    appearance(e, s),
+    appearance(e, JSON.parse(JSON.stringify(s))),
+  );
+});
+test("miniboss uses independent elite sprite and stays smaller than boss", () => {
+  const e = { species: "goblin", spawn_key: "x" };
+  const mini = appearance({ ...e, category: "miniboss" }, state()),
+    boss = appearance({ ...e, species: "champion", category: "boss" }, state());
+  assert.equal(mini.key, "goblin_elite");
+  assert.equal(mini.boss, false);
+  assert(mini.height * mini.scale < boss.height * boss.scale);
+});
+test("spawn door exit portal NPC resource and required paths are reserved", () => {
+  const s = state(),
+    mask = placementMask(s);
+  for (const [x, y] of [
+    [2, 2],
+    [28, 12],
+    [10, 5],
+    [20, 5],
+    [25, 10],
+    [20, 18],
+    [23, 18],
+    [8, 8],
+  ])
+    assert(
+      !canPlace({ kind: "tree", x, y, width: 1, height: 1 }, mask, 32, 24),
+    );
+  assert(
+    !canPlace({ kind: "tree", x: 1, y: 1, width: 3, height: 4 }, mask, 32, 24),
+  );
+  assert(mask.has("3,2"));
+});
+test("complete prop footprint must clear every reserved tile", () => {
+  assert(
+    !canPlace(
+      { kind: "tree", x: 5, y: 5, width: 3, height: 4 },
+      new Set(["7,8"]),
+      32,
+      24,
+    ),
+  );
+  assert(
+    canPlace(
+      { kind: "tree", x: 5, y: 5, width: 3, height: 4 },
+      new Set(["8,8"]),
+      32,
+      24,
+    ),
+  );
+});
+test("village paths and arena centers are never decorated by tall props", () => {
+  const mask = placementMask(state("CITY"));
+  assert(mask.has("10,20"));
+  assert(mask.has("25,18"));
+  for (const k of ["BOSS", "SECRET_DUNGEON"])
+    assert(placementMask(state(k)).has("15,12"));
+});
+test("tile detail is repeatable and varied", () => {
+  const a = Array.from({ length: 100 }, (_, i) => tileHash(88, i, 7) % 8);
+  assert.deepEqual(
+    a,
+    Array.from({ length: 100 }, (_, i) => tileHash(88, i, 7) % 8),
+  );
+  assert(new Set(a).size >= 6);
+});
+test("all directional idle/walk/action/death frames are valid", () => {
+  const all = new Set();
+  for (const mode of ["idle", "walk", "attack", "hurt", "death"])
+    for (let dir = 0; dir < 4; dir++)
+      for (let f = 0; f < 4; f++) all.add(actorFrame(mode, dir, f));
+  assert.equal(all.size, 80);
+  assert.equal(Math.max(...all), 79);
+  assert.equal(direction(0, -1), 3);
+  assert.equal(direction(-1, 0), 1);
+});
+test("every shipped atlas matches its recorded checksum and total PNG payload stays under 450KB", () => {
+  const crypto = require("node:crypto"),
+    root = path.resolve(__dirname, "../public/assets/pixel"),
+    manifest = require(root + "/manifest.json");
+  let bytes = 0;
+  for (const v of Object.values(manifest)) {
+    const buf = fs.readFileSync(root + "/" + v.file);
+    bytes += buf.length;
+    assert.equal(
+      crypto.createHash("sha256").update(buf).digest("hex"),
+      v.sha256,
+    );
+  }
+  assert(bytes < 450000);
+});
+
+const { cityPaths, buildingEntrances } = load("paths");
+test("building paths meet exact entry tile and route around occupied facades", () => {
+  const s = state("CITY");
+  s.map.width = 52;
+  s.map.height = 36;
+  s.map.buildings = [
+    { x: 7, y: 3, width: 6, height: 4 },
+    { x: 35, y: 24, width: 6, height: 5 },
+  ];
+  s.room.exits = [{ id: 3, x: 9, y: 7 }];
+  for (const b of s.map.buildings)
+    for (let y = b.y; y < b.y + b.height; y++)
+      for (let x = b.x; x < b.x + b.width; x++) s.map.walls.push([x, y]);
+  const roads = cityPaths(s),
+    doors = buildingEntrances(s);
+  assert.deepEqual(
+    doors.map((d) => [d.x, d.y]),
+    [
+      [9, 7],
+      [37, 29],
+    ],
+  );
+  assert.equal(doors[0].exitId, 3);
+  for (const d of doors) assert(roads.has(d.x + "," + d.y));
+  for (const p of s.map.walls) assert(!roads.has(p.join(",")));
+  const queue = ["37,29"],
+    seen = new Set(queue);
+  for (let i = 0; i < queue.length; i++) {
+    const [x, y] = queue[i].split(",").map(Number);
+    for (const [dx, dy] of [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ]) {
+      const k = x + dx + "," + (y + dy);
+      if (roads.has(k) && !seen.has(k)) {
+        seen.add(k);
+        queue.push(k);
+      }
+    }
+  }
+  assert(seen.has("9,7"));
+  assert(placementMask(s).has("37,29"));
+});
+
+test("wandering enemies do not reroll reserved decoration routes", () => {
+  const s = state();
+  s.map.spawns = { slime: { x: 8, y: 8, species: "slime" } };
+  const a = [...placementMask(s)].sort();
+  s.map.monsters.slime = [15, 15];
+  assert.deepEqual([...placementMask(s)].sort(), a);
+});
+
+const { softwareRenderer } = load("renderer");
+test("software GPU uses lightweight Canvas; real GPUs keep WebGL", () => {
+  for (const gpu of [
+    "ANGLE SwiftShader driver",
+    "llvmpipe",
+    "Microsoft Basic Render",
+  ])
+    assert(softwareRenderer(gpu));
+  for (const gpu of ["NVIDIA GeForce RTX", "Intel Iris Xe", "AMD Radeon"])
+    assert(!softwareRenderer(gpu));
+});
+
+const { hitBuildingEntrance } = load("paths");
+test("painted facade click resolves exactly to authorized exit; decorative doors do not travel", () => {
+  const s = state("CITY");
+  s.map.buildings = [
+    { x: 7, y: 3, width: 6, height: 4 },
+    { x: 22, y: 5, width: 7, height: 5 },
+  ];
+  s.room.exits = [{ id: 44, x: 9, y: 7 }];
+  assert.equal(hitBuildingEntrance(s, 304, 205).exitId, 44);
+  assert.equal(hitBuildingEntrance(s, 26 * 32, 300), undefined);
+  assert.equal(hitBuildingEntrance(s, 352, 160), undefined);
+});
+
+const { buildZones, planScenery, placementViolations } = load("placement");
+test("every decoration footprint in every theme avoids all forbidden zones", () => {
+  for (const kind of [
+    "CITY",
+    "GUILD",
+    "TRAINING",
+    "BUILDING_INTERIOR",
+    "COMMON",
+    "COMBAT",
+    "PROCEDURAL",
+    "BOSS",
+    "SECRET_DUNGEON",
+  ])
+    for (let seed = 0; seed < 30; seed++) {
+      const s = state(kind);
+      s.room.safe = ["CITY", "GUILD"].includes(kind);
+      s.map.seed = seed;
+      const plan = planScenery(s);
+      assert.deepEqual(plan.violations, []);
+      for (const p of plan.props) {
+        assert.deepEqual(placementViolations(p.footprint, plan.zones), []);
+        assert([...plan.zones.DECORATION_ALLOWED].length > 0);
+      }
+    }
+});
+test("legacy props on roads doors buildings NPCs and resources never bypass validation", () => {
+  const s = state("CITY");
+  s.map.decorations = [
+    { kind: "crate", x: 10, y: 18, solid: true },
+    { kind: "barrel", x: 10, y: 5, solid: true },
+    { kind: "well", x: 20, y: 5 },
+    { kind: "flower", x: 20, y: 18 },
+    { kind: "rock", x: 2, y: 2 },
+  ];
+  const p = planScenery(s);
+  assert.deepEqual(p.violations, []);
+  for (const d of p.props)
+    assert(!s.map.decorations.some((old) => old.x === d.x && old.y === d.y));
+});
+test("reference based character atlases have larger frames and all80 animation cells", () => {
+  const manifest = require("../src/visual/atlas.json");
+  for (const name of [
+    "hero",
+    "merchant",
+    "alchemist",
+    "blacksmith",
+    "npc",
+    "peer",
+    "hooded",
+    "goblin",
+  ])
+    assert.deepEqual(manifest[name].frames, {
+      frameWidth: 48,
+      frameHeight: 64,
+      endFrame: 79,
+    });
+});
+
+test("interior furniture requires a deliberate footprint or contextual seating/wall", () => {
+  const s = state("GUILD");
+  s.map.decorations = [
+    { kind: "table", x: 6, y: 14, width: 3, height: 2 },
+    { kind: "chair", x: 7, y: 13 },
+    { kind: "chair", x: 19, y: 19 },
+    { kind: "shelf", x: 19, y: 19 },
+    { kind: "banner", x: 19, y: 18 },
+  ];
+  const p = planScenery(s);
+  assert(p.fixtures.some((d) => d.kind === "table"));
+  assert(p.fixtures.some((d) => d.kind === "chair" && d.x === 7));
+  assert(!p.fixtures.some((d) => d.x === 19));
+});
+
+const { battleGroundSet, battleTileFrame, BATTLE_GROUNDS } = load("battleTerrain");
+test("ordinary dungeons match the green combat reference with palette variation", () => {
+  for (const material of ["ruins", "moss", "cave", "crypt"])
+    assert.equal(battleGroundSet(material), material);
+  assert.equal(battleGroundSet("wood"), null);
+  assert.equal(battleGroundSet("grass"), null);
+  assert.equal(new Set(BATTLE_GROUNDS).size, BATTLE_GROUNDS.length);
+});
+
+test("boss arenas remain dark but allow frost or ember themed variations", () => {
+  assert.equal(battleGroundSet("ritual", "moss_stone"), "ritual");
+  assert.equal(battleGroundSet("secret", "wild_ruins"), "secret");
+  assert.equal(battleGroundSet("ritual", "crystal_bones"), "boss_frost");
+  assert.equal(battleGroundSet("secret", "abandoned_wood"), "boss_ember");
+  assert.notEqual(battleTileFrame("ritual", 0), battleTileFrame("ruins", 0));
+  assert.notEqual(battleTileFrame("secret", 0), battleTileFrame("ritual", 0));
+  assert.notEqual(battleTileFrame("boss_frost", 0), battleTileFrame("boss_ember", 0));
+  for (const material of BATTLE_GROUNDS) {
+    const floor = Array.from({ length: 8 }, (_, i) => battleTileFrame(material, i));
+    const wall = Array.from({ length: 8 }, (_, i) => battleTileFrame(material, i, true));
+    assert.equal(new Set([...floor, ...wall]).size, 16);
+    assert.equal(wall[0] - floor[0], 8);
+  }
+});
+
+test("village never regenerates rejected crate, barrel, well, rock and station props", () => {
+  const s = state("CITY");
+  for (let seed = 0; seed < 12; seed++) {
+    s.map.seed = seed;
+    const plan = planScenery(s);
+    assert.deepEqual(plan.violations, []);
+    assert(!plan.props.some(p => ["well", "barrel", "crate", "rock", "alchemy", "forge"].includes(p.kind)));
+  }
+});
+
+test("ground-contact coordinates remain valid and consistent", () => {
+  const code = fs.readFileSync(path.resolve(__dirname, "../src/Map.tsx"), "utf8");
+  assert(!code.includes(".(y + 1)"), "broken actor coordinates");
+  assert(code.includes("this.hero.y - (c.y + 1) * 32"));
+  assert(code.includes("a.sprite.y - (e.y + 1) * 32"));
+  assert(code.includes("sp.y - (p.y + 1) * 32"));
+  assert(code.includes("g.fillEllipse(this.hero.x, this.hero.y - 2"));
+  assert(!code.includes("Math.sin(time/700+e.id)"), "boss must not float");
+});
+
+test("terrain sheets use Phaser TextureManager canvas registration", () => {
+  for (const name of ["villageTerrain.ts", "battleTerrain.ts"]) {
+    const source = fs.readFileSync(path.resolve(__dirname, "../src/visual", name), "utf8");
+    assert(source.includes("scene.textures.addCanvas("));
+    assert(source.includes('scene.textures.addSpriteSheet("", texture,'));
+  }
+});

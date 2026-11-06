@@ -6,6 +6,7 @@ export function route(state: State, target: Target): [number, number][] | null {
   const blocked = new Set(m.walls.map((p) => p.join(",")));
   Object.values(m.monsters).forEach((p) => blocked.add(p.join(",")));
   if (m.npc) blocked.add(m.npc.join(","));
+  m.service_npcs?.forEach(n=>blocked.add(`${n.x},${n.y}`));
   const queue: { x: number; y: number; path: [number, number][] }[] = [
     { x: c.x, y: c.y, path: [] },
   ];

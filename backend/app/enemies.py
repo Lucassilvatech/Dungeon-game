@@ -34,6 +34,12 @@ def instances(db, c, wander=False):
         )
         .order_by(EnemyInstance.id)
     ).all()
+    if room.data.get("procedural_version"):
+        from .models import Expedition
+
+        record = db.scalar(select(Expedition).where(Expedition.room_id == room.id))
+        if record and record.status != "ACTIVE":
+            return existing
     known = {e.spawn_key for e in existing}
     for key, spawn in spawns.items():
         if key in known:
@@ -41,13 +47,27 @@ def instances(db, c, wander=False):
         species = spawn["species"]
         from .danger import scale_stats
 
-        hp, attack, defense, level, xp = scale_stats(
-            ENEMIES.get(species, ENEMIES["slime"]), room.danger_tier, room.kind
+        from .models import MonsterDefinition
+
+        definition = db.get(MonsterDefinition, species)
+        stats = (
+            tuple(
+                getattr(definition, k)
+                for k in ("hp", "attack", "defense", "level", "xp")
+            )
+            if definition
+            else ENEMIES.get(species, ENEMIES["slime"])
         )
+        hp, attack, defense, level, xp = scale_stats(stats, room.danger_tier, room.kind)
         if species == "warden":
             hp = room.data.get("enemy_hp", hp)
             attack = room.data.get("enemy_attack", attack)
             level = room.data.get("enemy_level", level)
+        if spawn.get("stats"):
+            generated = spawn["stats"]
+            hp, attack, defense, level, xp = (
+                generated[k] for k in ("hp", "attack", "defense", "level", "xp")
+            )
         old = db.scalar(
             select(Battle)
             .where(
@@ -71,12 +91,21 @@ def instances(db, c, wander=False):
             generation=rs.generation,
             spawn_key=key,
             species=species,
+            category=spawn.get(
+                "category",
+                (
+                    "boss"
+                    if species == "boss"
+                    else "unique" if species == "warden" else "common"
+                ),
+            ),
             hp=(
                 0
                 if state == EnemyState.DEAD
                 else old.hp if state == EnemyState.IN_COMBAT else hp
             ),
             max_hp=hp,
+            xp_reward=xp,
             attack=attack,
             defense=defense,
             level=level,
@@ -90,6 +119,10 @@ def instances(db, c, wander=False):
         db.add(e)
         db.flush()
         existing.append(e)
+        if species != "dummy":
+            from .observability import add
+
+            add(db, c, **{f"spawn_level_{e.level}": 1})
         if old and rs.generation == 0 and old.status in ("won", "active"):
             old.enemy_id = e.id
         event(
@@ -137,7 +170,14 @@ def instances(db, c, wander=False):
 
 
 def payload(e):
+    from .procedural import CATEGORIES
+
+    label, color, icon = CATEGORIES[e.category]
     return dict(
+        category=e.category,
+        category_label=label,
+        name_color=color,
+        category_icon=icon,
         id=e.id,
         spawn_key=e.spawn_key,
         species=e.species,

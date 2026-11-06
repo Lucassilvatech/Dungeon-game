@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
+import {NpcShops} from "./NpcShops";
+import React, { useEffect, useRef, useState, lazy, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { api, State, Battle } from "./api";
-import { Map } from "./Map";
+const Map=lazy(()=>import("./Map").then(module=>({default:module.Map})));
 import {
   ExpeditionPanel,
   FleeModal,
@@ -9,8 +10,19 @@ import {
 } from "./ExpeditionPanel";
 import { route } from "./pathfinding";
 import type { Peer, Target } from "./types";
-import { DeathSummary, AttributePanel, AuctionHouse } from "./DeathEconomy";
+import {
+  DeathSummary,
+  AttributePanel,
+  AuctionHouse,
+  PersonalRecovery,
+} from "./DeathEconomy";
 import "./style.css";
+import {Shop} from "./Shop";
+import {LunarResources} from "./LunarResources";
+import {LunarWallet} from "./LunarWallet";
+import {Gathering,ContractBoard} from './CollectionContracts';
+import {Encounters} from "./Encounters";
+import {AudioControls,sound} from "./audio";
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 function App() {
   const [state, setState] = useState<State | null>(null),
@@ -20,12 +32,17 @@ function App() {
       "Bem-vindo ao Alvorecer. Sua história está apenas começando.",
     ),
     [busy, setBusy] = useState(false),
+    [connection,setConnection]=useState("Conectando…"),
+    [connectionEpoch,setConnectionEpoch]=useState(0),
     [rewards, setRewards] = useState<Battle[]>([]),
     [rewardSummary, setRewardSummary] = useState<{
       count: number;
       total: number;
       groups: Record<string, number>;
     }>({ count: 0, total: 0, groups: {} }),
+    [fastDestinations, setFastDestinations] = useState<
+      { id: string; name: string; danger_tier: number }[]
+    >([]),
     [lootFlash, setLootFlash] = useState(""),
     [tab, setTab] = useState(""),
     [fleePreview, setFleePreview] = useState<FleePreview | null>(null),
@@ -35,17 +52,19 @@ function App() {
       seq: number;
       status: string;
       enemy_id?: number;
+      damage?:number;
     } | null>(null),
     [invite, setInvite] = useState("");
   const gate = useRef(false),
     live = useRef<State | null>(null);
   const sequence = useRef(0);
+  const freshness=useRef(0), refreshGate=useRef(false), failures=useRef(0);
   const lastEvent = useRef(0);
   useEffect(() => {
     if (!state?.events.length) return;
     const fresh = state.events.filter((e) => e.id > lastEvent.current);
     const initialized = lastEvent.current !== 0;
-    lastEvent.current = Math.max(...state.events.map((e) => e.id));
+    lastEvent.current = Math.max(lastEvent.current,...state.events.map((e) => e.id));
     const item = fresh.find((e) => e.kind === "ITEM_ADDED");
     if (initialized && item) {
       setLootFlash("+" + item.payload.quantity + " material na mochila");
@@ -57,23 +76,37 @@ function App() {
     live.current = s;
     setState(s);
   }
-  async function refresh() {
+  async function refresh(force=false):Promise<void> {
+    if(refreshGate.current){if(force){await wait(30);return refresh(true);}return;}
+    refreshGate.current=true;
+    const revision=freshness.current,session=sessionStorage.getItem("token");
     try {
-      apply(await api("/state"));
-      setNeedsCharacter(false);
-      setRewards(await api("/rewards"));
-      setRewardSummary(await api("/guild/rewards"));
-    } catch (e) {
-      const message = (e as Error).message;
-      if (message.includes("Crie seu")) setNeedsCharacter(true);
-      else setNotice(message);
-    }
+      const current=await api("/state") as State;
+      if(revision!==freshness.current||session!==sessionStorage.getItem("token"))return;
+      apply(current);setNeedsCharacter(false);
+      setRewards(current.reward_records);setRewardSummary(current.guild_rewards);setFastDestinations(current.fast_destinations);
+      failures.current=0;setConnection("Conectado");
+    }catch(e){
+      const message=(e as Error).message;
+      if(message.includes("Crie seu"))setNeedsCharacter(true);
+      else {failures.current++;setNotice(message);setConnection(failures.current>=3?"Atualização pausada após 3 falhas":"Conexão interrompida");}
+    }finally{refreshGate.current=false;}
   }
+  function clearSession(){
+    freshness.current++;lastEvent.current=0;sessionStorage.removeItem("token");setToken(null);setState(null);live.current=null;setPeers([]);
+  }
+  useEffect(()=>{
+    const expired=()=>{clearSession();setNotice("Sessão expirada ou revogada. Entre novamente.")};
+    const reconnect=()=>{failures.current=0;setConnectionEpoch(v=>v+1);if(sessionStorage.getItem("token"))void refresh()};
+    const escape=(e:KeyboardEvent)=>{if(e.key==="Escape")setTab("")};
+    window.addEventListener("dungeon:session-expired",expired);window.addEventListener("online",reconnect);window.addEventListener("keydown",escape);
+    return()=>{window.removeEventListener("dungeon:session-expired",expired);window.removeEventListener("online",reconnect);window.removeEventListener("keydown",escape)};
+  },[]);
   useEffect(() => {
     if (!token) return;
     void refresh();
     const timer = setInterval(() => {
-      if (!gate.current) void refresh();
+      if (!gate.current && failures.current<3 && document.visibilityState!=="hidden") void refresh();
     }, 1500);
     return () => clearInterval(timer);
   }, [token]);
@@ -81,7 +114,7 @@ function App() {
     if (!token || !state) return;
     let disposed = false,
       socket: WebSocket | undefined,
-      reconnect: ReturnType<typeof setTimeout>;
+      reconnect: ReturnType<typeof setTimeout>, attempts=0;
     const heartbeat = setInterval(() => {
       if (socket?.readyState === 1) socket.send("ping");
     }, 1000);
@@ -91,13 +124,16 @@ function App() {
       );
       socket.onopen = () => socket?.send(JSON.stringify({ token }));
       socket.onmessage = (e) => {
-        const data = JSON.parse(e.data);
+        let data;try{data=JSON.parse(e.data)}catch{return;}
+        attempts=0;
         if (data.room_id === live.current?.room.id) setPeers(data.players);
         else setPeers([]);
       };
-      socket.onclose = () => {
+      socket.onclose = (e) => {
         setPeers([]);
-        if (!disposed) reconnect = setTimeout(connect, 2000);
+        if(e.code===4401){window.dispatchEvent(new Event("dungeon:session-expired"));return;}
+        if(!disposed && attempts<5){attempts++;reconnect=setTimeout(connect,Math.min(16000,1000*2**attempts));}
+        else if(!disposed)setConnection("Presença desconectada; use Atualizar. Progresso salvo no servidor.");
       };
     }
     connect();
@@ -107,22 +143,30 @@ function App() {
       clearTimeout(reconnect);
       socket?.close();
     };
-  }, [token, !!state]);
-  async function execute(fn: () => Promise<unknown>) {
-    if (gate.current) return;
+  }, [token, !!state,connectionEpoch]);
+  const [npcShop,setNpcShop]=useState("merchant");
+  async function execute(fn: () => Promise<unknown>, propagate=false) {
+    if (gate.current) { if(propagate)throw Error("Aguarde a operação atual terminar."); return; }
     gate.current = true;
+    freshness.current++;
     setBusy(true);
     try {
       const r = (await fn()) as any;
+      if(r?.status)sound(r.status==="won"?"win":r.status==="lost"?"hurt":"attack");
+      else if(r?.message)sound("interaction");
       if (r?.message) {
         setNotice(r.message);
         if (r?.rewards) setTab("guild");
+        if (r?.open_auctions) setTab("auction");
+        if (r?.open_recovery) setTab("recovery");
+        if(r?.open_npc_shop){setNpcShop(r.open_npc_shop);setTab("npc-shops")}
       } else if (r?.code) setNotice("Código Discord (5 minutos): " + r.code);
       else if (r?.status) {
         setFx({
           seq: ++sequence.current,
           status: r.status,
           enemy_id: r.enemy_id,
+          damage:r.damage,
         });
         setNotice(
           r.status === "won"
@@ -132,8 +176,10 @@ function App() {
               : "Turno concluído.",
         );
       }
-      await refresh();
+      if(sessionStorage.getItem("token"))await refresh(true);
+      return r;
     } catch (e) {
+      if(propagate)throw e;
       setNotice((e as Error).message);
     } finally {
       gate.current = false;
@@ -164,6 +210,13 @@ function App() {
         setPeers([]);
         return api("/rooms/exits/" + t.id, {});
       }
+      if(t.kind==="lunar"){
+        const r=s.map.lunar_resources?.find(r=>r.id===t.id);
+        if(!r)throw Error("Recurso Lunar indisponível");
+        return api(`/expeditions/${r.expedition_id}/lunar-resources/${r.id}/collect`,{request_id:crypto.randomUUID()});
+      }
+      if(t.kind==="resource")return api(`/resources/${t.id}/collect`,{request_id:crypto.randomUUID()});
+      if(t.kind==="service")return api(`/economy/npcs/${t.serviceId}/interact`,{});
       if (t.kind === "npc") return api("/interact", {});
       if (t.kind === "monster") {
         if (
@@ -227,6 +280,7 @@ function App() {
   return (
     <main aria-busy={busy}>
       <header>
+        <AudioControls/>
         <a className="brand" href="/">
           ♜{" "}
           <span>
@@ -240,13 +294,7 @@ function App() {
         {token && (
           <button
             className="quiet"
-            onClick={() => {
-              sessionStorage.removeItem("token");
-              setToken(null);
-              setState(null);
-              live.current = null;
-              setPeers([]);
-            }}
+            onClick={()=>void execute(async()=>{try{await api("/auth/logout",{})}finally{clearSession();}})}
           >
             Sair
           </button>
@@ -318,11 +366,15 @@ function App() {
         </form>
       ) : state && c ? (
         <>
+          <div className="connection-bar" role="status">
+            <span>{connection} · Progresso persistente</span>
+            <button disabled={busy} onClick={()=>{failures.current=0;setConnectionEpoch(v=>v+1);void refresh()}}>Atualizar</button>
+          </div>
           <div className="room-heading">
             <div>
               <p className="eyebrow">
                 ANDAR {c.floor} /{" "}
-                {state.room.safe ? "PORTO SEGURO" : "TERRAS DE EXPLORAÇÃO"}
+                {state.room.kind==="PROCEDURAL"?"EXPEDIÇÃO COM COMPROMISSO":state.room.safe ? "PORTO SEGURO" : "SALA COMUM · EXPLORAÇÃO LIVRE"}
               </p>
               <h1>{state.room.name}</h1>
             </div>
@@ -376,6 +428,13 @@ function App() {
               onConfirm={confirmFlee}
             />
           )}
+          <Encounters state={state} busy={busy} action={action} start={ids=>void execute(async()=>{
+            const current=live.current; if(!current)return;
+            const lead=current.map.enemies.find(e=>e.id===ids[0]);if(!lead)throw Error("Alvo indisponível");
+            const path=route(current,{kind:"monster",monster:String(lead.id),x:lead.x,y:lead.y});if(!path)throw Error("Não há caminho até o primeiro alvo");
+            for(const [dx,dy] of path){apply(await api("/move",{dx,dy}));await wait(100);}
+            return api("/encounters",{enemy_ids:ids,request_id:crypto.randomUUID()});
+          })}/>
           <section className="game-shell">
             <div className="status-bar">
               <div className="portrait">♙</div>
@@ -399,7 +458,7 @@ function App() {
                 className={"coins" + (c.coins < 0 ? " debt" : "")}
                 title="Pagamentos futuros da Guilda serão usados automaticamente para quitar sua dívida."
               >
-                ◈ {state.coins_exact}
+                ◈ {state.coins_exact}{state.economy_mode==='LUNAR'&&<small>g líquidos · Lunar</small>}
                 {c.coins < 0 && <small>Dívida médica ativa</small>}
               </span>
               <small className="online">{peers.length + 1} NESTA SALA</small>
@@ -410,14 +469,16 @@ function App() {
                   ◆ {lootFlash}
                 </div>
               )}
+              <Suspense fallback={<p role="status">Carregando mapa…</p>}>
               <Map
                 state={state}
                 peers={peers}
                 fx={fx}
                 onMove={move}
-                onInteract={() => action("/interact")}
+                onInteract={() => { const n=state.map.service_npcs?.find(n=>Math.abs(c.x-n.x)+Math.abs(c.y-n.y)<=1);action(n?`/economy/npcs/${n.id}/interact`:"/interact"); }}
                 onTarget={target}
               />
+              </Suspense>
               <div className="stage-chip">
                 {state.room.safe
                   ? "❖ ZONA SEGURA"
@@ -427,7 +488,7 @@ function App() {
               <div className="map-tip">
                 Clique no chão para caminhar · NPCs e portas são interativos
               </div>
-              {b && (
+              {b && !state.encounter && (
                 <div className="combat panel">
                   <small>COMBATE POR TURNOS · TURNO {b.turn + 1}</small>
                   <h2>
@@ -497,7 +558,7 @@ function App() {
               >
                 ✧ AVENTURA
               </button>
-              {state.room.kind === "GUILD" && (
+              {(state.room.kind === "GUILD" || (state.map.npc_role==="recovery" && state.map.npc && Math.abs(c.x-state.map.npc[0])+Math.abs(c.y-state.map.npc[1])<=4)) && (
                 <button
                   className="secondary"
                   disabled={busy || !!b}
@@ -506,7 +567,7 @@ function App() {
                     if (npc) target({ x: npc[0], y: npc[1], kind: "npc" });
                   }}
                 >
-                  Falar com recepcionista
+                  {state.room.id==="guild"?"Falar com recepcionista":"Falar com "+(state.map.npc_name??"NPC")}
                 </button>
               )}
               {c.floor > 1 && state.map.portal && (
@@ -563,6 +624,11 @@ function App() {
               ["exploration", "✧ Exploração"],
               ["guild", "⚑ Guilda"],
               ["auction", "⚖ Leilão"],
+              ["recovery", "♜ Recuperação"],
+              ["history", "◷ Histórico"],
+ ["lunar", "☾ Lunar"],
+ ["shop", "▤ Comércio"], ["npc-shops","⚒ Lojas da vila"],
+ ["collection", "♧ Coleta"], ["contracts", "▤ Contratos"],
               ["raid", "♧ Raid"],
             ].map(([id, label]) => (
               <button
@@ -613,6 +679,12 @@ function App() {
                       níveis (mínimo 1).
                     </p>
                   )}
+                  {Object.entries(state.attributes).map(([key, a]) => (
+                    <p key={key}>
+                      {key}: base {a.base} + equipamentos {a.equipment} +
+                      temporários {a.temporary} = <strong>{a.effective}</strong>
+                    </p>
+                  ))}
                   <p>Ouro reservado em leilões: {state.reserved_gold}</p>
                   <AttributePanel state={state} busy={busy} action={action} />
                   <button
@@ -627,6 +699,8 @@ function App() {
                 <>
                   <p className="eyebrow">O QUE VOCÊ CARREGA</p>
                   <h2>Inventário persistente</h2>
+                  {(state.lunar_inventory??[]).map(n=><p key={n.lot_id}>Pepita #{n.lot_id} · {BigInt(n.weight_mg)/1000n+''} g</p>)}
+                  <p>Slots: {state.collection_capacity.used}/{state.collection_capacity.limit}. Cada pepita ocupa um slot.</p>
                   <div className="items">
                     {state.inventory.map((i) => (
                       <div
@@ -650,29 +724,56 @@ function App() {
                         </div>
                         <span>
                           {i.name} ×{i.quantity}
+                          {i.protected ? " · protegido" : ""}
                           <small>
                             {i.kind === "weapon"
-                              ? "ARMA · FORÇA +3"
-                              : "EMPILHÁVEL · " +
+                              ? "ARMA · FORÇA +" + i.power
+                              : i.equipment_slot ? "EQUIPAMENTO · "+({head:"Cabeça",chest:"Peitoral",hands:"Mãos",legs:"Pernas",feet:"Pés",weapon:"Arma"} as Record<string,string>)[i.equipment_slot] : "EMPILHÁVEL · " +
                                 i.quantity +
                                 "/" +
                                 i.max_stack_size}
                           </small>
                         </span>
-                        {i.kind === "weapon" && (
+                        {(i.kind === "weapon" || !!i.equipment_slot) && (
                           <button
-                            disabled={busy || i.equipped}
+                            disabled={busy}
                             onClick={() =>
-                              action("/inventory/" + i.id + "/equip")
+                              action(
+                                "/inventory/" +
+                                  i.id +
+                                  (i.equipped ? "/unequip" : "/equip"),
+                              )
                             }
                           >
-                            {i.equipped ? "Equipada" : "Equipar"}
+                            {i.equipped ? "Desequipar" : "Equipar"}
                           </button>
                         )}
                       </div>
                     ))}
                   </div>
                 </>
+              )}
+              {tab === "map" && (
+                <div className="fast-travel">
+                  <h3>Viagem rápida · locais visitados</h3>
+                  <p>
+                    Combate e expedições ativas impedem viagem. Instâncias
+                    temporárias não são destinos.
+                  </p>
+                  {fastDestinations.map((d) => (
+                    <button
+                      key={d.id}
+                      disabled={
+                        busy || !!b || state.expedition?.status === "ACTIVE"
+                      }
+                      onClick={() =>
+                        action("/fast-travel", { destination: d.id })
+                      }
+                    >
+                      {d.name} · Perigo {d.danger_tier}
+                    </button>
+                  ))}
+                </div>
               )}
               {tab === "map" && (
                 <>
@@ -815,8 +916,7 @@ function App() {
                     RESGATAR RECOMPENSAS
                   </button>
                   <p>
-                    Contratos ainda indisponíveis. Não há moedas criadas pela
-                    vitória: o pagamento utiliza o orçamento existente.
+                    Tesouro disponível: {state.guild_treasury} {state.economy_mode==='LUNAR'?'g equivalentes de moeda Lunar':'moedas'}. {state.economy_mode==='LUNAR'&&<>Caixa da Guilda: {state.guild_balance} g equivalentes. </>} Recompensas usam orçamento existente, sem emissão automática.
                   </p>
                   <p>
                     O pátio de treinamento é acessível pela porta da Guilda.
@@ -827,6 +927,15 @@ function App() {
               {tab === "auction" && (
                 <AuctionHouse state={state} busy={busy} action={action} />
               )}
+              {tab === "recovery" && (
+                <PersonalRecovery state={state} busy={busy} action={action} transact={(path,body)=>execute(()=>api(path,body),true)} />
+              )}
+              {tab==="npc-shops"&&<NpcShops state={state} busy={busy} target={target} selected={npcShop} onSelect={setNpcShop} transact={(path,body)=>execute(()=>api(path,body),true)}/>}
+{tab==="shop"&&<Shop state={state} busy={busy} transact={(path,body)=>execute(()=>api(path,body),true)}/>}
+ {tab==="lunar"&&<LunarWallet busy={busy} action={action} transact={(path,body)=>execute(()=>api(path,body),true)}/>}
+ {tab==="collection"&&<Gathering state={state} busy={busy} target={target}/>}
+ {tab==="contracts"&&<ContractBoard state={state} busy={busy} action={action}/>}
+ {tab==="history"&&<><h2>Histórico e notificações</h2><p>Últimas operações do seu personagem. Registros financeiros completos permanecem auditados.</p><ol>{state.events.slice(-20).reverse().map(e=><li key={e.id}>{({ITEM_ADDED:"Item recebido",GUILD_REWARD_CLAIMED:"Recompensa paga",EXPEDITION_STARTED:"Expedição iniciada",EXPEDITION_COMPLETED:"Expedição concluída",EXPEDITION_FLED:"Fuga confirmada",PLAYER_DIED_IN_EXPEDITION:"Resgate após morte",PERSONAL_ITEM_RECOVERED:"Item recuperado",GUILD_DEBT_COLLECTION:"Cobrança da Guilda",ATTRIBUTE_POINT_SPENT:"Atributos distribuídos",FAST_TRAVEL:"Viagem rápida"} as Record<string,string>)[e.kind]??"Progresso registrado"}{e.payload.amount!=null?" · "+String(e.payload.amount)+" moedas":""}</li>)}</ol></>}
               {tab === "raid" && (
                 <>
                   <p className="eyebrow">NINGUÉM PRECISA EXPLORAR SOZINHO</p>
@@ -883,6 +992,7 @@ function App() {
               )}
             </section>
           )}
+          <LunarResources state={state} busy={busy} target={target}/>
           <section className="encounters">
             {state.map.enemies
               .filter((e) => e.state === "ALIVE")

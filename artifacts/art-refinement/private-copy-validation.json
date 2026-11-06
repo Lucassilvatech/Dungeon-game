@@ -1,0 +1,18 @@
+{
+  "source": "Previously verified private representative Lunar/NPC copy; operational database untouched",
+  "migration": "65a7c9e21b04",
+  "upgrade": "PASS",
+  "alembic_check": "PASS",
+  "unchanged_nonspatial_tables": 55,
+  "unchanged_nonspatial_rows": 940,
+  "characters_finance_inventory_progress_exact": true,
+  "only_expected_city_geometry_changed": true,
+  "rooms_repaired": 1,
+  "decorative_collisions_removed": 31,
+  "procedural_rooms_unchanged": true,
+  "old_world_events_preserved": true,
+  "audit_gap_mg": "0",
+  "mass_mg": "100550000",
+  "ledger_mismatches": [],
+  "metadata_mismatches": []
+}

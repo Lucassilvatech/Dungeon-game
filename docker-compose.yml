@@ -32,6 +32,9 @@ services:
       AUCTION_DURATION_HOURS: ${AUCTION_DURATION_HOURS:-24}
       AUCTION_PROCEEDS_DESTINATION: ${AUCTION_PROCEEDS_DESTINATION:-treasury}
       AUCTION_SWEEP_SECONDS: ${AUCTION_SWEEP_SECONDS:-30}
+      ADVENTURE_BOSS_INCREMENT: ${ADVENTURE_BOSS_INCREMENT:-0.01}
+      PROCEDURAL_PROXIMITY_K: ${PROCEDURAL_PROXIMITY_K:-3}
+      PROCEDURAL_LEVEL_WEIGHT: ${PROCEDURAL_LEVEL_WEIGHT:-0.65}
       DISCORD_SERVICE_KEY: ${DISCORD_SERVICE_KEY:-}
     depends_on:
       db: {condition: service_healthy}
@@ -43,7 +46,7 @@ services:
       retries: 20
   frontend:
     build: ./frontend
-    ports: ["127.0.0.1:8080:80"]
+    ports: ["${FRONTEND_BIND:-127.0.0.1}:8080:80"]
     depends_on:
       backend: {condition: service_healthy}
   discord:

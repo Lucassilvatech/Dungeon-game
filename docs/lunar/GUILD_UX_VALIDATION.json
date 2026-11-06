@@ -1,0 +1,77 @@
+{
+  "branch": "feature/guild-shop-recovery-ux-0.9",
+  "initial_head": "9d79999e62fd31d36c24241c04715b08af47b416",
+  "code_head": "5d6901c192705fd1c41873cfb0d3716b79a6e912",
+  "backend": {
+    "command": "TOWER_TEST_DATABASE=1 PYTHONPATH=backend .venv/bin/python -m pytest backend/tests -q",
+    "passed": 304,
+    "failed": 0,
+    "skipped": 0,
+    "warnings": 2,
+    "seconds": 696.2,
+    "database": "Disposable PostgreSQL17; complete run, no summed subsets"
+  },
+  "frontend": {
+    "command": "npm test",
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "milliseconds": 66.071408
+  },
+  "build": {
+    "command": "npm run build",
+    "status": "PASS",
+    "seconds": 4.89,
+    "warning": "Known Phaser chunk >500kB"
+  },
+  "chromium": {
+    "smoke": "PASS: expanded city/guild/training, mobile, four-turn combat, death removal/rejection, inventory, guild claim, reconnect, committed expedition, API/exit blocking, flee preview/cancel/penalty, two procedural themes, wandering, manual attributes, persistent death summary, medical debt, bounded death losses, personal recovery and isolated second-player ownership",
+    "lunar": "PASS: mobile Lunar wallet, denomination/nugget display, server-backed physical denomination display, unavailable split without stock, no overflow",
+    "lunar-resources": "PASS: Chromium 390px registration/login, procedural map and mineral marker, collection, inventory, reload/logout/login, flee custody, Guild sale with real cash, admin metrics and audit gap 0",
+    "royal": "PASS: Royal 390px injection, manual 437g mint from 684g, residual247g lineage, player split500+184, Guild payment400, confiscation, partial mineral/coin burn, coin injection and zero-gap audit; Godot unchanged",
+    "physical-commerce": "PASS: desktop/390px actual wallet72/1/5, no-change Guild rejection, explicit exchange, independent prices/history, partial stock sale and purchase, player no-change rejection, competing out-of-stock rejection, V1 rebalance/fingerprint, stale preview/quote, whole mineral buy/sell and audit gap0",
+    "guild-shop-recovery-ux": "PASS: aggregated stock>=12438/>=3000, desktop grid/mobile390, live search, TUDO240 excludes equipped99, MAX server capacity/coins, instant totals, integrated confirmation/cancel, per-operation reason, two-item atomic batch/history, conditional risks, stale revisions retained, southwest hooded tent, proximity recovery and audit gap0"
+  },
+  "fresh_schema": {
+    "alembic_upgrade_head": "PASS",
+    "alembic_check": "PASS",
+    "head": "e06a9c24f8bd"
+  },
+  "private_copy": {
+    "source": "Previously validated private copy; operational database untouched",
+    "migration": "e06a9c24f8bd",
+    "existing_tables": 53,
+    "unchanged_tables": 50,
+    "unchanged_historical_rows": 816,
+    "economic_tables_hashes_unchanged": true,
+    "all_character_non_location_fields_hashes_unchanged": true,
+    "old_room_ids_and_connections_preserved": true,
+    "relocated_occupants": 1,
+    "relocation_audit_events": 1,
+    "cutover": "Existing receipt unchanged; not rerun",
+    "gap_mg": "0",
+    "mass_mg": "100550000",
+    "upgrade": "PASS",
+    "alembic_check": "PASS",
+    "ledger_mismatches": [],
+    "metadata_mismatches": []
+  },
+  "package": {
+    "archive": "builds/development/0.9.0-web-guild-ux-5d6901c/DungeonGame-Web-0.9-GuildUX.zip",
+    "source_commit": "5d6901c192705fd1c41873cfb0d3716b79a6e912",
+    "files": 8,
+    "zip_crc": "PASS",
+    "all_manifest_hashes": "PASS",
+    "sha256": "877cd431fbb5a20a67687181604ec1d86966c172d0f492c7df4fe5bbe33f38b1",
+    "bytes": 447437
+  },
+  "main_before_publication": "eab42d7e732befb04244e29d5e1615e821c5ea5e",
+  "base_before_publication": "9d79999e62fd31d36c24241c04715b08af47b416",
+  "discord": "READ_ONLY; cannot control character",
+  "godot": "Source preserved; Windows/Android frozen; no native builds",
+  "not_executed": [
+    "Deployment/migration on user Windows operational database",
+    "External live Discord connection",
+    "Production load test"
+  ]
+}

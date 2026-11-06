@@ -1,15 +1,19 @@
 import type { DeathReceipt } from "./DeathEconomy";
 import type { Room } from "./types";
 export type Item = {
+  power:number;
   id: number;
   name: string;
   kind: string;
   quantity: number;
   equipped: boolean;
+  equipment_slot?: string | null;
   location: string;
   stackable: boolean;
   max_stack_size: number;
   description: string;
+  definition: string;
+  protected: boolean;
 };
 export type Battle = {
   id: number;
@@ -22,6 +26,9 @@ export type Battle = {
   reward_amount: number | null;
 };
 export type Enemy = {
+  category?:string;
+  category_label?: string;
+  name_color?: string;
   id: number;
   spawn_key: string;
   species: string;
@@ -34,7 +41,22 @@ export type Enemy = {
   state: "ALIVE" | "IN_COMBAT" | "DYING" | "DEAD";
   ai_state: string;
 };
+export type Encounter={id:number;status:string;turn:number;size:number;selected_enemy_id:number;enemies:Enemy[];last_round:{actor:string;enemy_id?:number;damage:number}[];damage_dealt:number;damage_received:number};
+export type ResourceNode={id:number;name:string;definition:string;x:number;y:number;remaining:number;capacity:number;enabled:boolean};
 export type State = {
+ economy_mode?:"LUNAR"|"LEGACY";guild_balance?:string;
+ collection_capacity:{used:number;limit:number};
+  encounter:Encounter|null;
+  encounter_rules:{max_enemies:number;radius:number};
+  guild_rewards:{count:number;total:number;groups:Record<string,number>};
+  reward_records:Battle[];
+  fast_destinations:{id:string;name:string;danger_tier:number}[];
+  guild_treasury:string;
+  attributes: Record<
+    string,
+    { base: number; equipment: number; temporary: number; effective: number }
+  >;
+  next_boss_chance: number;
   death: DeathReceipt | null;
   coins_exact: string;
   reserved_gold: string;
@@ -77,12 +99,17 @@ export type State = {
     y: number;
   };
   inventory: Item[];
+  lunar_inventory?:{lot_id:number;weight_mg:string;state:string}[];
   battle: Battle | null;
   unlocked_floor: number;
   map: {
+    spawns?:Record<string,{x:number;y:number;species:string}>;
+ lunar_resources?:{id:number;expedition_id:number;name:string;weight_mg:string;x:number;y:number;state:string}[];
+ gather_nodes:ResourceNode[];
     enemies: Enemy[];
     seed?: number;
     npc_name?: string;
+    npc_role?: string;
     decorations?: {
       kind: string;
       x: number;
@@ -91,6 +118,7 @@ export type State = {
       height?: number;
       solid?: boolean;
     }[];
+    service_npcs?: { id: string; name: string; x: number; y: number; sprite: string }[];
     npcs?: { id: string; name: string; x: number; y: number; walk: boolean }[];
     width: number;
     height: number;
@@ -112,22 +140,29 @@ export type State = {
     portal: number[] | null;
   };
 };
-export async function api(path: string, body?: unknown) {
-  const token = sessionStorage.getItem("token");
-  const r = await fetch("/api" + path, {
-    method: body === undefined ? "GET" : "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: "Bearer " + token } : {}),
-    },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-  const data = await r.json();
-  if (!r.ok)
-    throw new Error(
-      typeof data.detail === "string"
-        ? data.detail
-        : "Revise os dados informados",
-    );
-  return data;
+export class APIError extends Error {
+  constructor(message:string,public status:number){super(message);this.name="APIError";}
+}
+export async function api(path:string,body?:unknown) {
+  const token=sessionStorage.getItem("token");
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),15000);
+  try {
+    const r=await fetch("/api"+path,{
+      method:body===undefined?"GET":"POST", signal:controller.signal,
+      headers:{"Content-Type":"application/json",...(token&&!["/auth/login","/auth/register"].includes(path)?{Authorization:"Bearer "+token}:{})},
+      body:body===undefined?undefined:JSON.stringify(body)
+    });
+    const data=await r.json().catch(()=>({detail:"Resposta inválida do servidor."}));
+    if(!r.ok){
+      if(r.status===401&&!path.startsWith("/auth/")){
+        sessionStorage.removeItem("token");window.dispatchEvent(new Event("dungeon:session-expired"));
+      }
+      throw new APIError((typeof data.detail==="string"?data.detail:"Revise os dados informados")+(r.status===429&&data.retry_after?` Aguarde ${data.retry_after}s.`:""),r.status);
+    }
+    return data;
+  }catch(e){
+    if(e instanceof APIError)throw e;
+    throw new APIError((e as Error).name==="AbortError"?"Tempo limite excedido. Tente atualizar novamente.":"Falha de conexão com o servidor. Confira a rede e tente novamente.",0);
+  }finally{clearTimeout(timer);}
 }

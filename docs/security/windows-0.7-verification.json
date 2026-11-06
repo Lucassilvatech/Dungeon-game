@@ -1,0 +1,17 @@
+{
+  "run_url": "https://github.com/Lucassilvatech/Dungeon-game/actions/runs/40258420595",
+  "workflow_status": "SUCCESS",
+  "scan_result": "NO_DETECTION_IN_THIS_SCAN",
+  "engine": "1.1.26090.9",
+  "signature_version": "1.461.206.0",
+  "cloud_MAPS": 2,
+  "cloud_connection_validated": true,
+  "windows_native_headless_startup": "PASSED",
+  "windows_graphical_gameplay_login": "NOT_TESTED",
+  "android_device_execution": "NOT_TESTED",
+  "zip_sha256": "19a069950896650e1c165f95129f74088f0e4fb7fe8c91feef34479e6a416e02",
+  "exe_sha256": "b1fc08d5c87c08fcbf2bb6e1ab106ef36e8f25df1d8964d6aebc976c413741ad",
+  "export_workflow_url": "https://github.com/Lucassilvatech/Dungeon-game/actions/runs/40258147700",
+  "export_workflow_status": "SUCCESS",
+  "limitations": "No detection in this updated-signature/cloud-connected scan is not proof of safety or vendor confirmation of false positive; preserve local quarantine if detected."
+}

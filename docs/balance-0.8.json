@@ -1,0 +1,315 @@
+{
+  "samples_per_case": 1500,
+  "profiles": {
+    "iniciante_sem_arma": {
+      "level": 1,
+      "strength": 5,
+      "defense": 2,
+      "weapon": 0,
+      "coins": 0
+    },
+    "iniciante_espada": {
+      "level": 1,
+      "strength": 5,
+      "defense": 2,
+      "weapon": 3,
+      "coins": 0
+    },
+    "iniciante_endividado": {
+      "level": 1,
+      "strength": 5,
+      "defense": 2,
+      "weapon": 3,
+      "coins": -1000
+    },
+    "forca_nivel5": {
+      "level": 5,
+      "strength": 9,
+      "defense": 2,
+      "weapon": 3,
+      "coins": 0
+    },
+    "defesa_nivel5": {
+      "level": 5,
+      "strength": 5,
+      "defense": 6,
+      "weapon": 3,
+      "coins": 0
+    },
+    "equilibrado_nivel3": {
+      "level": 3,
+      "strength": 6,
+      "defense": 3,
+      "weapon": 3,
+      "coins": 0
+    }
+  },
+  "policy": "Skill while energy>=2 then basic; fixed target order; survivors answer by identity. Isolated encounters, full initial HP/energy, zero XP at start. No simulated wall-clock game time.",
+  "results": {
+    "iniciante_sem_arma": {
+      "p=0;size=1": {
+        "win_rate": 0.996,
+        "mean_turns": 4.3133333333333335,
+        "mean_damage_dealt": 29.038666666666668,
+        "mean_damage_received": 17.947333333333333,
+        "mean_hp_remaining": 12.052666666666667
+      },
+      "p=0;size=2": {
+        "win_rate": 0.0,
+        "mean_turns": 3.0926666666666667,
+        "mean_damage_dealt": 23.272666666666666,
+        "mean_damage_received": 30,
+        "mean_hp_remaining": 0
+      },
+      "p=0.5;size=1": {
+        "win_rate": 0.986,
+        "mean_turns": 4.727333333333333,
+        "mean_damage_dealt": 31.255333333333333,
+        "mean_damage_received": 22.716666666666665,
+        "mean_hp_remaining": 7.283333333333333
+      },
+      "p=0.5;size=2": {
+        "win_rate": 0.0,
+        "mean_turns": 2.956,
+        "mean_damage_dealt": 21.434,
+        "mean_damage_received": 30,
+        "mean_hp_remaining": 0
+      },
+      "p=1;size=1": {
+        "win_rate": 0.9806666666666667,
+        "mean_turns": 4.884,
+        "mean_damage_dealt": 32.19266666666667,
+        "mean_damage_received": 24.760666666666665,
+        "mean_hp_remaining": 5.239333333333334
+      },
+      "p=1;size=2": {
+        "win_rate": 0.0,
+        "mean_turns": 2.8946666666666667,
+        "mean_damage_dealt": 20.545333333333332,
+        "mean_damage_received": 30,
+        "mean_hp_remaining": 0
+      }
+    },
+    "iniciante_espada": {
+      "p=0;size=1": {
+        "win_rate": 1.0,
+        "mean_turns": 3.268666666666667,
+        "mean_damage_dealt": 29.06,
+        "mean_damage_received": 12.290666666666667,
+        "mean_hp_remaining": 17.709333333333333
+      },
+      "p=0;size=2": {
+        "win_rate": 0.0,
+        "mean_turns": 3.4593333333333334,
+        "mean_damage_dealt": 32.998,
+        "mean_damage_received": 30,
+        "mean_hp_remaining": 0
+      },
+      "p=0.5;size=1": {
+        "win_rate": 1.0,
+        "mean_turns": 3.6533333333333333,
+        "mean_damage_dealt": 31.347333333333335,
+        "mean_damage_received": 16.2,
+        "mean_hp_remaining": 13.8
+      },
+      "p=0.5;size=2": {
+        "win_rate": 0.0,
+        "mean_turns": 3.0033333333333334,
+        "mean_damage_dealt": 29.699333333333332,
+        "mean_damage_received": 30,
+        "mean_hp_remaining": 0
+      },
+      "p=1;size=1": {
+        "win_rate": 1.0,
+        "mean_turns": 3.8386666666666667,
+        "mean_damage_dealt": 32.327333333333335,
+        "mean_damage_received": 18.088,
+        "mean_hp_remaining": 11.912
+      },
+      "p=1;size=2": {
+        "win_rate": 0.0,
+        "mean_turns": 2.8973333333333335,
+        "mean_damage_dealt": 28.924,
+        "mean_damage_received": 30,
+        "mean_hp_remaining": 0
+      }
+    },
+    "iniciante_endividado": {
+      "p=0;size=1": {
+        "win_rate": 1.0,
+        "mean_turns": 3.268666666666667,
+        "mean_damage_dealt": 29.06,
+        "mean_damage_received": 12.290666666666667,
+        "mean_hp_remaining": 17.709333333333333
+      },
+      "p=0;size=2": {
+        "win_rate": 0.0,
+        "mean_turns": 3.4593333333333334,
+        "mean_damage_dealt": 32.998,
+        "mean_damage_received": 30,
+        "mean_hp_remaining": 0
+      },
+      "p=0.5;size=1": {
+        "win_rate": 1.0,
+        "mean_turns": 3.6533333333333333,
+        "mean_damage_dealt": 31.347333333333335,
+        "mean_damage_received": 16.2,
+        "mean_hp_remaining": 13.8
+      },
+      "p=0.5;size=2": {
+        "win_rate": 0.0,
+        "mean_turns": 3.0033333333333334,
+        "mean_damage_dealt": 29.699333333333332,
+        "mean_damage_received": 30,
+        "mean_hp_remaining": 0
+      },
+      "p=1;size=1": {
+        "win_rate": 1.0,
+        "mean_turns": 3.8386666666666667,
+        "mean_damage_dealt": 32.327333333333335,
+        "mean_damage_received": 18.088,
+        "mean_hp_remaining": 11.912
+      },
+      "p=1;size=2": {
+        "win_rate": 0.0,
+        "mean_turns": 2.8973333333333335,
+        "mean_damage_dealt": 28.924,
+        "mean_damage_received": 30,
+        "mean_hp_remaining": 0
+      }
+    },
+    "forca_nivel5": {
+      "p=0;size=1": {
+        "win_rate": 1.0,
+        "mean_turns": 2.0913333333333335,
+        "mean_damage_dealt": 29.06,
+        "mean_damage_received": 5.8773333333333335,
+        "mean_hp_remaining": 44.12266666666667
+      },
+      "p=0;size=2": {
+        "win_rate": 0.9906666666666667,
+        "mean_turns": 4.9046666666666665,
+        "mean_damage_dealt": 64.36733333333333,
+        "mean_damage_received": 31.098,
+        "mean_hp_remaining": 18.902
+      },
+      "p=0.5;size=1": {
+        "win_rate": 1.0,
+        "mean_turns": 2.33,
+        "mean_damage_dealt": 31.347333333333335,
+        "mean_damage_received": 8.155333333333333,
+        "mean_hp_remaining": 41.84466666666667
+      },
+      "p=0.5;size=2": {
+        "win_rate": 0.9246666666666666,
+        "mean_turns": 5.26,
+        "mean_damage_dealt": 68.78333333333333,
+        "mean_damage_received": 38.364666666666665,
+        "mean_hp_remaining": 11.635333333333334
+      },
+      "p=1;size=1": {
+        "win_rate": 1.0,
+        "mean_turns": 2.538,
+        "mean_damage_dealt": 32.327333333333335,
+        "mean_damage_received": 9.881333333333334,
+        "mean_hp_remaining": 40.11866666666667
+      },
+      "p=1;size=2": {
+        "win_rate": 0.8086666666666666,
+        "mean_turns": 5.405333333333333,
+        "mean_damage_dealt": 70.096,
+        "mean_damage_received": 42.34866666666667,
+        "mean_hp_remaining": 7.6513333333333335
+      }
+    },
+    "defesa_nivel5": {
+      "p=0;size=1": {
+        "win_rate": 1.0,
+        "mean_turns": 2.8106666666666666,
+        "mean_damage_dealt": 29.06,
+        "mean_damage_received": 3.7653333333333334,
+        "mean_hp_remaining": 46.23466666666667
+      },
+      "p=0;size=2": {
+        "win_rate": 1.0,
+        "mean_turns": 6.933333333333334,
+        "mean_damage_dealt": 64.43066666666667,
+        "mean_damage_received": 19.706666666666667,
+        "mean_hp_remaining": 30.293333333333333
+      },
+      "p=0.5;size=1": {
+        "win_rate": 1.0,
+        "mean_turns": 2.981333333333333,
+        "mean_damage_dealt": 31.347333333333335,
+        "mean_damage_received": 4.448,
+        "mean_hp_remaining": 45.552
+      },
+      "p=0.5;size=2": {
+        "win_rate": 1.0,
+        "mean_turns": 7.768666666666666,
+        "mean_damage_dealt": 69.314,
+        "mean_damage_received": 25.248,
+        "mean_hp_remaining": 24.752
+      },
+      "p=1;size=1": {
+        "win_rate": 1.0,
+        "mean_turns": 2.998,
+        "mean_damage_dealt": 32.327333333333335,
+        "mean_damage_received": 4.796,
+        "mean_hp_remaining": 45.204
+      },
+      "p=1;size=2": {
+        "win_rate": 1.0,
+        "mean_turns": 8.081333333333333,
+        "mean_damage_dealt": 71.46866666666666,
+        "mean_damage_received": 27.718666666666667,
+        "mean_hp_remaining": 22.281333333333333
+      }
+    },
+    "equilibrado_nivel3": {
+      "p=0;size=1": {
+        "win_rate": 1.0,
+        "mean_turns": 2.8106666666666666,
+        "mean_damage_dealt": 29.06,
+        "mean_damage_received": 7.982,
+        "mean_hp_remaining": 32.018
+      },
+      "p=0;size=2": {
+        "win_rate": 0.43933333333333335,
+        "mean_turns": 5.755333333333334,
+        "mean_damage_dealt": 58.358666666666664,
+        "mean_damage_received": 35.844,
+        "mean_hp_remaining": 4.156
+      },
+      "p=0.5;size=1": {
+        "win_rate": 1.0,
+        "mean_turns": 2.981333333333333,
+        "mean_damage_dealt": 31.347333333333335,
+        "mean_damage_received": 9.973333333333333,
+        "mean_hp_remaining": 30.026666666666667
+      },
+      "p=0.5;size=2": {
+        "win_rate": 0.05466666666666667,
+        "mean_turns": 5.22,
+        "mean_damage_dealt": 55.254666666666665,
+        "mean_damage_received": 39.666666666666664,
+        "mean_hp_remaining": 0.3333333333333333
+      },
+      "p=1;size=1": {
+        "win_rate": 1.0,
+        "mean_turns": 2.998,
+        "mean_damage_dealt": 32.327333333333335,
+        "mean_damage_received": 10.648666666666667,
+        "mean_hp_remaining": 29.351333333333333
+      },
+      "p=1;size=2": {
+        "win_rate": 0.0026666666666666666,
+        "mean_turns": 4.971333333333333,
+        "mean_damage_dealt": 53.95933333333333,
+        "mean_damage_received": 39.98866666666667,
+        "mean_hp_remaining": 0.011333333333333334
+      }
+    }
+  },
+  "economic_note": "Debt does not alter combat stats; medical fee/death/flee/recovery impacts are measured from real transactions in gameplay_days. No synthetic coins issued."
+}

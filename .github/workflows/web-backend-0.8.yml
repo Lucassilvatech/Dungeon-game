@@ -1,0 +1,116 @@
+name: Web and authoritative backend 0.8
+on:
+  pull_request:
+    paths: ['art/**', 'backend/**', 'frontend/**', 'discord-bot/**', 'scripts/**', '.github/workflows/web-backend-0.8.yml']
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: tower08_test
+          POSTGRES_USER: tower
+          POSTGRES_PASSWORD: test-only-password
+        ports: ['5432:5432']
+        options: --health-cmd=pg_isready --health-interval=3s --health-timeout=3s --health-retries=20
+    env:
+      DATABASE_URL: postgresql+psycopg://tower:test-only-password@localhost:5432/tower08_test
+      TOWER_TEST_DATABASE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22', cache: npm, cache-dependency-path: frontend/package-lock.json}
+      - run: pip install -r backend/requirements-dev.txt
+      - run: alembic upgrade head && alembic check && python -m pytest -q
+        working-directory: backend
+      - name: Reproduce original pixel atlases
+        run: pip install -r scripts/requirements-art.txt && python scripts/build_pixel_assets.py && git diff --exit-code -- frontend/public/assets/pixel frontend/src/visual/atlas.json
+      - run: npm ci && npm run build
+        working-directory: frontend
+      - run: npm test
+        working-directory: frontend
+      - name: Audit actual layout templates against strict decorative zones
+        run: PYTHONPATH=backend python scripts/export_visual_layout_fixtures.py /tmp/visual-layouts.json && VISUAL_LAYOUT_FIXTURES=/tmp/visual-layouts.json node frontend/tests/placement-audit.cjs
+      - run: python scripts/simulate_lunar.py
+      - run: python scripts/simulate_guild_liquidity.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lunar-simulation
+          path: |
+            docs/lunar/SIMULATION.json
+            docs/lunar/LIQUIDITY_SIMULATION.json
+  chromium:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: tower_web
+          POSTGRES_USER: tower
+          POSTGRES_PASSWORD: test-only-password
+        ports: ['5432:5432']
+        options: --health-cmd=pg_isready --health-interval=3s --health-timeout=3s --health-retries=20
+    env:
+      DATABASE_URL: postgresql+psycopg://tower:test-only-password@localhost:5432/tower_web
+      RATE_LIMIT_SCALE: '10'
+      TOWER_TEST_DATABASE: '1'
+      # TEST_DEFAULT only: this job owns a disposable database, never production.
+      LUNAR_RESOURCE_SPAWN_ENABLED: 'true'
+      LUNAR_RESOURCE_SPAWN_CHANCE_PPM: '1000000'
+      LUNAR_GUILD_BUY_RATE_MILLIUNITS_PER_GRAM: '800'
+      SECRET_CHANCE: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22', cache: npm, cache-dependency-path: frontend/package-lock.json}
+      - run: pip install -r backend/requirements-dev.txt
+      - run: npm ci && npx playwright install --with-deps chromium
+        working-directory: frontend
+      - name: Start disposable HTTP stack
+        run: |
+          cd backend
+          alembic upgrade head
+          python -m app.seed
+          nohup uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 1 > /tmp/backend.log 2>&1 &
+          cd ../frontend
+          nohup npm run dev -- --host 127.0.0.1 --port 8080 > /tmp/frontend.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8080/api/health; then exit 0; fi
+            sleep 1
+          done
+          exit 1
+      - run: npm run test:e2e && node tests/lunar.cjs
+        working-directory: frontend
+
+      - name: Procedural Lunar collection and finite Guild purchase (private TEST_DEFAULT)
+        run: PROCEDURAL_TEST_DATABASE_URL="$DATABASE_URL" BASE_URL=http://127.0.0.1:8080 node tests/lunar-resources.cjs
+        working-directory: frontend
+
+      - name: Variable lots and Royal administration on mobile (private database)
+        run: ROYAL_TEST_DATABASE_URL="$DATABASE_URL" BASE_URL=http://127.0.0.1:8080 node tests/royal.cjs
+        working-directory: frontend
+
+      - name: Physical denominations and bidirectional Guild commerce (private database)
+        run: PHYSICAL_TEST_DATABASE_URL="$DATABASE_URL" BASE_URL=http://127.0.0.1:8080 node tests/physical-commerce.cjs
+        working-directory: frontend
+
+      - name: Aggregate shop batch pricing and relocated recovery (desktop and 390px)
+        run: UX_TEST_DATABASE_URL="$DATABASE_URL" BASE_URL=http://127.0.0.1:8080 node tests/guild-shop-recovery-ux.cjs
+        working-directory: frontend
+
+      - name: Autonomous NPC chain with a real worker in a new private HTTP database
+        run: python scripts/test_npc_browser_stack.py
+
+      - name: Original pixel worlds, facade doors, fixed bosses and responsive screenshots
+        run: python scripts/test_visual_stack.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: art-refinement-review
+          path: artifacts/art-refinement/

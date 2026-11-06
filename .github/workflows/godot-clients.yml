@@ -1,0 +1,49 @@
+name: Godot clients
+# Dormant native workflow: manual only during the Web-first cycle.
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.6.3
+          use-dotnet: false
+          include-templates: true
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Use runner Android SDK
+        run: |
+          test -d "$ANDROID_HOME/cmdline-tools/latest/bin"
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+      - name: Android tools
+        run: sdkmanager 'platform-tools' 'platforms;android-36' 'build-tools;36.0.0'
+      - name: Configure development signing and SDK
+        run: |
+          keytool -genkeypair -keystore /tmp/dungeon-debug.keystore -alias androiddebugkey -storepass android -keypass android -dname 'CN=Dungeon Development,O=Dungeon,C=BR' -keyalg RSA -keysize 2048 -validity 10000
+          python3 - <<'PY'
+          import os,pathlib,json
+          p=pathlib.Path.home()/'.config/godot/editor_settings-4.6.tres'
+          p.parent.mkdir(parents=True,exist_ok=True)
+          values={'export/android/android_sdk_path':os.environ['ANDROID_HOME'],'export/android/java_sdk_path':os.environ['JAVA_HOME'],'export/android/debug_keystore':'/tmp/dungeon-debug.keystore','export/android/debug_keystore_user':'androiddebugkey','export/android/debug_keystore_pass':'android'}
+          p.write_text('[gd_resource type="EditorSettings" format=3]\n[resource]\n'+'\n'.join(k+' = '+json.dumps(v) for k,v in values.items()))
+          PY
+      - name: Import and export clients
+        env:
+          GODOT_ANDROID_KEYSTORE_DEBUG_PATH: /tmp/dungeon-debug.keystore
+          GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
+          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
+        run: |
+          python3 scripts/build_clients.py exports
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose exports/DungeonGame-Android.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dungeon-clients-0.7-development
+          path: exports/

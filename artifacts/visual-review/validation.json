@@ -1,0 +1,127 @@
+{
+  "date": "2026-10-31",
+  "base_branch": "feature/autonomous-npc-economy-0.9",
+  "base_commit": "2ae4446a02d9a4507e11e57b9a6e52cae9233ef5",
+  "branch": "feature/pixel-art-visual-overhaul-0.9",
+  "tested_source_commit": "041587fd423f1886ba6ad0b9f650f7c72678fcf0",
+  "backend": {
+    "passed": 339,
+    "failed": 0,
+    "skipped": 0,
+    "warnings": 2,
+    "duration_seconds": 1003.34,
+    "full_suite": true
+  },
+  "frontend": {
+    "passed": 22,
+    "failed": 0,
+    "skipped": 0,
+    "duration_ms": 311.358446
+  },
+  "build": {
+    "status": "PASS",
+    "duration_seconds": 4.87
+  },
+  "chromium": {
+    "visual": "PASS",
+    "smoke": "PASS",
+    "npc-economy": "PASS",
+    "encounters": "PASS"
+  },
+  "performance": {
+    "environment": "Headless Chromium virtualized cloud, not physical mobile/GPU benchmark",
+    "metrics": [
+      {
+        "room": "city1",
+        "phaser_fps": 60,
+        "raf_median_ms": 16.699999999999818,
+        "raf_p95_ms": 16.700000000000273,
+        "objects": 161,
+        "renderer": "CANVAS"
+      },
+      {
+        "room": "common_a",
+        "phaser_fps": 60,
+        "raf_median_ms": 16.699999999999818,
+        "raf_p95_ms": 16.700000000000273,
+        "objects": 92,
+        "renderer": "CANVAS"
+      },
+      {
+        "room": "secret",
+        "phaser_fps": 60,
+        "raf_median_ms": 16.699999999999818,
+        "raf_p95_ms": 16.799999999999727,
+        "objects": 64,
+        "renderer": "CANVAS"
+      },
+      {
+        "room": "boss",
+        "phaser_fps": 60,
+        "raf_median_ms": 16.699999999999818,
+        "raf_p95_ms": 16.700000000000273,
+        "objects": 69,
+        "renderer": "CANVAS"
+      },
+      {
+        "room": "guild",
+        "phaser_fps": 60,
+        "raf_median_ms": 16.699999999999818,
+        "raf_p95_ms": 16.800000000000182,
+        "objects": 125,
+        "renderer": "CANVAS"
+      }
+    ],
+    "errors": []
+  },
+  "runtime_art": {
+    "atlases": 16,
+    "png_bytes": 370894
+  },
+  "migration": {
+    "new": false,
+    "head": "7167b684d5f7",
+    "upgrade": "PASS",
+    "check": "PASS",
+    "operational_database_touched": false
+  },
+  "unchanged_source": {
+    "backend": true,
+    "discord-bot": true,
+    "godot-client": true
+  },
+  "package": {
+    "archive": "builds/development/0.9.0-web-pixel-art-041587f/DungeonGame-Web-0.9-Pixel-Art.zip",
+    "source_commit": "041587fd423f1886ba6ad0b9f650f7c72678fcf0",
+    "files": 25,
+    "zip_crc": "PASS",
+    "all_manifest_hashes": "PASS",
+    "sha256": "edb95db53d8d9e3b957fba9a009339d0715fae7ceddbff846556e8771eb23878",
+    "bytes": 814305
+  },
+  "screenshots": [
+    "boss-room-1920.png",
+    "boss-room-desktop.png",
+    "boss-room-mobile.png",
+    "common-battle-1920.png",
+    "common-battle-desktop.png",
+    "common-battle-mobile.png",
+    "fixed-boss-1920.png",
+    "fixed-boss-desktop.png",
+    "fixed-boss-mobile.png",
+    "guild-1920.png",
+    "guild-desktop.png",
+    "guild-mobile.png",
+    "recovery-tent-desktop.png",
+    "safe-zone-1920.png",
+    "safe-zone-desktop.png",
+    "safe-zone-mobile.png"
+  ],
+  "limitations": [
+    "Physical GPU/mobile/Windows not tested",
+    "Artistic acceptance belongs to user",
+    "GitHub Actions run not observed",
+    "No operational deployment",
+    "No PR creation tool available"
+  ]
+}

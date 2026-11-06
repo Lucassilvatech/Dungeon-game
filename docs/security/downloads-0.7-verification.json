@@ -1,0 +1,16 @@
+[
+  {
+    "name": "DungeonGame-Windows-x64.zip",
+    "url": "https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/b17d07bc16fc14a0767c99f66cc6a139f0235739/builds/development/0.7.0-bd480e0/DungeonGame-Windows-x64.zip",
+    "http_status": 200,
+    "bytes": 33536490,
+    "sha256": "19a069950896650e1c165f95129f74088f0e4fb7fe8c91feef34479e6a416e02"
+  },
+  {
+    "name": "DungeonGame-Android.apk",
+    "url": "https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/b17d07bc16fc14a0767c99f66cc6a139f0235739/builds/development/0.7.0-bd480e0/DungeonGame-Android.apk",
+    "http_status": 200,
+    "bytes": 84547008,
+    "sha256": "72a8fa5bbaecde3b10a2ed966921abeeb082ad6f064669d9798912bab3f65bc1"
+  }
+]

@@ -1,0 +1,194 @@
+{
+  "slime:0": {
+    "level": {
+      "min": 1,
+      "max": 4,
+      "mean": 2.5112,
+      "max_frequency": 0.0
+    },
+    "hp": {
+      "min": 24,
+      "max": 34,
+      "mean": 29.0313,
+      "max_frequency": 0.0
+    },
+    "attack": {
+      "min": 6,
+      "max": 8,
+      "mean": 6.8309,
+      "max_frequency": 0.0639
+    },
+    "defense": {
+      "min": 2,
+      "max": 3,
+      "mean": 2.3758,
+      "max_frequency": 0.3758
+    },
+    "xp": {
+      "min": 30,
+      "max": 40,
+      "mean": 35.0358,
+      "max_frequency": 0.0
+    }
+  },
+  "slime:0.5": {
+    "level": {
+      "min": 1,
+      "max": 4,
+      "mean": 3.3145,
+      "max_frequency": 0.0
+    },
+    "hp": {
+      "min": 24,
+      "max": 34,
+      "mean": 31.3172,
+      "max_frequency": 0.0
+    },
+    "attack": {
+      "min": 6,
+      "max": 8,
+      "mean": 7.2026,
+      "max_frequency": 0.2282
+    },
+    "defense": {
+      "min": 2,
+      "max": 3,
+      "mean": 2.7529,
+      "max_frequency": 0.7529
+    },
+    "xp": {
+      "min": 30,
+      "max": 40,
+      "mean": 37.3217,
+      "max_frequency": 0.0
+    }
+  },
+  "slime:1": {
+    "level": {
+      "min": 1,
+      "max": 4,
+      "mean": 3.6262,
+      "max_frequency": 0.0
+    },
+    "hp": {
+      "min": 25,
+      "max": 34,
+      "mean": 32.2861,
+      "max_frequency": 0.0
+    },
+    "attack": {
+      "min": 6,
+      "max": 8,
+      "mean": 7.3969,
+      "max_frequency": 0.3995
+    },
+    "defense": {
+      "min": 2,
+      "max": 3,
+      "mean": 2.9127,
+      "max_frequency": 0.9127
+    },
+    "xp": {
+      "min": 31,
+      "max": 40,
+      "mean": 38.2937,
+      "max_frequency": 0.0
+    }
+  },
+  "goblin:0": {
+    "level": {
+      "min": 2,
+      "max": 4,
+      "mean": 3.0114,
+      "max_frequency": 0.0
+    },
+    "hp": {
+      "min": 30,
+      "max": 41,
+      "mean": 35.4988,
+      "max_frequency": 0.0
+    },
+    "attack": {
+      "min": 7,
+      "max": 9,
+      "mean": 7.7768,
+      "max_frequency": 0.0339
+    },
+    "defense": {
+      "min": 3,
+      "max": 4,
+      "mean": 3.3384,
+      "max_frequency": 0.3384
+    },
+    "xp": {
+      "min": 40,
+      "max": 51,
+      "mean": 45.5155,
+      "max_frequency": 0.0
+    }
+  },
+  "goblin:0.5": {
+    "level": {
+      "min": 2,
+      "max": 4,
+      "mean": 3.5838,
+      "max_frequency": 0.0
+    },
+    "hp": {
+      "min": 30,
+      "max": 41,
+      "mean": 38.0733,
+      "max_frequency": 0.0
+    },
+    "attack": {
+      "min": 7,
+      "max": 9,
+      "mean": 8.0848,
+      "max_frequency": 0.1196
+    },
+    "defense": {
+      "min": 3,
+      "max": 4,
+      "mean": 3.725,
+      "max_frequency": 0.725
+    },
+    "xp": {
+      "min": 40,
+      "max": 51,
+      "mean": 48.0862,
+      "max_frequency": 0.0
+    }
+  },
+  "goblin:1": {
+    "level": {
+      "min": 2,
+      "max": 4,
+      "mean": 3.7923,
+      "max_frequency": 0.0
+    },
+    "hp": {
+      "min": 31,
+      "max": 41,
+      "mean": 39.1247,
+      "max_frequency": 0.0
+    },
+    "attack": {
+      "min": 7,
+      "max": 9,
+      "mean": 8.2126,
+      "max_frequency": 0.2167
+    },
+    "defense": {
+      "min": 3,
+      "max": 4,
+      "mean": 3.8875,
+      "max_frequency": 0.8875
+    },
+    "xp": {
+      "min": 41,
+      "max": 51,
+      "mean": 49.1284,
+      "max_frequency": 0.0
+    }
+  }
+}

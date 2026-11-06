@@ -8,6 +8,7 @@ ENEMIES = {
     "goblin": (30, 7, 3, 2, 40),
     "boss": (60, 9, 3, 3, 100),
     "warden": (90, 14, 5, 8, 100),
+    "champion": (60, 9, 3, 5, 100),
     "dummy": (24, 0, 2, 1, 0),
 }
 NAMES = {
@@ -15,6 +16,7 @@ NAMES = {
     "goblin": "Batedor da clareira",
     "boss": "Guardião da Clareira",
     "warden": "Sentinela da Maré",
+    "champion": "Guardião errante",
     "dummy": "Boneco de treinamento",
 }
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, type State } from "./api";
+import { GameDialog, commerceMessage, type Transact } from "./GameDialog";
 
 type Action = (path: string, body?: unknown) => void;
 export type DeathReceipt = {
@@ -9,6 +10,8 @@ export type DeathReceipt = {
   pending_lost_exact: string;
   medical_fee: number;
   charged: number;
+  paid?: number;
+  newly_financed?: number;
   waived: number;
   balance_after_exact: string;
   debt_limit_reached: boolean;
@@ -20,7 +23,9 @@ export type DeathReceipt = {
     item_id: number;
     name: string;
     quantity: number;
-    auction_id: number;
+    auction_id?: number;
+    destination?: string;
+    recovery_id?: number;
   }[];
 };
 
@@ -54,11 +59,24 @@ export function DeathSummary({
           <dd>{death.pending_lost_exact} moedas</dd>
           <dt>Taxa médica</dt>
           <dd>{death.medical_fee} moedas</dd>
-          <dt>Saldo atual</dt>
+          {death.paid !== undefined && (
+            <>
+              <dt>Pago ao Tesouro</dt>
+              <dd>{death.paid} g de moeda Lunar</dd>
+              <dt>Nova dívida médica</dt>
+              <dd>{death.newly_financed ?? 0} g equivalentes</dd>
+            </>
+          )}
+          <dt>
+            {death.paid !== undefined
+              ? "Saldo líquido após dívida"
+              : "Saldo atual"}
+          </dt>
           <dd
             className={death.balance_after_exact.startsWith("-") ? "debt" : ""}
           >
-            {death.balance_after_exact} moedas
+            {death.balance_after_exact}{" "}
+            {death.paid !== undefined ? "g equivalentes" : "moedas"}
           </dd>
         </dl>
         {death.waived > 0 && (
@@ -76,12 +94,13 @@ export function DeathSummary({
             níveis novamente.
           </p>
         )}
-        <h2>Itens enviados para leilão</h2>
+        <h2>Itens perdidos (até cinco unidades)</h2>
         {death.items.length ? (
           <ul>
             {death.items.map((i) => (
               <li key={i.item_id}>
-                {i.name} ×{i.quantity} · leilão #{i.auction_id}
+                {i.name} ×{i.quantity} ·{" "}
+                {i.destination ?? `leilão histórico #${i.auction_id}`}
               </li>
             ))}
           </ul>
@@ -89,8 +108,9 @@ export function DeathSummary({
           <p>Nenhum item físico elegível carregado.</p>
         )}
         <p>
-          Itens perdidos ficam em custódia do leilão. Pagamentos futuros
-          compensam automaticamente qualquer saldo negativo.
+          Itens comuns são destruídos; valiosos ficam na recuperação pessoal por
+          200% do valor-base. Confisco de dívida é independente. Pagamentos
+          futuros compensam automaticamente qualquer saldo negativo.
         </p>
         <button disabled={busy} autoFocus onClick={onReturn}>
           RETORNAR À CIDADE
@@ -186,6 +206,15 @@ type Auction = {
   name: string;
   quantity: number;
   description: string;
+  accepts_bids: boolean;
+  protected: boolean;
+  kind: string;
+  attributes: { power: number };
+  origin: string;
+  death_event_id: number;
+  next_bid: string;
+  minimum_increment: string;
+  proceeds_destination: string;
   opening_price: string;
   highest_bid: string;
   highest_bidder_id: number | null;
@@ -203,6 +232,19 @@ export function AuctionHouse({
 }) {
   const [auctions, setAuctions] = useState<Auction[]>([]);
   const [offset, setOffset] = useState(0);
+  const [details, setDetails] = useState<
+    Record<
+      number,
+      {
+        bids: {
+          id: number;
+          bidder_id: number;
+          amount: string;
+          created_at: string;
+        }[];
+      }
+    >
+  >({});
   const [error, setError] = useState("");
   const [bids, setBids] = useState<Record<number, string>>({});
   useEffect(() => {
@@ -230,15 +272,18 @@ export function AuctionHouse({
   return (
     <>
       <p className="eyebrow">GUILDA · ESPÓLIOS DE AVENTURA</p>
-      <h2>Leilão de itens perdidos</h2>
+      <h2>Salão de Leilões</h2>
       <p>
         Apenas jogadores. Lance inicial de 20% do valor base total, arredondado
         para cima, com mínimo configurado. Não há teto de lance. O ouro vencedor
         vai para a Guilda ou sink configurado, sem pagamento ao antigo dono.
       </p>
       <p>
-        Saldo disponível: <strong>{state.coins_exact}</strong> · Ouro reservado:{" "}
-        {state.reserved_gold}. A reserva sai do saldo disponível; quando
+        Saldo disponível: <strong>{state.coins_exact}</strong> ·{" "}
+        {state.economy_mode === "LUNAR"
+          ? "Reserva Lunar (g equivalentes)"
+          : "Ouro reservado"}
+        : {state.reserved_gold}. A reserva sai do saldo disponível; quando
         superado, o lance é devolvido e compensa dívidas.
       </p>
       {state.coins_exact.startsWith("-") && (
@@ -256,8 +301,7 @@ export function AuctionHouse({
               : BigInt(a.opening_price);
           const amount = bids[a.id] ?? minimum.toString();
           const valid = /^[0-9]+$/.test(amount) && BigInt(amount) >= minimum;
-          const open =
-            a.status === "OPEN" && Date.parse(a.ends_at) > Date.now();
+          const open = a.accepts_bids;
           return (
             <article className="auction-card" key={a.id}>
               <h3>
@@ -265,9 +309,52 @@ export function AuctionHouse({
               </h3>
               <p>{a.description}</p>
               <p>
+                Tipo: {a.kind} · Poder: {a.attributes?.power} · Origem:{" "}
+                {a.origin === "guild_debt"
+                  ? "Confisco da Guilda"
+                  : "Espólio histórico de morte #" + a.death_event_id}
+              </p>
+              <p>
+                Próximo lance: {a.next_bid} · Incremento mínimo:{" "}
+                {a.minimum_increment} · Destino: {a.proceeds_destination}
+              </p>
+              <p>Entrega: mesmo item/stack, desequipado, ao vencedor.</p>
+              {a.protected && (
+                <p className="debt">
+                  Item protegido: negociação suspensa para recuperação
+                  administrativa individual.
+                </p>
+              )}
+              <button
+                className="secondary"
+                disabled={busy}
+                onClick={() => {
+                  void api("/auctions/" + a.id)
+                    .then((d) => setDetails({ ...details, [a.id]: d }))
+                    .catch((e) => setError(e.message));
+                }}
+              >
+                Detalhes e histórico
+              </button>
+              {details[a.id] && (
+                <ul>
+                  {details[a.id].bids.length ? (
+                    details[a.id].bids.map((b) => (
+                      <li key={b.id}>
+                        Jogador #{b.bidder_id}: {b.amount} moedas ·{" "}
+                        {new Date(b.created_at).toLocaleString()}
+                      </li>
+                    ))
+                  ) : (
+                    <li>Nenhum lance registrado.</li>
+                  )}
+                </ul>
+              )}
+              <p>
                 Inicial: {a.opening_price} · Maior lance: {a.highest_bid}
-                {a.highest_bidder_id === state.character.id
-                  ? " · seu lance está reservado"
+                {a.highest_bidder_id === state.character.id &&
+                ["OPEN", "CLOSED"].includes(a.status)
+                  ? " · sua reserva neste anúncio: " + a.highest_bid
                   : ""}
               </p>
               <p>
@@ -276,7 +363,12 @@ export function AuctionHouse({
                   : a.status === "SETTLED"
                     ? "FINALIZADO · entregue ao vencedor"
                     : a.status}{" "}
-                · Fim: {new Date(a.ends_at).toLocaleString()}
+                · Fim: {new Date(a.ends_at).toLocaleString()} ·{" "}
+                {new Date(a.ends_at).getTime() > Date.now()
+                  ? Math.ceil(
+                      (new Date(a.ends_at).getTime() - Date.now()) / 60000,
+                    ) + " minutos restantes"
+                  : "prazo encerrado"}
               </p>
               {open && (
                 <form
@@ -336,6 +428,113 @@ export function AuctionHouse({
         resolvidos automaticamente; sem lances, o item permanece arquivado e não
         é destruído.
       </p>
+    </>
+  );
+}
+
+export function PersonalRecovery({
+  state,
+  busy,
+  transact,
+}: {
+  state: State;
+  busy: boolean;
+  action: Action;
+  transact: Transact;
+}) {
+  const [items, setItems] = useState<any[]>([]),
+    [error, setError] = useState(""),
+    [selected, setSelected] = useState<any>(null),
+    [requestId, setRequestId] = useState("");
+  useEffect(() => {
+    let live = true;
+    api("/recovery")
+      .then((r) => {
+        if (live) setItems(r);
+      })
+      .catch((e) => {
+        if (live) setError(commerceMessage(e));
+      });
+    return () => {
+      live = false;
+    };
+  }, [state]);
+  const near =
+    state.room.id === "city1" &&
+    state.map.npc_role === "recovery" &&
+    state.map.npc &&
+    Math.abs(state.character.x - state.map.npc[0]) +
+      Math.abs(state.character.y - state.map.npc[1]) <=
+      1;
+  return (
+    <>
+      <h2>Recuperação pessoal</h2>
+      <p>
+        Uma figura encapuzada guarda seus pertences na velha barraca ao sudoeste
+        da vila. Recuperar custa 200% do valor-base.
+      </p>
+      {!near && <p>Aproxime-se da barraca para recuperar seus itens.</p>}
+      {error && !selected && <p role="alert">{error}</p>}
+      {!items.length && <p>Nenhum item para recuperar.</p>}
+      {items.map((i) => (
+        <article key={i.id}>
+          <h3>
+            {i.name} × {i.quantity}
+          </h3>
+          <p>Custo de recuperação: {i.price} unidades</p>
+          {i.recovered ? (
+            <p>Já recuperado</p>
+          ) : (
+            <button
+              disabled={busy || !near}
+              onClick={() => {
+                setError("");
+                setSelected(i);
+                setRequestId(crypto.randomUUID());
+              }}
+            >
+              Recuperar {i.name}
+            </button>
+          )}
+        </article>
+      ))}
+      {selected && (
+        <GameDialog
+          title="Confirmar recuperação"
+          busy={busy}
+          onCancel={() => setSelected(null)}
+        >
+          <h3>{selected.name}</h3>
+          <p>Custo: {selected.price} unidades monetárias</p>
+          {error && <p role="alert">{error}</p>}
+          <div className="dialog-actions">
+            <button
+              className="secondary"
+              disabled={busy}
+              onClick={() => setSelected(null)}
+            >
+              Cancelar
+            </button>
+            <button
+              disabled={busy}
+              onClick={() =>
+                void (async () => {
+                  try {
+                    await transact("/recovery/" + selected.id + "/recover", {
+                      request_id: requestId,
+                    });
+                    setSelected(null);
+                  } catch (e) {
+                    setError(commerceMessage(e));
+                  }
+                })()
+              }
+            >
+              Confirmar recuperação
+            </button>
+          </div>
+        </GameDialog>
+      )}
     </>
   );
 }

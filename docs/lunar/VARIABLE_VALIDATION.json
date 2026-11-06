@@ -1,0 +1,115 @@
+{
+  "branch_base": "feature/lunar-procedural-resources-0.9",
+  "branch": "feature/lunar-variable-nuggets-royal-admin-0.9",
+  "initial_head": "9026877958b5323cad34ab9fb9410d4d34c36a2e",
+  "migration": "ca343e37b4ca",
+  "backend": {
+    "command": "cd backend && TOWER_TEST_DATABASE=1 ../.venv/bin/python -m pytest tests -q",
+    "database": "fresh disposable PostgreSQL 17; migrated from scratch",
+    "passed": 257,
+    "failed": 0,
+    "skipped": 0,
+    "warnings": 2,
+    "duration_seconds": "592.55",
+    "counting": "single complete final run; targeted subsets not added",
+    "warnings_detail": [
+      "Starlette AnyIO BlockingPortal alias deprecated",
+      "discord.py audioop deprecated"
+    ]
+  },
+  "frontend": {
+    "npm_test": {
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "duration_ms": "51.918699"
+    },
+    "npm_build": {
+      "status": "PASS",
+      "duration_seconds": "4.74",
+      "warning": "Known large Phaser chunk"
+    },
+    "chromium": {
+      "legacy_gameplay": "PASS",
+      "lunar_wallet": "PASS",
+      "procedural_collection_guild_390px": "PASS",
+      "royal_split_mint_burn_injection_390px": "PASS",
+      "fixtures": "explicit private database; temporary owner roles revoked finally; resource spawn chance 100% TEST_ONLY"
+    }
+  },
+  "alembic": {
+    "upgrade_head": "PASS",
+    "check": "No new upgrade operations detected",
+    "scope": "fresh test databases and private copied database only"
+  },
+  "migration_fixture": {
+    "legacy_units": [
+      "player 2x100g",
+      "guild 1x500g",
+      "treasury 1x1000g"
+    ],
+    "converted_lots": 4,
+    "mass_before_mg": "1700000",
+    "mass_after_mg": "1700000",
+    "historical_ledger": "PRESERVED"
+  },
+  "private_copy": {
+    "source": "Previously verified private copy of real database; original remains stopped",
+    "old_tables": 49,
+    "preserved_historical_row_hashes": 1666,
+    "converted_lots": 1,
+    "mineral_before_mg": "100000",
+    "physical_before_mg": "100550000",
+    "physical_after_mg": "100550000",
+    "genesis_mg": "100450000",
+    "discovered_mg": "100000",
+    "admin_injected_mg": "0",
+    "destroyed_mg": "0",
+    "audit_gap_mg": "0",
+    "cutover_receipt": "UNCHANGED",
+    "steps": [
+      "upgrade",
+      "migrate fixed units",
+      "audit",
+      "split100=1+99",
+      "sale99=79 coins",
+      "Guild→Treasury same identity",
+      "mint37 with residual62",
+      "audit"
+    ]
+  },
+  "simulation": {
+    "decisions": 1000000,
+    "spawned": 19891,
+    "chance_ppm": 20000,
+    "band_counts": [
+      15994,
+      2956,
+      941
+    ],
+    "minimum_g": 100,
+    "maximum_g": 1000,
+    "rate_milliunits_per_g": 800,
+    "note": "Approved initial design; statistical tolerances are verification only."
+  },
+  "discord": {
+    "mode": "READ_ONLY",
+    "character_control": false,
+    "post_collection_queries": 5,
+    "external_live_connection": "NOT_VALIDATED; no live credentials used"
+  },
+  "godot": {
+    "Windows": "FROZEN",
+    "Android": "FROZEN",
+    "APK": "NOT_REQUIRED",
+    "Windows_build": "NOT_REQUIRED",
+    "source": "PRESERVED"
+  },
+  "operational_database": "NOT_MODIFIED; original containers remained stopped",
+  "limits": [
+    "No production load/deploy",
+    "Global financial mutex; growing full-ledger audit",
+    "Presence single worker; broker needed before multiple workers",
+    "No global boss, Echo, automated king policy or NPC production"
+  ]
+}

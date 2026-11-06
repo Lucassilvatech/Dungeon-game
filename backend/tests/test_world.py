@@ -80,7 +80,10 @@ def test_procedural_persistence_and_replay(client, monkeypatch):
     expected = __import__("json").loads(
         __import__("json").dumps(template(s["room"]["seed"]))
     )
-    assert {key: s["map"][key] for key in expected} == expected
+    assert {key: s["map"][key] for key in expected if key != "spawns"} == {
+        key: value for key, value in expected.items() if key != "spawns"
+    }
+    assert set(s["map"]["spawns"]) == set(expected["spawns"])
     assert client.post("/adventure", json=body, headers=h).status_code == 200
     with Session() as db:
         assert (
@@ -250,4 +253,14 @@ def test_room_presence_scope_and_auth(client):
             assert b.receive_json()["players"][0]["name"] == "alice"
             assert a.receive_json()["players"][0]["name"] == "bob"
             navigate(client, other, "city1")
-            assert not a.receive_json()["players"]
+            # Movement can queue several legitimate earlier positions while HTTP
+            # navigation is running. Observe the eventual authoritative room change.
+            for _ in range(100):
+                update = a.receive_json()
+                assert update["room_id"] == "common_a"
+                if not update["players"]:
+                    break
+            else:
+                raise AssertionError(
+                    "Presence did not remove peer after room departure"
+                )

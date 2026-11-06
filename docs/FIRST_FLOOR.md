@@ -1,5 +1,37 @@
 # Primeiro andar: regras e implementação
 
+## Personagens da referência e caminhos limpos
+
+O refinamento atual usa diretamente as proporções dos personagens enviados pelo usuário, com cores profissionais preservadas. A vila tem terreno limpo, bosques/estações e caminhos sem caixas/pedras aleatórias. A migração espacial65a7c9e21b04 retira somente colisões decorativas antigas, sem mover personagens/NPCs/portas ou alterar economia. Dungeons/chefes mantêm gameplay e identidade persistidos; visual mais escuro/coeso.9:16 vale só para a referência em imagem.
+
+
+## Apresentação visual0.9
+
+Vila com caminhos conectados às portas reais, três serviços comerciais e barraca sudoeste; ruínas comuns frias e secret/boss ritualístico têm temas/arte distintos. Bosses fixos e procedurais usam aparência própria e determinística; miniboss tem arte elite separada. Tudo é apresentação: coordenadas, colisões, atributos, economia, expedições e progresso continuam autoritativos e preservados. [Regras visuais](PIXEL_ART_OVERHAUL.md).
+
+
+## Lojas da vila — NPCs
+
+Comerciante(34,8), Alquimista(36,15), Ferreiro(16,22) em city1. E/clique/toque/Ir até exigem caminhada e proximidade para comprar. Estoque finito e lotes de materiais; seis peças com slots independentes. A produção avança no servidor sem abrir lojas. Recuperação permanece na barraca sudoeste, separada da Guilda. [Regras](lunar/NPC_ECONOMY.md).
+
+
+## Vila e loja — estado atual 0.9
+
+A recuperação pessoal agora é um serviço discreto na barraca sudoeste da vila, NPC encapuzado(5,30). Aproximação≤1 e interação abrem a interface existente, com custo200% preservado. Não há porta de recuperação na Guilda. Comércio da recepção usa estoque agregado e moedas reais, sem troco automático. [Regras](lunar/GUILD_SHOP_RECOVERY_UX.md). Descrições históricas de recovery_hall abaixo não representam o acesso Web atual.
+
+
+## Evolução atual 0.8
+
+Web é o cliente principal; combate individual/regras de expedição da 0.7 continuam. Grupos opt-in começam com dois inimigos próximos: uma ação do jogador, seguida pelos sobreviventes em ordem estável de ID. Alvo, HP e recibos persistem; cada inimigo paga XP/loot/direito uma vez. O iniciante deve preferir combate individual até se preparar. [Regras e compatibilidade](COMBAT_ENCOUNTERS.md).
+
+Máximo procedural agora tem cauda transformada `u >= 0.995`, preservando bins anteriores abaixo dela, influência da proximidade/perigo e consumo de RNG. Só novas instâncias recebem revisão 2; comparar resultados em [BALANCE_REPORT_0.8.md](BALANCE_REPORT_0.8.md).
+
+Folha Luminosa em `common_a`, Minério de Musgo em `common_b`; até dois pontos pessoais por geração, estoque 3/2 respectivamente, sem reposição temporal. Coleta exige proximidade, ausência de combate e espaço de mochila (30 slots para novas coletas, preenchendo stacks existentes quando possível). Não afeta excedentes antigos nem cria moeda. Contratos da recepção exigem reserva antecipada do Tesouro e só contam ações após aceitação. Entregas consomem materiais; retirada de publicação preserva pagamentos já adquiridos. [Especificação](COLLECTION_AND_CONTRACTS.md).
+
+Métricas são posteriores à instrumentação; simulações não representam sessões humanas. Áudio original opcional inicia mudo. Não implementados cooperação, raids completas, classes, habilidades avançadas ou andares superiores.
+
+> **Regras atuais 0.7:** [sequência, geração, retenção, morte/recuperação, dívida e eventos](PROCEDURAL_ECONOMY_UPDATE.md). As regras novas substituem a perda de todos os itens por leilão das versões históricas abaixo.
+
 ## Combate
 
 Parâmetros centrais em `balance.py` e Settings:
@@ -124,7 +156,7 @@ O resgate envia à city1, restaura energia 10 e `max(1, floor(HP_max × RESPAWN_
 
 ## Custódia e leilão exclusivo de espólios
 
-Itens físicos de `location=inventory` e definição `death_transferable=true` saem da mochila, ficam `owner=NULL`, `location=auction`, `equipped=false`. Nenhum item é apagado ou duplicado; quantidade e ID permanecem. Não há flags técnicas disfarçadas de item no catálogo atual; futuras definições estruturais podem marcar false. Outros locais de custódia não são confiscados.
+Itens físicos de `location=inventory` e definição `death_transferable=true` (a Espada de Aprendiz `sword` é permanentemente excluída na 0.6) saem da mochila, ficam `owner=NULL`, `location=auction`, `equipped=false`. Nenhum item é apagado ou duplicado; quantidade e ID permanecem. Não há flags técnicas disfarçadas de item no catálogo atual; futuras definições estruturais podem marcar false. Outros locais de custódia não são confiscados.
 
 Uma Auction por item/stack e morte guarda antigo dono, quantidade original, preço inicial, maior lance/licitante, início/fim, destino e estado. Um índice parcial impede duas custódias abertas do mesmo item; seu histórico permite nova morte após compra legítima. O lance inicial arredonda para cima os 20% do valor total: `(base × quantidade + 4) // 5`, mínimo configurado. Sem valor positivo confiável, usa o mínimo. Catálogo inicial provisório: espada 100, cristal 10/unidade.
 
@@ -139,3 +171,19 @@ O backend resolve vencidos em lotes até 100 a cada AUCTION_SWEEP_SECONDS, no st
 Os atributos existentes são strength (Força) e defense (Defesa). Novos níveis concedem 1 ponto, acumulável, depois de quitar attribute_point_debt. Não existe mais +1 de força automático; HP máximo e curva nível×50 continuam anteriores. Personagens legados preservam os valores atuais, com zero pontos retroativos, pois sua força já continha ganhos automáticos. A política evita um segundo bônus para os mesmos níveis.
 
 POST /character/attributes aceita lote não negativo, inteiro, somente desses atributos e UUID. Soma deve ser positiva e não superar os pontos livres; o resultado não pode estourar o armazenamento do atributo. O lock do personagem e chave do evento serializam gastos concorrentes/replay. Sem redução manual ou respec. Eventos ATTRIBUTE_POINT_GAINED e ATTRIBUTE_POINT_SPENT auditam ganhos, quitação de dívida e escolhas.
+
+
+## Consolidação e cliente Godot — 0.6
+
+A regra de morte/fuga permanece, com exceção explícita: a Espada de Aprendiz inicial sobrevive à morte. Proteção é por ID de definição sword e não por nome/tipo de arma. Outras espadas continuam elegíveis; materiais/stacks e equipamentos físicos não protegidos vão ao leilão. Não há devolução automática de todo histórico: recuperação/reembolso/reposição exigem revisão administrativa individual (AUCTIONS.md).
+
+Exploração acrescenta viagem rápida a locais permanentes visitados, sem combate/ACTIVE, segredos ou procedurais como destinos. O Salão de Leilões fica ligado à Guilda e tem seu próprio leiloeiro; recompensas continuam exclusivamente com a recepcionista. A duração dos anúncios continua 24h configuráveis; detalhes/histórico/entrega/preços são dados reais do backend.
+
+Godot joga o mesmo primeiro andar por API: mapa/teclado/toque, combate, inventário, pontos, NPCs, expedição/fuga/morte, leilões e reconexão. Web legada e Discord preservados. Exportações de desenvolvimento Windows/Android foram geradas; hardware Windows/Android e experiência visual móvel ainda precisam de validação nativa antes de descontinuar Phaser.
+
+Administração não é um poder do personagem: operações financeiras/oficiais usam contexto separado, permissões, antes/depois, UUID e justificativa. Taxa/recompensa e perfil regional podem ser ajustados de modo auditado; saldo já recebido, direito já registrado, leilão existente e inimigo já instanciado não são recalculados retroativamente. Sem segundo andar, combate coletivo ou habilidades novas.
+
+
+## Continuação procedural Lunar 0.9
+
+Expedições novas podem conter Minério Lunar raro configurável; coletar não dá moedas. Disponibilidade é decidida uma vez, com mapa privado e slots compartilhados. Ver [recursos Lunares](lunar/PROCEDURAL_RESOURCES.md).
