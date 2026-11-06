@@ -339,3 +339,38 @@ test("interior furniture requires a deliberate footprint or contextual seating/w
   assert(p.fixtures.some((d) => d.kind === "chair" && d.x === 7));
   assert(!p.fixtures.some((d) => d.x === 19));
 });
+
+const { battleGroundSet, battleTileFrame, BATTLE_GROUNDS } = load("battleTerrain");
+test("ordinary dungeons match the green combat reference with palette variation", () => {
+  for (const material of ["ruins", "moss", "cave", "crypt"])
+    assert.equal(battleGroundSet(material), material);
+  assert.equal(battleGroundSet("wood"), null);
+  assert.equal(battleGroundSet("grass"), null);
+  assert.equal(new Set(BATTLE_GROUNDS).size, BATTLE_GROUNDS.length);
+});
+
+test("boss arenas remain dark but allow frost or ember themed variations", () => {
+  assert.equal(battleGroundSet("ritual", "moss_stone"), "ritual");
+  assert.equal(battleGroundSet("secret", "wild_ruins"), "secret");
+  assert.equal(battleGroundSet("ritual", "crystal_bones"), "boss_frost");
+  assert.equal(battleGroundSet("secret", "abandoned_wood"), "boss_ember");
+  assert.notEqual(battleTileFrame("ritual", 0), battleTileFrame("ruins", 0));
+  assert.notEqual(battleTileFrame("secret", 0), battleTileFrame("ritual", 0));
+  assert.notEqual(battleTileFrame("boss_frost", 0), battleTileFrame("boss_ember", 0));
+  for (const material of BATTLE_GROUNDS) {
+    const floor = Array.from({ length: 8 }, (_, i) => battleTileFrame(material, i));
+    const wall = Array.from({ length: 8 }, (_, i) => battleTileFrame(material, i, true));
+    assert.equal(new Set([...floor, ...wall]).size, 16);
+    assert.equal(wall[0] - floor[0], 8);
+  }
+});
+
+test("village never regenerates rejected crate, barrel, well, rock and station props", () => {
+  const s = state("CITY");
+  for (let seed = 0; seed < 12; seed++) {
+    s.map.seed = seed;
+    const plan = planScenery(s);
+    assert.deepEqual(plan.violations, []);
+    assert(!plan.props.some(p => ["well", "barrel", "crate", "rock", "alchemy", "forge"].includes(p.kind)));
+  }
+});
