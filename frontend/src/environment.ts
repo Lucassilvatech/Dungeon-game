@@ -5,6 +5,7 @@ import { resolveTheme, type VisualThemeProfile } from "./visual/themes";
 import { cityPaths, buildingEntrances } from "./visual/paths";
 import { planScenery, type PlannedProp } from "./visual/placement";
 import { ensureVillageTerrain, VILLAGE_TERRAIN_KEY } from "./visual/villageTerrain";
+import { battleGroundSet, battleTileFrame, ensureBattleTerrain, BATTLE_TERRAIN_KEY } from "./visual/battleTerrain";
 type Image = Phaser.GameObjects.Image;
 const scenery = frames.scenery as Record<string, number>,
   effects = frames.effects as Record<string, number>,
@@ -81,8 +82,10 @@ export class Environment {
     const { map: m, room } = this.state,
       p = this.theme,
       paths = cityPaths(this.state),
-      entrances = buildingEntrances(this.state);
+      entrances = buildingEntrances(this.state),
+      battleGround = battleGroundSet(p.groundSet, m.theme);
     if (room.kind === "CITY") ensureVillageTerrain(this.scene);
+    if (battleGround) ensureBattleTerrain(this.scene);
     const ground = this.scene.add
       .renderTexture(0, 0, m.width * 32, m.height * 32)
       .setOrigin(0)
@@ -108,6 +111,13 @@ export class Environment {
             x * 32,
             y * 32,
           );
+        } else if (battleGround) {
+          ground.batchDrawFrame(
+            BATTLE_TERRAIN_KEY,
+            battleTileFrame(battleGround, variant),
+            x * 32,
+            y * 32,
+          );
         } else {
           ground.batchDrawFrame(
             "tiles",
@@ -120,7 +130,15 @@ export class Environment {
     for (const [x, y] of m.walls) {
       if (buildings.has(`${x},${y}`)) continue;
       const base = p.groundSet === "grass" ? "path" : p.groundSet;
-      ground.batchDrawFrame("tiles", tiles[base + "_wall_0"], x * 32, y * 32);
+      if (battleGround) {
+        ground.batchDrawFrame(
+          BATTLE_TERRAIN_KEY,
+          battleTileFrame(battleGround, (x + y) % 8, true),
+          x * 32, y * 32,
+        );
+      } else {
+        ground.batchDrawFrame("tiles", tiles[base + "_wall_0"], x * 32, y * 32);
+      }
     }
     ground.endDraw();
     for (const [i, b] of (m.buildings ?? []).entries()) {
