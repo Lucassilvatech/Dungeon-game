@@ -14,7 +14,7 @@ jobs:
           POSTGRES_USER: tower
           POSTGRES_PASSWORD: test-only-password
         ports: ['5432:5432']
-        options: --health-cmd 'pg_isready -U tower -d tower08_test' --health-interval 3s --health-timeout 3s --health-retries 20
+        options: --health-cmd=pg_isready --health-interval=3s --health-timeout=3s --health-retries=20
     env:
       DATABASE_URL: postgresql+psycopg://tower:test-only-password@localhost:5432/tower08_test
       TOWER_TEST_DATABASE: '1'
@@ -53,7 +53,7 @@ jobs:
           POSTGRES_USER: tower
           POSTGRES_PASSWORD: test-only-password
         ports: ['5432:5432']
-        options: --health-cmd 'pg_isready -U tower -d tower_web' --health-interval 3s --health-timeout 3s --health-retries 20
+        options: --health-cmd=pg_isready --health-interval=3s --health-timeout=3s --health-retries=20
     env:
       DATABASE_URL: postgresql+psycopg://tower:test-only-password@localhost:5432/tower_web
       RATE_LIMIT_SCALE: '10'
