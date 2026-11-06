@@ -242,21 +242,9 @@ export function planScenery(s: Pick<State, "map" | "room">) {
     inside = ["GUILD", "TRAINING", "BUILDING_INTERIOR"].includes(s.room.kind),
     arena = ["BOSS", "SECRET_DUNGEON"].includes(s.room.kind);
   if (city) {
-    approve({ kind: "well", x: 21, y: 14 });
-    for (const n of m.service_npcs ?? []) {
-      const kind = (n.id ?? "").includes("alchemist")
-        ? "alchemy"
-        : (n.id ?? "").includes("blacksmith")
-          ? "forge"
-          : "crate";
-      for (const [dx, dy] of [
-        [3, 1],
-        [-3, 1],
-        [3, 3],
-        [-3, 3],
-      ])
-        if (approve({ kind, x: n.x + dx, y: n.y + dy })) break;
-    }
+    // Visual reset: do not revive rejected props (wells, crates, barrels,
+    // rock piles or generic profession stations). Only approved foliage
+    // belongs on the village ground; interactive services remain intact.
     // Compose groves; do not scatter a random prop on every floor cell.
     const groves = [
       [0.08, 0.19],
@@ -291,11 +279,8 @@ export function planScenery(s: Pick<State, "map" | "room">) {
       }
     }
     for (const b of m.buildings ?? [])
-      for (const x of [b.x - 2, b.x + b.width + 1]) {
+      for (const x of [b.x - 2, b.x + b.width + 1])
         approve({ kind: "flower", x, y: b.y + b.height - 1 });
-        if (tileHash(m.seed ?? 0, x, b.y) % 2 === 0)
-          approve({ kind: "barrel", x, y: b.y + b.height - 2 });
-      }
   } else if (!inside) {
     const theme = m.theme,
       kind = arena
