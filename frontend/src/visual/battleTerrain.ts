@@ -153,7 +153,11 @@ export function ensureBattleTerrain(scene: Phaser.Scene): void {
       ctx.restore();
     }
   });
-  scene.textures.addSpriteSheet(BATTLE_TERRAIN_KEY, canvas, {
+  // Phaser 3.88 accepts a Phaser Texture, not an HTMLCanvasElement,
+  // as the sprite-sheet source. Register the canvas first.
+  const texture = scene.textures.addCanvas(BATTLE_TERRAIN_KEY, canvas);
+  if (!texture) throw new Error("Could not register terrain canvas");
+  scene.textures.addSpriteSheet("", texture, {
     frameWidth: SIZE, frameHeight: SIZE,
   });
 }
