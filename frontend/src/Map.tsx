@@ -178,18 +178,18 @@ export function Map({
         for (const n of s.map.npcs || []) {
           this.npcs.push(
             this.add
-              .sprite(n.x * 32 + 16, n.(y + 1) * 32, "peer")
+              .sprite(n.x * 32 + 16, (n.y + 1) * 32, "peer")
               .setScale(1).setOrigin(.5,1)
               .setDepth(11),
           );
           this.npcHomes.push({
             x: n.x * 32 + 16,
-            y: n.(y + 1) * 32,
+            y: (n.y + 1) * 32,
             walk: n.walk,
           });
         }
         for(const e of s.room.exits)this.labels.push(this.label(e.x*32+16,e.y*32-45,e.known?e.name:"? Caminho"));
-        this.hero.setPosition(s.character.x * 32 + 16, s.character.(y + 1) * 32);
+        this.hero.setPosition(s.character.x * 32 + 16, (s.character.y + 1) * 32);
         this.lastTile = `${s.character.x},${s.character.y}`;
         this.cameras.main
           .setBounds(0, 0, s.map.width * 32, s.map.height * 32)
@@ -201,7 +201,7 @@ export function Map({
       createEnemy(e:Enemy){
         const look=appearance(e,live.current.state);
         const bossFrame=({moss_colossus:0,thorn_chief:1,abyssal_warden:2,basalt_drake:3} as Record<string,number>)[look.key.replace("boss_","")];
-        const sprite=this.add.sprite(e.x*32+16,(e.y+1)*32,look.boss?"bosses":look.key,look.boss?bossFrame:0).setOrigin(.5,look.boss?1:.875).setScale(look.scale).setDepth(100+(e.y+1)*32);
+        const sprite=this.add.sprite(e.x*32+16,(e.y+1)*32,look.boss?"bosses":look.key,look.boss?bossFrame:0).setOrigin(.5,1).setScale(look.scale).setDepth(100+(e.y+1)*32);
         if(e.category==="rare")sprite.setTint(0xa8d8e7);
         const label=this.label(sprite.x,sprite.y-(look.boss?190:look.scale>1?88:56),(e.category_label??"Comum")+" · "+e.name+" · "+e.level).setColor(e.name_color??"#e3eadb");
         this.actors.set(e.id,{sprite,label,lastX:e.x,lastY:e.y,dying:false,boss:look.boss,scale:look.scale,dir:0});
@@ -230,7 +230,7 @@ export function Map({
           this.tweens.add({
             targets: this.hero,
             x: c.x * 32 + 16,
-            y: c.(y + 1) * 32,
+            y: (c.y + 1) * 32,
             duration: 145,
             ease: "Sine.easeOut",
           });
@@ -246,7 +246,7 @@ export function Map({
         }
         const moving =
             Math.abs(this.hero.x - c.x * 32 - 16) +
-              Math.abs(this.hero.y - c.y * 32 - 12) >
+              Math.abs(this.hero.y - (c.y + 1) * 32) >
             1,
           active = time < this.until;
         this.hero.setFrame(actorFrame(active?this.effect==="lost"?"death":this.until-time<280?"hurt":"attack":moving?"walk":"idle",this.heroDir,moving?Math.floor(time/90)%4:frame)).setDepth(100+this.hero.y);
@@ -298,7 +298,7 @@ export function Map({
             this.tweens.add({
               targets: a.sprite,
               x: e.x * 32 + 16,
-              y: e.(y + 1) * 32,
+              y: (e.y + 1) * 32,
               duration: 600,
               ease: "Sine.easeInOut",
             });
@@ -307,7 +307,7 @@ export function Map({
           a.sprite.setDepth(100+a.sprite.y);
           const walking =
             Math.abs(a.sprite.x - e.x * 32 - 16) +
-              Math.abs(a.sprite.y - e.y * 32 - 12) >
+              Math.abs(a.sprite.y - (e.y + 1) * 32) >
             1;
           if(!a.boss)a.sprite.setFrame(actorFrame(active&&this.targetEnemy===e.id?"hurt":e.state==="IN_COMBAT"?"attack":walking?"walk":"idle",a.dir,frame));
           else {a.sprite.setAlpha(active&&this.targetEnemy===e.id?.65:1);if(!walking)a.sprite.y=Math.round((e.y+1)*32+(motion.matches?0:Math.sin(time/700+e.id)*2));}
@@ -330,15 +330,15 @@ export function Map({
           let sp = this.others.get(p.id);
           if (!sp) {
             sp = this.add
-              .sprite(p.x * 32 + 16, p.(y + 1) * 32, "peer")
+              .sprite(p.x * 32 + 16, (p.y + 1) * 32, "peer")
               .setScale(1).setOrigin(.5,1)
               .setDepth(14);
             this.others.set(p.id, sp);
           }
           const walk =
-            Math.abs(sp.x - p.x * 32 - 16) + Math.abs(sp.y - p.y * 32 - 12) > 1;
+            Math.abs(sp.x - p.x * 32 - 16) + Math.abs(sp.y - (p.y + 1) * 32) > 1;
           sp.x = Phaser.Math.Linear(sp.x, p.x * 32 + 16, 0.2);
-          sp.y = Phaser.Math.Linear(sp.y, p.(y + 1) * 32, 0.2);
+          sp.y = Phaser.Math.Linear(sp.y, (p.y + 1) * 32, 0.2);
           sp.setFrame(actorFrame(walk?"walk":"idle",0,frame)).setDepth(100+sp.y);
         }
         const g = this.ambient;
