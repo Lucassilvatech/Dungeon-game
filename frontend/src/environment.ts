@@ -4,6 +4,7 @@ import { frames } from "./sprites";
 import { resolveTheme, type VisualThemeProfile } from "./visual/themes";
 import { cityPaths, buildingEntrances } from "./visual/paths";
 import { planScenery, type PlannedProp } from "./visual/placement";
+import { ensureVillageTerrain, VILLAGE_TERRAIN_KEY } from "./visual/villageTerrain";
 type Image = Phaser.GameObjects.Image;
 const scenery = frames.scenery as Record<string, number>,
   effects = frames.effects as Record<string, number>,
@@ -81,6 +82,7 @@ export class Environment {
       p = this.theme,
       paths = cityPaths(this.state),
       entrances = buildingEntrances(this.state);
+    if (room.kind === "CITY") ensureVillageTerrain(this.scene);
     const ground = this.scene.add
       .renderTexture(0, 0, m.width * 32, m.height * 32)
       .setOrigin(0)
@@ -99,12 +101,21 @@ export class Environment {
           ((Math.floor(x / 3) * 5 + Math.floor(y / 3) * 3 + (m.seed ?? 0)) >>>
             0) %
           8;
-        ground.batchDrawFrame(
-          "tiles",
-          tiles[set + "_" + variant],
-          x * 32,
-          y * 32,
-        );
+        if (room.kind === "CITY") {
+          ground.batchDrawFrame(
+            VILLAGE_TERRAIN_KEY,
+            (set === "path" ? 8 : 0) + variant,
+            x * 32,
+            y * 32,
+          );
+        } else {
+          ground.batchDrawFrame(
+            "tiles",
+            tiles[set + "_" + variant],
+            x * 32,
+            y * 32,
+          );
+        }
       }
     for (const [x, y] of m.walls) {
       if (buildings.has(`${x},${y}`)) continue;
