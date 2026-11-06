@@ -374,3 +374,21 @@ test("village never regenerates rejected crate, barrel, well, rock and station p
     assert(!plan.props.some(p => ["well", "barrel", "crate", "rock", "alchemy", "forge"].includes(p.kind)));
   }
 });
+
+test("ground-contact coordinates remain valid and consistent", () => {
+  const code = fs.readFileSync(path.resolve(__dirname, "../src/Map.tsx"), "utf8");
+  assert(!code.includes(".(y + 1)"), "broken actor coordinates");
+  assert(code.includes("this.hero.y - (c.y + 1) * 32"));
+  assert(code.includes("a.sprite.y - (e.y + 1) * 32"));
+  assert(code.includes("sp.y - (p.y + 1) * 32"));
+  assert(code.includes("g.fillEllipse(this.hero.x, this.hero.y - 2"));
+  assert(!code.includes("Math.sin(time/700+e.id)"), "boss must not float");
+});
+
+test("terrain sheets use Phaser TextureManager canvas registration", () => {
+  for (const name of ["villageTerrain.ts", "battleTerrain.ts"]) {
+    const source = fs.readFileSync(path.resolve(__dirname, "../src/visual", name), "utf8");
+    assert(source.includes("scene.textures.addCanvas("));
+    assert(source.includes('scene.textures.addSpriteSheet("", texture,'));
+  }
+});
