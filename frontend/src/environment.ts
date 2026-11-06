@@ -211,8 +211,10 @@ export class Environment {
           );
       const x = (boss?.x ?? Math.floor(m.width / 2)) * 32 + 16,
         y = (boss?.y ?? Math.floor(m.height / 2)) * 32 + 16;
-      this.image(x, y, "effects", effects.rune, 3, 5);
-      this.light(x, y, true, false);
+      const rune = this.image(x, y, "effects", effects.rune, 3, 5);
+      if (battleGround === "boss_frost") rune.setTint(0x8cd5e0);
+      if (battleGround === "boss_ember") rune.setTint(0xea927e);
+      this.light(x, y, battleGround !== "boss_ember", false);
     }
     if (p.lightProfile !== "day") {
       for (let x = 5; x < m.width - 2; x += 8) {
