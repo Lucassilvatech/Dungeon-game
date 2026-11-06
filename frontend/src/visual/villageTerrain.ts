@@ -79,7 +79,11 @@ export function ensureVillageTerrain(scene: Phaser.Scene): void {
     else drawStonePath(ctx, frame - 8);
     ctx.restore();
   }
-  scene.textures.addSpriteSheet(VILLAGE_TERRAIN_KEY, canvas, {
+  // Phaser 3.88 accepts a Phaser Texture, not an HTMLCanvasElement,
+  // as the sprite-sheet source. Register the canvas first.
+  const texture = scene.textures.addCanvas(VILLAGE_TERRAIN_KEY, canvas);
+  if (!texture) throw new Error("Could not register terrain canvas");
+  scene.textures.addSpriteSheet("", texture, {
     frameWidth: SIZE, frameHeight: SIZE,
   });
 }
