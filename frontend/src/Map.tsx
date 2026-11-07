@@ -231,8 +231,8 @@ export function Map({
             targets: this.hero,
             x: c.x * 32 + 16,
             y: (c.y + 1) * 32,
-            duration: 205,
-            ease: "Linear",
+            duration: s.room.kind === "CITY" ? 205 : 145,
+            ease: s.room.kind === "CITY" ? "Linear" : "Sine.easeOut",
           });
         }
         if (fx && fx.seq !== this.lastFx) {
@@ -249,7 +249,7 @@ export function Map({
               Math.abs(this.hero.y - (c.y + 1) * 32) >
             1,
           active = time < this.until;
-        this.hero.setFrame(actorFrame(active?this.effect==="lost"?"death":this.until-time<280?"hurt":"attack":moving?"walk":"idle",this.heroDir,moving?Math.floor(time/115)%4:frame)).setDepth(100+this.hero.y);
+        this.hero.setFrame(actorFrame(active?this.effect==="lost"?"death":this.until-time<280?"hurt":"attack":moving?"walk":"idle",this.heroDir,moving?Math.floor(time/(s.room.kind === "CITY" ? 115 : 90))%4:frame)).setDepth(100+this.hero.y);
         if(this.recoveryLabel&&s.map.npc)this.recoveryLabel.setVisible(Math.abs(s.character.x-s.map.npc[0])+Math.abs(s.character.y-s.map.npc[1])<=4);
         const ids = new Set(s.map.enemies.map((e) => e.id));
         this.actors.forEach((a, id) => {
