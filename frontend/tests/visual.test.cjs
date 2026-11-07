@@ -392,3 +392,19 @@ test("terrain sheets use Phaser TextureManager canvas registration", () => {
     assert(source.includes('scene.textures.addSpriteSheet("", texture,'));
   }
 });
+
+test("village tree canopies reserve four full tiles and never cover paths", () => {
+  const s = state("CITY");
+  s.room.safe = true;
+  const { planScenery, placementViolations, visualFootprint } = load("placement");
+  const planned = planScenery(s);
+  assert.deepEqual(visualFootprint({ kind: "tree", x: 12, y: 12 }), {
+    kind: "tree", x: 10, y: 9, width: 4, height: 4,
+  });
+  for (const p of planned.props.filter((p) => p.kind === "tree")) {
+    assert.equal(p.footprint.width, 4);
+    assert.equal(p.footprint.height, 4);
+    assert.deepEqual(placementViolations(p.footprint, planned.zones), []);
+  }
+  assert.deepEqual(planned.violations, []);
+});
