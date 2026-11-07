@@ -1,0 +1,327 @@
+{
+  "frames": {
+    "ruin": {
+      "frame": {
+        "x": 2,
+        "y": 2,
+        "w": 44,
+        "h": 63
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 44,
+        "h": 63
+      },
+      "sourceSize": {
+        "w": 44,
+        "h": 63
+      }
+    },
+    "statue": {
+      "frame": {
+        "x": 258,
+        "y": 2,
+        "w": 44,
+        "h": 55
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 44,
+        "h": 55
+      },
+      "sourceSize": {
+        "w": 44,
+        "h": 55
+      }
+    },
+    "boulder": {
+      "frame": {
+        "x": 514,
+        "y": 2,
+        "w": 38,
+        "h": 34
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 38,
+        "h": 34
+      },
+      "sourceSize": {
+        "w": 38,
+        "h": 34
+      }
+    },
+    "moss": {
+      "frame": {
+        "x": 770,
+        "y": 2,
+        "w": 26,
+        "h": 18
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 26,
+        "h": 18
+      },
+      "sourceSize": {
+        "w": 26,
+        "h": 18
+      }
+    },
+    "obelisk": {
+      "frame": {
+        "x": 2,
+        "y": 258,
+        "w": 46,
+        "h": 60
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 46,
+        "h": 60
+      },
+      "sourceSize": {
+        "w": 46,
+        "h": 60
+      }
+    },
+    "crystal": {
+      "frame": {
+        "x": 258,
+        "y": 258,
+        "w": 42,
+        "h": 61
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 42,
+        "h": 61
+      },
+      "sourceSize": {
+        "w": 42,
+        "h": 61
+      }
+    },
+    "tomb": {
+      "frame": {
+        "x": 514,
+        "y": 258,
+        "w": 42,
+        "h": 39
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 42,
+        "h": 39
+      },
+      "sourceSize": {
+        "w": 42,
+        "h": 39
+      }
+    },
+    "broken_column": {
+      "frame": {
+        "x": 770,
+        "y": 258,
+        "w": 42,
+        "h": 34
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 42,
+        "h": 34
+      },
+      "sourceSize": {
+        "w": 42,
+        "h": 34
+      }
+    },
+    "torch": {
+      "frame": {
+        "x": 2,
+        "y": 514,
+        "w": 16,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 52
+      }
+    },
+    "candle": {
+      "frame": {
+        "x": 258,
+        "y": 514,
+        "w": 23,
+        "h": 50
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 23,
+        "h": 50
+      },
+      "sourceSize": {
+        "w": 23,
+        "h": 50
+      }
+    },
+    "banner": {
+      "frame": {
+        "x": 514,
+        "y": 514,
+        "w": 38,
+        "h": 58
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 38,
+        "h": 58
+      },
+      "sourceSize": {
+        "w": 38,
+        "h": 58
+      }
+    },
+    "bones": {
+      "frame": {
+        "x": 770,
+        "y": 514,
+        "w": 25,
+        "h": 15
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 25,
+        "h": 15
+      },
+      "sourceSize": {
+        "w": 25,
+        "h": 15
+      }
+    },
+    "ritual": {
+      "frame": {
+        "x": 2,
+        "y": 770,
+        "w": 250,
+        "h": 241
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 250,
+        "h": 241
+      },
+      "sourceSize": {
+        "w": 250,
+        "h": 241
+      }
+    },
+    "altar": {
+      "frame": {
+        "x": 258,
+        "y": 770,
+        "w": 64,
+        "h": 48
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 48
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 48
+      }
+    },
+    "web": {
+      "frame": {
+        "x": 514,
+        "y": 770,
+        "w": 35,
+        "h": 38
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 35,
+        "h": 38
+      },
+      "sourceSize": {
+        "w": 35,
+        "h": 38
+      }
+    },
+    "mushroom": {
+      "frame": {
+        "x": 770,
+        "y": 770,
+        "w": 20,
+        "h": 14
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 20,
+        "h": 14
+      },
+      "sourceSize": {
+        "w": 20,
+        "h": 14
+      }
+    }
+  },
+  "meta": {
+    "scale": "1"
+  }
+}

@@ -1,6 +1,9 @@
+import { TILE } from "./scale";
 import type { State } from "../api";
 import { cityPaths, buildingEntrances } from "./paths";
 import { tileHash } from "./themes";
+import { visualBounds } from "./assets";
+import { villageGroves, ruinSites } from "./composition";
 export { isVillagePath } from "./paths";
 export type Placement = {
   kind: string;
@@ -37,31 +40,17 @@ const forbidden: Zone[] = [
   "RESOURCE_ZONE",
   "WALL",
 ];
-const sizes: Record<string, [number, number]> = {
-  tree: [4, 4],
-  well: [2, 3],
-  ruin: [2, 3],
-  statue: [2, 3],
-  obelisk: [2, 3],
-  crystal: [2, 2],
-  barrel: [1, 2],
-  crate: [2, 2],
-  bush: [2, 1],
-  flower: [1, 1],
-  moss: [1, 1],
-  mushroom: [1, 1],
-  rock: [1, 1],
-  alchemy: [3, 3],
-  forge: [3, 3],
-};
 export function visualFootprint(p: Placement): Placement {
-  const [w, h] = sizes[p.kind] ?? [1, 1];
+  const { width, height } = visualBounds(p.kind);
+  const left = Math.floor(p.x + 0.5 - width / (TILE * 2));
+  const right = Math.ceil(p.x + 0.5 + width / (TILE * 2));
+  const top = Math.floor(p.y + 1 - height / TILE);
   return {
     ...p,
-    x: p.x - Math.floor(w / 2),
-    y: p.y - h + 1,
-    width: w,
-    height: h,
+    x: left,
+    y: top,
+    width: right - left,
+    height: p.y + 1 - top,
   };
 }
 function cells(p: Pick<Placement, "x" | "y" | "width" | "height">) {
@@ -242,72 +231,38 @@ export function planScenery(s: Pick<State, "map" | "room">) {
     inside = ["GUILD", "TRAINING", "BUILDING_INTERIOR"].includes(s.room.kind),
     arena = ["BOSS", "SECRET_DUNGEON"].includes(s.room.kind);
   if (city) {
-    // Visual reset: do not revive rejected props (wells, crates, barrels,
-    // rock piles or generic profession stations). Only approved foliage
-    // belongs on the village ground; interactive services remain intact.
-    // Compose groves; do not scatter a random prop on every floor cell.
-    const groves = [
-      [0.08, 0.19],
-      [0.35, 0.24],
-      [0.6, 0.28],
-      [0.86, 0.41],
-      [0.32, 0.78],
-      [0.85, 0.84],
-    ];
-    for (const [gx, gy] of groves) {
-      const cx = Math.round(gx * m.width),
-        cy = Math.round(gy * m.height),
-        candidates: { x: number; y: number; rank: number }[] = [];
-      for (let dy = -3; dy <= 4; dy++)
-        for (let dx = -3; dx <= 3; dx++)
-          candidates.push({
-            x: cx + dx,
-            y: cy + dy,
-            rank:
-              Math.abs(dx) +
-              Math.abs(dy) +
-              (tileHash(m.seed ?? 0, cx + dx, cy + dy) % 7) / 10,
-          });
-      candidates.sort((a, b) => a.rank - b.rank);
+    for (const candidates of villageGroves(s)) {
       let count = 0;
-      for (const q of candidates) {
+      for (const q of candidates)
         if (approve({ kind: "tree", x: q.x, y: q.y })) {
-          approve({ kind: "flower", x: q.x + 2, y: q.y - 1 });
-          approve({ kind: "bush", x: q.x - 2, y: q.y });
+          approve({ kind: "flower", x: q.x + 2, y: q.y });
+          approve({ kind: "bush", x: q.x - 2, y: q.y - 1 });
+          approve({ kind: "grass_tuft", x: q.x + 2, y: q.y + 1 });
           if (++count === 2) break;
         }
-      }
     }
     for (const b of m.buildings ?? [])
-      for (const x of [b.x - 2, b.x + b.width + 1])
+      for (const x of [b.x - 1, b.x + b.width])
         approve({ kind: "flower", x, y: b.y + b.height - 1 });
   } else if (!inside) {
-    const theme = m.theme,
-      kind = arena
-        ? "obelisk"
-        : theme === "crystal_bones"
-          ? "crystal"
-          : theme === "abandoned_wood"
-            ? "statue"
-            : "ruin";
-    const candidates: { x: number; y: number; rank: number }[] = [];
-    for (let y = 3; y < m.height - 1; y++)
-      for (let x = 2; x < m.width - 1; x++)
-        if (x <= 4 || y <= 4 || x >= m.width - 5 || y >= m.height - 5)
-          candidates.push({ x, y, rank: tileHash((m.seed ?? 0) + 311, x, y) });
-    candidates.sort((a, b) => a.rank - b.rank);
     let count = 0;
-    for (const q of candidates)
+    const pool = arena
+      ? ["obelisk", "crystal", "tomb", "broken_column", "candle"]
+      : m.theme === "crystal_bones"
+        ? ["crystal", "boulder", "ruin"]
+        : ["ruin", "statue", "boulder", "broken_column"];
+    for (const q of ruinSites(s)) {
+      const kind = pool[count % pool.length];
       if (approve({ kind, x: q.x, y: q.y })) {
-        if (!arena)
-          approve({
-            kind: "mushroom",
-            x: q.x + (q.x < m.width / 2 ? 2 : -2),
-            y: q.y - 1,
-          });
-        if (++count >= Math.min(6, Math.floor((m.width * m.height) / 140)))
+        approve({
+          kind: arena ? "bones" : "moss",
+          x: q.x + (q.x < m.width / 2 ? 2 : -2),
+          y: q.y,
+        });
+        if (++count >= Math.min(8, Math.floor((m.width * m.height) / 110)))
           break;
       }
+    }
   }
   // Legacy large random props are deliberately NOT rendered through a bypass.
   // Their solid walls remain visible architecture; city scatter walls are repaired by migration.
@@ -316,15 +271,15 @@ export function planScenery(s: Pick<State, "map" | "room">) {
   );
   const nearWall = (d: Placement) =>
     d.x <= 3 || d.y <= 3 || d.x >= m.width - 4 || d.y >= m.height - 4;
-  const pairedSeat = (d: Placement) =>
-    authoredFurniture.some(
+  const pairedSeat = (d: Placement, tables: Placement[] = authoredFurniture) =>
+    tables.some(
       (f) =>
         d.x >= f.x - 1 &&
         d.x <= f.x + (f.width ?? 1) &&
         d.y >= f.y - 1 &&
         d.y <= f.y + (f.height ?? 1),
     );
-  const fixtures = (m.decorations ?? [])
+  const eligibleFixtures = (m.decorations ?? [])
     .filter(
       (d) =>
         inside &&
@@ -356,6 +311,17 @@ export function planScenery(s: Pick<State, "map" | "room">) {
       ];
       return !forbiddenFixture.some((n) => cells(d).some((k) => z[n].has(k)));
     });
+  const retainedTables = [
+    ...eligibleFixtures.filter((d) => ["table", "counter"].includes(d.kind)),
+    ...authoredFurniture.filter(
+      (d) =>
+        d.kind === "counter" && d.solid && cells(d).every((k) => z.WALL.has(k)),
+    ),
+  ];
+  const fixtures = eligibleFixtures.filter(
+    (d) =>
+      !["chair", "bench"].includes(d.kind) || pairedSeat(d, retainedTables),
+  );
   const floorDetails = (m.decorations ?? []).filter(
     (d) => inside && d.kind === "rug",
   );

@@ -1,0 +1,285 @@
+{
+  "version": 1,
+  "assets": {
+    "tree_1": {
+      "atlas": "village",
+      "width": 124,
+      "height": 145
+    },
+    "tree_2": {
+      "atlas": "village",
+      "width": 128,
+      "height": 144
+    },
+    "tree_3": {
+      "atlas": "village",
+      "width": 118,
+      "height": 135
+    },
+    "bush": {
+      "atlas": "village",
+      "width": 38,
+      "height": 32
+    },
+    "house_1": {
+      "atlas": "village",
+      "width": 156,
+      "height": 136
+    },
+    "house_2": {
+      "atlas": "village",
+      "width": 224,
+      "height": 140
+    },
+    "house_3": {
+      "atlas": "village",
+      "width": 135,
+      "height": 136
+    },
+    "recovery_tent": {
+      "atlas": "village",
+      "width": 146,
+      "height": 136
+    },
+    "barrel": {
+      "atlas": "village",
+      "width": 26,
+      "height": 35
+    },
+    "crate": {
+      "atlas": "village",
+      "width": 32,
+      "height": 35
+    },
+    "rock": {
+      "atlas": "village",
+      "width": 28,
+      "height": 21
+    },
+    "well": {
+      "atlas": "village",
+      "width": 43,
+      "height": 46
+    },
+    "flower": {
+      "atlas": "village",
+      "width": 22,
+      "height": 14
+    },
+    "grass_tuft": {
+      "atlas": "village",
+      "width": 20,
+      "height": 11
+    },
+    "planter": {
+      "atlas": "village",
+      "width": 38,
+      "height": 28
+    },
+    "pebbles": {
+      "atlas": "village",
+      "width": 22,
+      "height": 10
+    },
+    "ruin": {
+      "atlas": "dungeon",
+      "width": 44,
+      "height": 63
+    },
+    "statue": {
+      "atlas": "dungeon",
+      "width": 44,
+      "height": 55
+    },
+    "boulder": {
+      "atlas": "dungeon",
+      "width": 38,
+      "height": 34
+    },
+    "moss": {
+      "atlas": "dungeon",
+      "width": 26,
+      "height": 18
+    },
+    "obelisk": {
+      "atlas": "dungeon",
+      "width": 46,
+      "height": 60
+    },
+    "crystal": {
+      "atlas": "dungeon",
+      "width": 42,
+      "height": 61
+    },
+    "tomb": {
+      "atlas": "dungeon",
+      "width": 42,
+      "height": 39
+    },
+    "broken_column": {
+      "atlas": "dungeon",
+      "width": 42,
+      "height": 34
+    },
+    "torch": {
+      "atlas": "dungeon",
+      "width": 16,
+      "height": 52
+    },
+    "candle": {
+      "atlas": "dungeon",
+      "width": 23,
+      "height": 50
+    },
+    "banner": {
+      "atlas": "dungeon",
+      "width": 38,
+      "height": 58
+    },
+    "bones": {
+      "atlas": "dungeon",
+      "width": 25,
+      "height": 15
+    },
+    "ritual": {
+      "atlas": "dungeon",
+      "width": 250,
+      "height": 241
+    },
+    "altar": {
+      "atlas": "dungeon",
+      "width": 64,
+      "height": 48
+    },
+    "web": {
+      "atlas": "dungeon",
+      "width": 35,
+      "height": 38
+    },
+    "mushroom": {
+      "atlas": "dungeon",
+      "width": 20,
+      "height": 14
+    },
+    "counter": {
+      "atlas": "interior",
+      "width": 159,
+      "height": 64
+    },
+    "table": {
+      "atlas": "interior",
+      "width": 80,
+      "height": 60
+    },
+    "chair": {
+      "atlas": "interior",
+      "width": 19,
+      "height": 32
+    },
+    "bench": {
+      "atlas": "interior",
+      "width": 32,
+      "height": 15
+    },
+    "shelf": {
+      "atlas": "interior",
+      "width": 26,
+      "height": 32
+    },
+    "board": {
+      "atlas": "interior",
+      "width": 83,
+      "height": 64
+    },
+    "rug": {
+      "atlas": "interior",
+      "width": 247,
+      "height": 168
+    },
+    "door": {
+      "atlas": "interior",
+      "width": 27,
+      "height": 32
+    },
+    "forge": {
+      "atlas": "interior",
+      "width": 63,
+      "height": 64
+    },
+    "alchemy": {
+      "atlas": "interior",
+      "width": 64,
+      "height": 47
+    },
+    "standing_torch": {
+      "atlas": "interior",
+      "width": 22,
+      "height": 64
+    },
+    "planks": {
+      "atlas": "interior",
+      "width": 32,
+      "height": 13
+    }
+  },
+  "files": {
+    "dungeon.json": {
+      "sha256": "a76e022ebde4578d7cc7b9062e862022a3236364fc94a9da6bfe041ee364a373",
+      "bytes": 5341
+    },
+    "dungeon.png": {
+      "sha256": "212920eebb8f0e7767f961df297275d7033ca5d7be8d233e7dd8cd6bb8514b61",
+      "bytes": 41881
+    },
+    "grass.png": {
+      "sha256": "b301146bfd6b74ab63884802d3f0038113bc950fe7d5beb9e7fcf214877ae0b3",
+      "bytes": 214675
+    },
+    "interior.json": {
+      "sha256": "cb8287865496c947e1c6e552269cf25977fdbe32ce95f78dd0b0755d5442040b",
+      "bytes": 4021
+    },
+    "interior.png": {
+      "sha256": "44eb922380b2d66b4dcdd573565a0e2f70accafc3cc392f08d1b6c300aac0afa",
+      "bytes": 74956
+    },
+    "path.png": {
+      "sha256": "46761ca7ee21c895d0ec3bdac1d373493bf6ad416cd70ba7fd9eb3f5285877a1",
+      "bytes": 42858
+    },
+    "ritual.png": {
+      "sha256": "d2a056234a054f7daf5db8fca290701ca3d742dcf01371d21cdf88c19ea642e3",
+      "bytes": 44760
+    },
+    "ritual_wall.png": {
+      "sha256": "0e1f6c1086edd0db2557dca956f289b48edefda16acfbe070509cdf2ff297489",
+      "bytes": 44130
+    },
+    "ruins.png": {
+      "sha256": "58229a2c6b971418344cb8ce88616165a364964c95d3425e854cb633394db299",
+      "bytes": 45673
+    },
+    "ruins_wall.png": {
+      "sha256": "7d0436417ed07693a17bb68a05ccdb4df5c530bcc88ac53515c6a463cd3a40d0",
+      "bytes": 46029
+    },
+    "village.json": {
+      "sha256": "4cbada97e69097a2e4ef426b9b7e50277682d2958fbef5a0e6818395486e28a1",
+      "bytes": 5386
+    },
+    "village.png": {
+      "sha256": "00cfba81fefd8c543358ec5b9fa471e90b0f79d52ea046acd44a981ee3850f39",
+      "bytes": 134707
+    },
+    "wood.png": {
+      "sha256": "a8a2fda1d53bc27582f4cd46c86d37a9ea29820e60da985baa5143e544ae43ee",
+      "bytes": 2441
+    }
+  },
+  "sources": {
+    "dungeon.png": "9649691afda47c9c6dba8aff869e8d980bba4165f3ab338cfd703099fccdfb3f",
+    "interior.png": "26730d44ffe8995636dcc355790fe8d226a0b92675291edf79c47603b7eb4f3c",
+    "materials.png": "6fb559ae9783b4c8110bf5f49ec94c4b05e228a425fc7e79321b89fbc7494c92",
+    "village.png": "750b8563e3df855fb898b9f41c9a93378c5d6c8a56cb49b92d8bcb6c060b9933"
+  }
+}

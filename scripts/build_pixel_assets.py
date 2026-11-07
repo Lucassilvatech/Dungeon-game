@@ -10,6 +10,8 @@ import json
 import math
 import random
 from PIL import Image, ImageDraw
+from map_art.walk import walk_pose
+from map_art.compiler import build as build_maps
 
 ROOT = Path(__file__).resolve().parents[1] / "frontend/public/assets/pixel"
 ROOT.mkdir(parents=True, exist_ok=True)
@@ -60,42 +62,6 @@ def source_atlas(filename, names, sizes, cols):
     save(filename.split("-")[0], atlas, {name: i for i, name in enumerate(names)})
 
 
-source_atlas(
-    "scenery-original.png",
-    [
-        "tree_green_01",
-        "tree_green_02",
-        "tree_green_03",
-        "well",
-        "house_01",
-        "house_02",
-        "house_03",
-        "recovery_tent",
-        "barrel",
-        "crate",
-        "ruin",
-        "statue",
-        "obelisk",
-        "crystal",
-        "alchemy",
-        "forge",
-    ],
-    [(48, 64)] * 3
-    + [(32, 40)]
-    + [(96, 80)] * 3
-    + [
-        (72, 64),
-        (16, 22),
-        (20, 20),
-        (24, 40),
-        (24, 40),
-        (24, 48),
-        (24, 32),
-        (40, 32),
-        (40, 40),
-    ],
-    4,
-)
 if (ROOT.parents[3] / "art/pixel/source/bosses-original.png").exists():
     source_atlas(
         "bosses-original.png",
@@ -104,148 +70,8 @@ if (ROOT.parents[3] / "art/pixel/source/bosses-original.png").exists():
         2,
     )
 
-# 16x16 tiles, eight variants per material. Discrete clusters, shared directional light.
-palettes = {
-    "grass": ["#526f3d", "#5f7c41", "#668447", "#708d4b", "#8eaa55", "#395739"],
-    "wood": ["#775239", "#805a3c", "#906546", "#9d734f", "#b88b5c", "#4c392d"],
-    "ruins": ["#263f3c", "#2b4540", "#304b44", "#39524a", "#536854", "#172e30"],
-    "moss": ["#263c35", "#2a4339", "#30493c", "#3c5340", "#647956", "#192b29"],
-    "cave": ["#2c3e4a", "#304451", "#354957", "#405363", "#627783", "#1a2b36"],
-    "crypt": ["#383d49", "#3e4250", "#454956", "#515461", "#747886", "#232835"],
-    "ritual": ["#22273d", "#292e47", "#30364e", "#394057", "#515a70", "#161b2f"],
-    "secret": ["#202c40", "#253247", "#2c394d", "#364257", "#566478", "#151f32"],
-    "path": ["#b0a380", "#bcae88", "#c8b993", "#d2c19a", "#e5d4a9", "#80795f"],
-}
-tiles = Image.new("RGBA", (16 * 8, 16 * (len(palettes) * 2 + 1)))
-tileframes = {}
-for row, (name, pal) in enumerate(palettes.items()):
-    for variant in range(8):
-        rng = random.Random(f"{name}:{variant}")
-        im = Image.new("RGBA", (16, 16), pal[variant % 3])
-        d = ImageDraw.Draw(im)
-        if name == "grass":
-            for _ in range(8):
-                x, y = rng.randrange(15), rng.randrange(15)
-                d.line((x, y, x + 1, y + 1), fill=pal[rng.choice([0, 2, 3])])
-            if variant in (2, 5, 7):
-                for x, y in [(3, 12), (10, 5)]:
-                    d.line((x, y + 2, x - 1, y - 1), fill=pal[5])
-                    d.point((x, y), fill=pal[4])
-                    d.line((x, y + 2, x + 2, y - 2), fill=pal[3])
-            if variant == 7:
-                for x, y in [(5, 4), (12, 12)]:
-                    d.rectangle((x, y, x + 1, y + 1), fill="#e4d99a")
-                    d.point((x, y), fill="#f6edcd")
-        elif name == "wood":
-            for y in (0, 5, 10, 15):
-                d.line((0, y, 15, y), fill=pal[5])
-                d.line((0, y + 1, 15, y + 1), fill=pal[3])
-            for y in (2, 7, 12):
-                x = rng.randrange(3, 13)
-                d.line((x, y, x + 5, y), fill=pal[2])
-                d.line((x, y - 1, x, y + 2), fill=pal[5])
-        else:
-            # Irregular masonry seams; occasional cracks/moss, never random full-tile noise.
-            d.line((0, 0, 15, 0), fill=pal[4])
-            d.line((0, 1, 15, 1), fill=pal[3])
-            d.line((0, 0, 0, 15), fill=pal[3])
-            d.line((15, 1, 15, 15), fill=pal[5])
-            d.line((1, 15, 15, 15), fill=pal[5])
-            for _ in range(4):
-                x, y = rng.randrange(2, 14), rng.randrange(2, 14)
-                d.rectangle((x, y, x + 1, y), fill=pal[rng.choice([1, 2, 3])])
-            if variant % 3 == 0:
-                d.line([(3, 2), (4, 5), (7, 6), (6, 9), (8, 10)], fill=pal[5])
-                d.point((5, 5), fill=pal[3])
-            if variant in (2, 5):
-                for x, y in [(2, 12), (4, 14), (1, 9), (11, 2)]:
-                    d.rectangle(
-                        (x, y, x + 2, y + 1),
-                        fill=(
-                            "#526447" if name not in ("secret", "ritual") else "#394b56"
-                        ),
-                    )
-        tiles.alpha_composite(im, (variant * 16, row * 32))
-        tileframes[f"{name}_{variant}"] = row * 16 + variant
-        wall = Image.new("RGBA", (16, 16), pal[5])
-        wd = ImageDraw.Draw(wall)
-        for yy in range(0, 16, 5):
-            for xx in range(-8 if yy % 2 else 0, 16, 8):
-                wd.rectangle((xx + 1, yy, xx + 7, yy + 3), fill=pal[1])
-                wd.line((xx + 1, yy, xx + 6, yy), fill=pal[3])
-                wd.point((xx + 6, yy + 2), fill=pal[2])
-        wd.rectangle((0, 13, 15, 15), fill=pal[5])
-        tiles.alpha_composite(wall, (variant * 16, row * 32 + 16))
-        tileframes[f"{name}_wall_{variant}"] = row * 16 + 8 + variant
-# Quiet native32px surfaces: large color clusters instead of sampled texture noise.
-tiles = tiles.resize((tiles.width * 2, tiles.height * 2), Image.Resampling.NEAREST)
-for row, name in enumerate(palettes):
-    for variant in range(8):
-        rng = random.Random(f"quiet:{name}:{variant}")
-        base = {
-            "grass": (102, 134, 72),
-            "path": (184, 168, 131),
-            "wood": (121, 85, 59),
-            "ruins": (45, 64, 61),
-            "moss": (46, 65, 56),
-            "cave": (42, 55, 68),
-            "crypt": (45, 48, 65),
-            "ritual": (29, 34, 52),
-            "secret": (28, 37, 56),
-        }[name]
-
-        def shade(delta):
-            return tuple(max(0, min(255, c + delta)) for c in base) + (255,)
-
-        im = Image.new("RGBA", (32, 32), shade((variant % 3) - 1))
-        d = ImageDraw.Draw(im)
-        if name == "grass":
-            # Broad, almost invisible patches; explicit scene clusters carry flowers/tufts.
-            d.polygon(
-                [(0, 22), (7, 20), (15, 24), (24, 22), (32, 25), (32, 32), (0, 32)],
-                fill=shade(-2),
-            )
-            if variant in (3, 7):
-                d.line((6, 28, 6, 25, 8, 27, 10, 23), fill=shade(6))
-        elif name == "path":
-            im = Image.new("RGBA", (32, 32), shade(-20))
-            d = ImageDraw.Draw(im)
-            for yy in (0, 16):
-                offset = -9 if (yy // 16 + variant) % 2 else 0
-                for xx in range(offset, 32, 19):
-                    d.rounded_rectangle(
-                        (xx, yy, xx + 17, yy + 14),
-                        radius=3,
-                        fill=shade(variant % 4 - 1),
-                    )
-                    d.line((xx + 4, yy + 1, xx + 13, yy + 1), fill=shade(18))
-                    d.line((xx + 2, yy + 3, xx + 2, yy + 10), fill=shade(9))
-                    d.line((xx + 4, yy + 13, xx + 13, yy + 13), fill=shade(-9))
-        elif name == "wood":
-            for y in (0, 10, 21):
-                d.line((0, y, 31, y), fill=shade(-20))
-                d.line((1, y + 1, 30, y + 1), fill=shade(8))
-            d.line((variant * 3 % 25, 10, variant * 3 % 25, 20), fill=shade(-11))
-        else:
-            # Large worn slab, subdued seams, rare corner cracks/moss.
-            d.line((0, 0, 31, 0), fill=shade(-11))
-            d.line((0, 1, 0, 31), fill=shade(-8))
-            d.line((2, 2, 29, 2), fill=shade(6))
-            d.line((31, 2, 31, 31), fill=shade(-10))
-            d.line((2, 31, 31, 31), fill=shade(-10))
-            d.polygon(
-                [(5, 7), (17, 5), (25, 9), (25, 16), (14, 18), (5, 13)], fill=shade(1)
-            )
-            if variant == 5:
-                d.line([(2, 3), (6, 5), (6, 8), (10, 10)], fill=shade(-10))
-                d.line((3, 4, 5, 5), fill=shade(3))
-            if variant == 7 and name in ("moss", "ruins"):
-                d.rectangle((2, 24, 5, 28), fill="#3f5847")
-                d.rectangle((3, 22, 4, 26), fill="#53674b")
-        tiles.paste(im, (variant * 32, row * 64))
-save("tiles", tiles, tileframes)
-
-# Direct reconstruction of the user's square-headed reference, not generic anime art.
+# Map materials/scenery are rebuilt separately from the supplied reference sheets.
+# Approved character identities and existing boss identities stay here.
 reference = Image.open(
     ROOT.parents[3] / "art/pixel/source/reference-actors.png"
 ).convert("RGBA")
@@ -319,9 +145,14 @@ for key in [
         poses = [recolor(v, "reception") for v in poses]
     if key.startswith("goblin"):
         poses = [recolor(v, "goblin") for v in poses]
-    atlas = Image.new("RGBA", (48 * 8, 64 * 10))
-    for frame in range(80):
-        mode, di, step = frame // 16, (frame % 16) // 4, frame % 4
+    atlas = Image.new("RGBA", (48 * 8, 64 * 12))
+    for frame in range(96):
+        if frame < 16:
+            mode, di, step = 0, frame // 4, frame % 4
+        elif frame < 48:
+            mode, di, step = 1, (frame - 16) // 8, (frame - 16) % 8
+        else:
+            mode, di, step = 2 + (frame - 48) // 16, (frame % 16) // 4, frame % 4
         im = Image.new("RGBA", (48, 64))
         d = ImageDraw.Draw(im)
         if key.startswith("slime"):
@@ -415,13 +246,11 @@ for key in [
         else:
             pose = poses[di].copy()
             if mode == 1:
-                # Separate boot regions shift in opposite directions; head remains stable.
-                left = pose.crop((0, 36, 16, 48))
-                right = pose.crop((16, 36, 32, 48))
-                pose.paste((0, 0, 0, 0), (0, 36, 32, 48))
-                pose.alpha_composite(left, (0, 35 + (step % 2) * 2))
-                pose.alpha_composite(right, (16, 37 - (step % 2) * 2))
-            im.alpha_composite(pose, (8, 14 - (1 if step == 2 else 0)))
+                im = walk_pose(pose, di, step)
+                d = ImageDraw.Draw(im)
+            else:
+                # Idle is the approved design, without artificial bouncing.
+                im.alpha_composite(pose, (8, 14))
             if key.startswith("goblin"):
                 d.polygon([(9, 28), (3, 24), (7, 34), (11, 33)], fill="#829a61")
                 d.polygon([(37, 28), (44, 24), (40, 34), (36, 33)], fill="#829a61")
@@ -448,7 +277,7 @@ for key in [
             im = Image.new("RGBA", (48, 64))
             im.alpha_composite(crop, ((48 - crop.width) // 2, 62 - crop.height))
         atlas.alpha_composite(im, ((frame % 8) * 48, (frame // 8) * 64))
-    save(key, atlas, {"frameWidth": 48, "frameHeight": 64, "endFrame": 79})
+    save(key, atlas, {"frameWidth": 48, "frameHeight": 64, "endFrame": 95})
 
 # Small authored effects/props atlas. Four flames have deliberately different silhouettes.
 names = [
@@ -631,3 +460,5 @@ print(
     + str(sum((ROOT / v["file"]).stat().st_size for v in manifest.values()))
     + " bytes"
 )
+
+build_maps()

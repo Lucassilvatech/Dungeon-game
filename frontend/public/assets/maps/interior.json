@@ -1,0 +1,247 @@
+{
+  "frames": {
+    "counter": {
+      "frame": {
+        "x": 2,
+        "y": 2,
+        "w": 159,
+        "h": 64
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 159,
+        "h": 64
+      },
+      "sourceSize": {
+        "w": 159,
+        "h": 64
+      }
+    },
+    "table": {
+      "frame": {
+        "x": 258,
+        "y": 2,
+        "w": 80,
+        "h": 60
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 80,
+        "h": 60
+      },
+      "sourceSize": {
+        "w": 80,
+        "h": 60
+      }
+    },
+    "chair": {
+      "frame": {
+        "x": 514,
+        "y": 2,
+        "w": 19,
+        "h": 32
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 19,
+        "h": 32
+      },
+      "sourceSize": {
+        "w": 19,
+        "h": 32
+      }
+    },
+    "bench": {
+      "frame": {
+        "x": 770,
+        "y": 2,
+        "w": 32,
+        "h": 15
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 15
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 15
+      }
+    },
+    "shelf": {
+      "frame": {
+        "x": 2,
+        "y": 258,
+        "w": 26,
+        "h": 32
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 26,
+        "h": 32
+      },
+      "sourceSize": {
+        "w": 26,
+        "h": 32
+      }
+    },
+    "board": {
+      "frame": {
+        "x": 258,
+        "y": 258,
+        "w": 83,
+        "h": 64
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 83,
+        "h": 64
+      },
+      "sourceSize": {
+        "w": 83,
+        "h": 64
+      }
+    },
+    "rug": {
+      "frame": {
+        "x": 514,
+        "y": 258,
+        "w": 247,
+        "h": 168
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 247,
+        "h": 168
+      },
+      "sourceSize": {
+        "w": 247,
+        "h": 168
+      }
+    },
+    "door": {
+      "frame": {
+        "x": 770,
+        "y": 258,
+        "w": 27,
+        "h": 32
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 27,
+        "h": 32
+      },
+      "sourceSize": {
+        "w": 27,
+        "h": 32
+      }
+    },
+    "forge": {
+      "frame": {
+        "x": 2,
+        "y": 514,
+        "w": 63,
+        "h": 64
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 63,
+        "h": 64
+      },
+      "sourceSize": {
+        "w": 63,
+        "h": 64
+      }
+    },
+    "alchemy": {
+      "frame": {
+        "x": 258,
+        "y": 514,
+        "w": 64,
+        "h": 47
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 47
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 47
+      }
+    },
+    "standing_torch": {
+      "frame": {
+        "x": 514,
+        "y": 514,
+        "w": 22,
+        "h": 64
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 22,
+        "h": 64
+      },
+      "sourceSize": {
+        "w": 22,
+        "h": 64
+      }
+    },
+    "planks": {
+      "frame": {
+        "x": 770,
+        "y": 514,
+        "w": 32,
+        "h": 13
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 13
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 13
+      }
+    }
+  },
+  "meta": {
+    "scale": "1"
+  }
+}
