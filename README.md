@@ -1,10 +1,16 @@
 # Dungeon Game — Web First · consolidação 0.9
 
-## Entrega atual: refinamento direto das referências
+## Entrega atual: reconstrução dos mapas a partir das três referências
+
+Continuação direta da branch existente **feature/village-natural-grass-grounded-walk-0.9**, base **9260f4f**. Novos materiais, casas, árvores, ruínas e iluminação; renderer dividido em módulos; personagens com design preservado e oito poses articuladas por direção. Apresentação em tiles de 48 px, sem mudar coordenadas lógicas, colisões, economia ou progressão. **Nenhuma nova migration**, reset ou build nativo.
+
+[Arquitetura e decisões](docs/MAP_REBUILD_0.9.md) · [Entrega, capturas reais e limites](docs/MAP_REBUILD_DELIVERY_0.9.md) · [Git/Docker/testes no Windows](docs/MAP_REBUILD_LOCAL_WINDOWS.md).
+
+## Histórico: refinamento direto das referências
 
 Branch **feature/pixel-art-cohesion-refinement-0.9**, base **cadbe5b**. Personagens reconstruídos usando diretamente a referência: cabeças quadradas, olhos pequenos e roupas azul/verde/roxo/marrom. Terreno mais limpo, bosques e detalhes agrupados, zonas rígidas para todos os props e correção das colisões decorativas antigas da vila. Migration incremental **65a7c9e21b04**, sem reset de personagem/economia. A referência vertical9:16 é apenas imagem; a Web permanece responsiva. [Direção e regras](docs/ART_REFINEMENT.md) · [Entrega e validação](docs/ART_REFINEMENT_DELIVERY_0.9.md) · [Executar no Windows](docs/ART_REFINEMENT_LOCAL_WINDOWS.md).
 
-Build atual: [baixar Web ZIP](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/65fe31e11e58e58d06c9332363e21802d496805d/builds/development/0.9.0-web-art-refinement-7bcbde1/DungeonGame-Web-0.9-Art-Refinement.zip) · [SHA256](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/65fe31e11e58e58d06c9332363e21802d496805d/builds/development/0.9.0-web-art-refinement-7bcbde1/SHA256SUMS).343 testes backend/26 frontend, build e quatro roteiros Chromium PASS.250 mapas reais auditados; capturas e métricas no relatório.
+Build histórico desse refinamento (não contém a reconstrução atual): [baixar Web ZIP](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/65fe31e11e58e58d06c9332363e21802d496805d/builds/development/0.9.0-web-art-refinement-7bcbde1/DungeonGame-Web-0.9-Art-Refinement.zip) · [SHA256](https://raw.githubusercontent.com/Lucassilvatech/Dungeon-game/65fe31e11e58e58d06c9332363e21802d496805d/builds/development/0.9.0-web-art-refinement-7bcbde1/SHA256SUMS).343 testes backend/26 frontend, build e quatro roteiros Chromium PASS.250 mapas reais auditados; capturas e métricas no relatório.
 
 ## Entrega anterior: overhaul visual Web pixel art
 
@@ -59,11 +65,12 @@ Builds históricos **0.7**, sem exportação nova em 0.8: [Windows x64](https://
 
 ## Revisar esta evolução sem alterar a main
 
-A entrega visual atual está em **feature/pixel-art-cohesion-refinement-0.9**, continuação da `feature/pixel-art-visual-overhaul-0.9`, para revisão por PR; a main permanece estável e não houve merge automático. Guarde alterações locais antes de trocar de branch. Para testar o código desta entrega:
+A entrega visual atual continua diretamente em **feature/village-natural-grass-grounded-walk-0.9**, a branch existente mais recente verificada. A main permanece intacta; não foi criada nova branch nem executado merge. Guarde alterações locais antes de trocar de branch. Para testar o código desta entrega:
 
 ```powershell
 git fetch origin
-git switch feature/pixel-art-cohesion-refinement-0.9
+git switch feature/village-natural-grass-grounded-walk-0.9
+git pull --ff-only origin feature/village-natural-grass-grounded-walk-0.9
 ```
 
 Use os comandos de execução abaixo na branch selecionada. Não use reset/force push ou apague volumes para atualizar.

@@ -1,6 +1,17 @@
 # Roadmap: primeiro andar antes de expandir a Torre
 
-## Refinamento artístico0.9 — referência direta
+## Reconstrução dos mapas 0.9 — etapa atual
+
+- [x] Nova arte de vila/ruínas/câmara ritualística usando as três referências.
+- [x] Terrenos contínuos, casas alinhadas às portas, novas árvores e decoração contextual.
+- [x] Renderer modular; navegação e colisões continuam pertencendo ao backend.
+- [x] Design aprovado dos personagens preservado; oito poses de caminhada por direção.
+- [x] Testes de mapas, movimentos reais, desktop/mobile e fluxos existentes.
+- [ ] Aceite artístico do usuário; avaliação em Windows, GPU e telefone físicos; deploy real.
+
+[Entrega atual e diferenças restantes](MAP_REBUILD_DELIVERY_0.9.md).
+
+## Histórico: refinamento artístico 0.9 — referência direta
 
 - [x] Personagens reconstruídos da referência (cabeças quadradas/roupas simples),80 frames e escala coerente.
 - [x] Piso limpo, bosques/detalhes agrupados, paletas safe/combat/boss e zonas estritas de props.
@@ -8,7 +19,7 @@
 - [x] Auditor independente de250 mapas reais/10 tipos; integração Web e capturas desktop/mobile.
 - [ ] Aceite artístico final do usuário e validação física em GPU/celular/Windows.
 
-[Entrega atual e limites](ART_REFINEMENT_DELIVERY_0.9.md).
+[Entrega histórica e limites](ART_REFINEMENT_DELIVERY_0.9.md).
 
 
 ## Overhaul visual Web0.9
