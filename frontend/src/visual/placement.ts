@@ -38,7 +38,7 @@ const forbidden: Zone[] = [
   "WALL",
 ];
 const sizes: Record<string, [number, number]> = {
-  tree: [3, 4],
+  tree: [4, 4],
   well: [2, 3],
   ruin: [2, 3],
   statue: [2, 3],
