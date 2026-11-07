@@ -12,7 +12,8 @@ abaixo são do jogo funcionando, não imagens geradas para representar um result
 - Base: `9260f4fb82f5784cacb12d037519beb4f3133c71`.
 - Implementação: `ea2b6c0` — `feat(visual): rebuild reference map art and grounded character motion`.
 - Testes/evidências: `028b254` — `test(visual): validate rebuilt maps movement and preserved gameplay`.
-- A documentação é o commit seguinte; o HEAD final e o resultado do push são
+- Documentação: `edd6498` — `docs(visual): record map reconstruction evidence and safe local commands`.
+- O HEAD final, incluindo a revisão factual do relatório, e o resultado do push são
   informados na resposta de entrega. O próprio documento não incorpora o hash
   do commit que o contém.
 - `main` permaneceu em `eab42d7e732befb04244e29d5e1615e821c5ea5e` durante a validação.
@@ -128,7 +129,7 @@ Avisos: alias AnyIO `BlockingPortal` depreciado; `audioop` do discord.py
 depreciado; Vite avisa sobre o chunk Phaser acima de 500 kB. Nenhum é ocultado
 como se tivesse sido corrigido.
 
-Amostra de Canvas/Chromium headless: **59–60 FPS**, mediana rAF aproximadamente
+Amostra final de Canvas/Chromium headless: **58–60 FPS**, mediana rAF aproximadamente
 16,7 ms, p95 de até 16,8 ms. É uma amostra curta virtualizada, não um benchmark
 em telefone/GPU físico. Resultados e saídas estão em
 [artifacts/map-rebuild](../artifacts/map-rebuild/README.md).
