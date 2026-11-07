@@ -1,0 +1,46 @@
+{
+  "environment": "Headless Chromium virtualized cloud, not physical mobile/GPU benchmark",
+  "metrics": [
+    {
+      "room": "city1",
+      "phaser_fps": 58,
+      "raf_median_ms": 16.699999999999818,
+      "raf_p95_ms": 16.799999999999727,
+      "objects": 60,
+      "renderer": "CANVAS"
+    },
+    {
+      "room": "common_a",
+      "phaser_fps": 60,
+      "raf_median_ms": 16.699999999999818,
+      "raf_p95_ms": 16.800000000000182,
+      "objects": 52,
+      "renderer": "CANVAS"
+    },
+    {
+      "room": "secret",
+      "phaser_fps": 60,
+      "raf_median_ms": 16.699999999999818,
+      "raf_p95_ms": 16.700000000000273,
+      "objects": 43,
+      "renderer": "CANVAS"
+    },
+    {
+      "room": "boss",
+      "phaser_fps": 60,
+      "raf_median_ms": 16.699999999999818,
+      "raf_p95_ms": 16.700000000000273,
+      "objects": 38,
+      "renderer": "CANVAS"
+    },
+    {
+      "room": "guild",
+      "phaser_fps": 60,
+      "raf_median_ms": 16.699999999999818,
+      "raf_p95_ms": 16.799999999999727,
+      "objects": 56,
+      "renderer": "CANVAS"
+    }
+  ],
+  "errors": []
+}

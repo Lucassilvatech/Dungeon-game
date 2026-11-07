@@ -20,7 +20,11 @@ assert (
 ), "Explicit disposable-test authorization required"
 assert os.getenv("DATABASE_URL"), "Use an explicit test PostgreSQL server"
 args = argparse.ArgumentParser()
-args.add_argument("--suite", choices=["visual", "smoke", "npc-economy", "encounters"], default="visual")
+args.add_argument(
+    "--suite",
+    choices=["visual", "smoke", "npc-economy", "encounters", "movement"],
+    default="visual",
+)
 suite = args.parse_args().suite
 root = Path(__file__).resolve().parents[1]
 name = "pixel_browser_" + uuid4().hex[:10]
@@ -108,7 +112,8 @@ try:
             "api",
         ),
         (
-            (["cmd.exe", "/c", "npm"] if os.name=="nt" else ["npm"])+["run", "dev", "--", "--host", "127.0.0.1", "--port", str(web_port)],
+            (["cmd.exe", "/c", "npm"] if os.name == "nt" else ["npm"])
+            + ["run", "dev", "--", "--host", "127.0.0.1", "--port", str(web_port)],
             root / "frontend",
             {**env, "API_URL": f"http://127.0.0.1:{api_port}"},
             "web",
@@ -123,7 +128,11 @@ try:
                 env=variables,
                 stdout=log,
                 stderr=subprocess.STDOUT,
-                **({"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if os.name=="nt" else {"start_new_session":True}),
+                **(
+                    {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
+                    if os.name == "nt"
+                    else {"start_new_session": True}
+                ),
             )
         )
     for attempt in range(60):
@@ -138,12 +147,12 @@ try:
     else:
         raise RuntimeError("Private HTTP stack not ready; logs in " + str(private))
     subprocess.run(
-        ["node", "tests/"+suite+".cjs"],
+        ["node", "tests/" + suite + ".cjs"],
         cwd=root / "frontend",
         env={
             **env,
             "NPC_TEST_DATABASE_URL": url,
-            "PYTHON_EXECUTABLE":sys.executable,
+            "PYTHON_EXECUTABLE": sys.executable,
             "BASE_URL": f"http://127.0.0.1:{web_port}",
         },
         check=True,
@@ -151,16 +160,25 @@ try:
 finally:
     for process in reversed(processes):
         try:
-            if os.name=="nt":subprocess.run(["taskkill", "/PID", str(process.pid), "/T", "/F"],check=False,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
-            else:os.killpg(process.pid, signal.SIGTERM)
+            if os.name == "nt":
+                subprocess.run(
+                    ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                    check=False,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+            else:
+                os.killpg(process.pid, signal.SIGTERM)
         except ProcessLookupError:
             pass
     for process in processes:
         try:
             process.wait(timeout=15)
         except subprocess.TimeoutExpired:
-            if os.name=="nt":process.kill()
-            else:os.killpg(process.pid, signal.SIGKILL)
+            if os.name == "nt":
+                process.kill()
+            else:
+                os.killpg(process.pid, signal.SIGKILL)
     for log in logs:
         log.close()
     # Retain the newly created private DB for diagnosis; never delete a game DB.

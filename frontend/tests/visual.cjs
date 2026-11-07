@@ -10,7 +10,7 @@ const { chromium } = require("playwright"),
     "New disposable visual DB required",
   );
   const root = path.resolve(__dirname, "../.."),
-    out = path.join(root, "artifacts/art-refinement");
+    out = path.join(root, "artifacts/map-rebuild");
   fs.mkdirSync(out, { recursive: true });
   const browser = await chromium.launch({
       headless: true,
@@ -102,7 +102,7 @@ const { chromium } = require("playwright"),
       if (process.env.REQUIRE_CANVAS === "1")
         assert.equal(diag.renderer, "CANVAS");
       assert(diag.lights <= 12);
-      assert.equal(diag.particles, 6);
+      assert.equal(diag.particles, 0);
       assert.deepEqual(diag.placement.violations, []);
       assert.equal(diag.camera.zoom, 1);
       await shot(name + "-desktop");
@@ -163,11 +163,14 @@ const { chromium } = require("playwright"),
         width === 390
           ? page.touchscreen.tap.bind(page.touchscreen)
           : page.mouse.click.bind(page.mouse);
-      await tap(box.x + 304 - d.camera.x, box.y + 208 - d.camera.y);
+      await tap(
+        box.x + 9.5 * d.tileSize - d.camera.x,
+        box.y + (7 * d.tileSize - 16) - d.camera.y,
+      );
       await page.waitForFunction(
         () =>
-          JSON.parse(document.querySelector(".canvas").dataset.visual).room ===
-          "guild",
+          JSON.parse(document.querySelector(".canvas")?.dataset.visual || "{}")
+            .room === "guild",
       );
     }
     for (const width of [1280, 390]) {
@@ -184,7 +187,10 @@ const { chromium } = require("playwright"),
         width === 390
           ? page.touchscreen.tap.bind(page.touchscreen)
           : page.mouse.click.bind(page.mouse);
-      await tap(box.x + 1104 - d.camera.x, box.y + 248 - d.camera.y);
+      await tap(
+        box.x + 34.5 * d.tileSize - d.camera.x,
+        box.y + (9 * d.tileSize - 40) - d.camera.y,
+      );
       assert.equal((await request).status(), 200);
       await page
         .getByRole("heading", { name: "Lojas da vila", exact: true })

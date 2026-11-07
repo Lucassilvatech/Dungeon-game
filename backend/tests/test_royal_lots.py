@@ -576,12 +576,17 @@ def test_post_collection_discord_observation_is_pure(client, monkeypatch):
 
 def test_fixed_nugget_migration_preserves_mass_owners_and_historical_ledger(tmp_path):
     # A separate old-schema PostgreSQL, never the active fixture database or production.
+    from app.database import engine
+
+    assert os.getenv("TOWER_TEST_DATABASE") == "1"
     name = "royal_migration_" + uuid4().hex[:10]
     with psycopg.connect(
-        "postgresql://tower:tower@localhost:5432/postgres", autocommit=True
+        engine.url.set(drivername="postgresql").render_as_string(hide_password=False),
+        autocommit=True,
     ) as c:
         c.execute("CREATE DATABASE " + name)
-    url = "postgresql+psycopg://tower:tower@localhost:5432/" + name
+    test_url = engine.url.set(database=name)
+    url = test_url.render_as_string(hide_password=False)
     env = {**os.environ, "DATABASE_URL": url}
     root = Path(__file__).resolve().parents[2]
     python = root / ".venv/bin/alembic"
@@ -609,7 +614,9 @@ def test_fixed_nugget_migration_preserves_mass_owners_and_historical_ledger(tmp_
         db.add(c)
         db.flush()
         cid = c.id
-    with psycopg.connect("postgresql://tower:tower@localhost:5432/" + name) as c:
+    with psycopg.connect(
+        test_url.set(drivername="postgresql").render_as_string(hide_password=False)
+    ) as c:
         for code, (kind, weight) in lunar.ASSETS.items():
             if code != "mineral_mg":
                 c.execute(

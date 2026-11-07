@@ -1,0 +1,14 @@
+visual-final
+PASS visual: login, five actual server rooms, fixed bosses/reload, 1280/1920/390px, 16 refined screenshots, painted facade travel and NPC body click/touch desktop/mobile, bounded effects, performance capture
+
+movement
+PASS real walking: four directions, eight API moves, distinct distance-driven poses, grounded idle, reload
+
+smoke
+PASS: expanded city/guild/training, mobile, four-turn combat, death removal/rejection, inventory, guild claim, reconnect, committed expedition, API/exit blocking, flee preview/cancel/penalty, two procedural themes, wandering, manual attributes, persistent death summary, medical debt, bounded death losses, personal recovery and isolated second-player ownership
+
+npc
+PASS: actual autonomous worker1→2 potions,90ore→18ingots→six equipment targets, financed physical restock, merchant10x2+1=21, shared market/factors/margins/lots, stale quote requires second confirmation, finite inventory, six independent equipment slots, admin/game sync,390px, idempotent seed and audit gap0
+
+encounters
+PASS: natural small group, checkbox start, target selection, round order, damage and reload restore through the browser

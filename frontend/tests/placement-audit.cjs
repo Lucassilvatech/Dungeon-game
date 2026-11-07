@@ -5,6 +5,10 @@ const fs = require("fs"),
   Module = require("module"),
   cache = {};
 function load(file) {
+  if (file.endsWith(".json"))
+    return JSON.parse(
+      fs.readFileSync(path.resolve(__dirname, "../src/visual", file), "utf8"),
+    );
   file = path.resolve(__dirname, "../src/visual", file + ".ts");
   if (cache[file]) return cache[file].exports;
   const m = new Module(file, module);
@@ -22,6 +26,7 @@ function load(file) {
     ts.transpileModule(fs.readFileSync(file, "utf8"), {
       compilerOptions: {
         module: ts.ModuleKind.CommonJS,
+        esModuleInterop: true,
         target: ts.ScriptTarget.ES2022,
       },
     }).outputText,

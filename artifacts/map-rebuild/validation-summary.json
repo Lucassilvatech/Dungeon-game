@@ -1,0 +1,53 @@
+{
+  "backend": {
+    "command": "PYTHONPATH=backend python -m pytest backend/tests -q",
+    "passed": 343,
+    "failed": 0,
+    "skipped": 0,
+    "warnings": 2,
+    "duration_seconds": 767.84,
+    "scope": "single complete run; PostgreSQL17 disposable database"
+  },
+  "frontend": {
+    "command": "npm test",
+    "passed": 37,
+    "failed": 0,
+    "skipped": 0,
+    "duration_ms": 797.42421
+  },
+  "browser": {
+    "engine": "system Chromium via Playwright",
+    "suites": {
+      "visual": "PASS",
+      "movement": "PASS",
+      "smoke": "PASS",
+      "npc-economy": "PASS",
+      "encounters": "PASS"
+    },
+    "widths": [
+      1280,
+      1920,
+      390
+    ]
+  },
+  "database": {
+    "upgrade_head": "PASS",
+    "alembic_check": "PASS",
+    "head": "65a7c9e21b04",
+    "operational_database_touched": false
+  },
+  "warnings": [
+    "AnyIO BlockingPortal deprecated",
+    "discord.py audioop deprecated",
+    "Vite Phaser chunk exceeds 500kB"
+  ],
+  "limitations": [
+    "Linux cloud Chromium, not physical Windows/mobile/GPU validation",
+    "Remote CI not observed",
+    "Production deployment not performed"
+  ],
+  "build": {
+    "status": "PASS",
+    "duration_seconds": 5.73
+  }
+}

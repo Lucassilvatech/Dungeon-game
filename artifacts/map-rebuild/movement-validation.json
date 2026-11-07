@@ -1,0 +1,96 @@
+{
+  "status": "PASS",
+  "directions": 4,
+  "samples": [
+    {
+      "direction": 2,
+      "frames": [
+        32,
+        34,
+        35,
+        37,
+        38
+      ],
+      "distanceObserved": 39.92213333333348
+    },
+    {
+      "direction": 2,
+      "frames": [
+        32,
+        34,
+        35,
+        37,
+        38
+      ],
+      "distanceObserved": 47.99893333333341
+    },
+    {
+      "direction": 0,
+      "frames": [
+        19,
+        21,
+        22,
+        16,
+        18
+      ],
+      "distanceObserved": 43.00183408181565
+    },
+    {
+      "direction": 0,
+      "frames": [
+        21,
+        22,
+        16,
+        18,
+        19
+      ],
+      "distanceObserved": 40
+    },
+    {
+      "direction": 1,
+      "frames": [
+        30,
+        24,
+        26,
+        27,
+        29
+      ],
+      "distanceObserved": 42.995995765187466
+    },
+    {
+      "direction": 1,
+      "frames": [
+        30,
+        24,
+        26,
+        27,
+        29
+      ],
+      "distanceObserved": 47.99839999999995
+    },
+    {
+      "direction": 3,
+      "frames": [
+        42,
+        43,
+        45,
+        46,
+        40
+      ],
+      "distanceObserved": 42.995003750668666
+    },
+    {
+      "direction": 3,
+      "frames": [
+        42,
+        43,
+        45,
+        46,
+        40
+      ],
+      "distanceObserved": 48.00479999999993
+    }
+  ],
+  "errors": [],
+  "groundContact": "authoritative tile feet, returns to idle, persisted after reload"
+}

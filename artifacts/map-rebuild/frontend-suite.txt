@@ -1,0 +1,54 @@
+
+> tower-rpg-web@0.6.0 test
+> node --test tests/platform.test.cjs tests/visual.test.cjs
+
+✔ native build workflows are manual only (1.286628ms)
+✔ real room CITY resolves SAFE_VILLAGE (1.171257ms)
+✔ real room GUILD resolves SAFE_GUILD (0.11432ms)
+✔ real room TRAINING resolves SAFE_GUILD (0.069282ms)
+✔ real room BUILDING_INTERIOR resolves SAFE_GUILD (0.064596ms)
+✔ real room BOSS resolves BOSS_RITUAL (0.082802ms)
+✔ real room SECRET_DUNGEON resolves SECRET_DUNGEON (0.085937ms)
+✔ all legacy environmental profiles have distinct authored ground (0.753568ms)
+✔ bosses have independent artwork, size and fixed tile hitbox (0.318142ms)
+✔ fixed boss identities do not vary by seed (0.214498ms)
+✔ procedural boss reloads use identical appearance (0.312704ms)
+✔ miniboss uses independent elite sprite and stays smaller than boss (0.150543ms)
+✔ spawn door exit portal NPC resource and required paths are reserved (2.178201ms)
+✔ complete prop footprint must clear every reserved tile (0.136322ms)
+✔ village paths and arena centers are never decorated by tall props (7.871935ms)
+✔ tile detail is repeatable and varied (0.39786ms)
+✔ all directional idle/walk/action/death frames are valid (0.877431ms)
+✔ every shipped atlas matches its recorded checksum and total PNG payload stays under 450KB (1.460727ms)
+✔ building paths meet exact entry tile and route around occupied facades (4.433104ms)
+✔ wandering enemies do not reroll reserved decoration routes (2.120185ms)
+✔ software GPU uses lightweight Canvas; real GPUs keep WebGL (0.233065ms)
+✔ painted facade click resolves exactly to authorized exit; decorative doors do not travel (0.165114ms)
+✔ every decoration footprint in every theme avoids all forbidden zones (260.204151ms)
+✔ legacy props on roads doors buildings NPCs and resources never bypass validation (4.882472ms)
+✔ reference based character atlases have larger frames and 96 animation cells including eight walking poses (0.636865ms)
+✔ interior furniture requires a deliberate footprint or contextual seating/wall (1.156876ms)
+✔ a rejected table never leaves an orphan decorative chair (0.955407ms)
+✔ full wall fixture bounds exclude door approach, NPCs and resources (1.558582ms)
+✔ village never regenerates rejected crate, barrel, well, rock and station props (57.731731ms)
+✔ tree bounds derive from actual art and never cover paths (5.948562ms)
+✔ continuous authoritative auto-route steps do not accumulate visual lag (0.477107ms)
+✔ new visual model preserves every logical coordinate and separates physical obstacles (0.624737ms)
+✔ three reference families select new continuous materials (0.666118ms)
+✔ walking follows distance equally at different frame rates and stops without sliding (0.513091ms)
+✔ teleport/reload and reduced motion do not synthesize walking distance (0.152677ms)
+✔ new source and shipping map assets have reproducible checksums within 1MB (1.670828ms)
+✔ authored rendered tree bounds fit inside exactly the reserved cells (0.183712ms)
+ℹ tests 37
+ℹ suites 0
+ℹ pass 37
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 797.42421
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.2
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.2
+npm notice To update run: npm install -g npm@12.2.2
+npm notice

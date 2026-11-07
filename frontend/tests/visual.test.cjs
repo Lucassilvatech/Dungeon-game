@@ -6,6 +6,10 @@ const { test } = require("node:test"),
   Module = require("node:module");
 const cache = {};
 function load(file) {
+  if (file.endsWith(".json"))
+    return JSON.parse(
+      fs.readFileSync(path.resolve(__dirname, "../src/visual", file), "utf8"),
+    );
   file = path.resolve(__dirname, "../src/visual", file + ".ts");
   if (cache[file]) return cache[file].exports;
   const m = new Module(file, module);
@@ -26,6 +30,7 @@ function load(file) {
     ts.transpileModule(fs.readFileSync(file, "utf8"), {
       compilerOptions: {
         module: ts.ModuleKind.CommonJS,
+        esModuleInterop: true,
         target: ts.ScriptTarget.ES2022,
       },
     }).outputText,
@@ -166,9 +171,10 @@ test("all directional idle/walk/action/death frames are valid", () => {
   const all = new Set();
   for (const mode of ["idle", "walk", "attack", "hurt", "death"])
     for (let dir = 0; dir < 4; dir++)
-      for (let f = 0; f < 4; f++) all.add(actorFrame(mode, dir, f));
-  assert.equal(all.size, 80);
-  assert.equal(Math.max(...all), 79);
+      for (let f = 0; f < (mode === "walk" ? 8 : 4); f++)
+        all.add(actorFrame(mode, dir, f));
+  assert.equal(all.size, 96);
+  assert.equal(Math.max(...all), 95);
   assert.equal(direction(0, -1), 3);
   assert.equal(direction(-1, 0), 1);
 });
@@ -262,9 +268,9 @@ test("painted facade click resolves exactly to authorized exit; decorative doors
     { x: 22, y: 5, width: 7, height: 5 },
   ];
   s.room.exits = [{ id: 44, x: 9, y: 7 }];
-  assert.equal(hitBuildingEntrance(s, 304, 205).exitId, 44);
-  assert.equal(hitBuildingEntrance(s, 26 * 32, 300), undefined);
-  assert.equal(hitBuildingEntrance(s, 352, 160), undefined);
+  assert.equal(hitBuildingEntrance(s, centreX(9), 7 * TILE - 19).exitId, 44);
+  assert.equal(hitBuildingEntrance(s, centreX(26), 10 * TILE - 20), undefined);
+  assert.equal(hitBuildingEntrance(s, centreX(11), 5 * TILE), undefined);
 });
 
 const { buildZones, planScenery, placementViolations } = load("placement");
@@ -306,7 +312,7 @@ test("legacy props on roads doors buildings NPCs and resources never bypass vali
   for (const d of p.props)
     assert(!s.map.decorations.some((old) => old.x === d.x && old.y === d.y));
 });
-test("reference based character atlases have larger frames and all80 animation cells", () => {
+test("reference based character atlases have larger frames and 96 animation cells including eight walking poses", () => {
   const manifest = require("../src/visual/atlas.json");
   for (const name of [
     "hero",
@@ -321,7 +327,7 @@ test("reference based character atlases have larger frames and all80 animation c
     assert.deepEqual(manifest[name].frames, {
       frameWidth: 48,
       frameHeight: 64,
-      endFrame: 79,
+      endFrame: 95,
     });
 });
 
@@ -340,29 +346,40 @@ test("interior furniture requires a deliberate footprint or contextual seating/w
   assert(!p.fixtures.some((d) => d.x === 19));
 });
 
-const { battleGroundSet, battleTileFrame, BATTLE_GROUNDS } = load("battleTerrain");
-test("ordinary dungeons match the green combat reference with palette variation", () => {
-  for (const material of ["ruins", "moss", "cave", "crypt"])
-    assert.equal(battleGroundSet(material), material);
-  assert.equal(battleGroundSet("wood"), null);
-  assert.equal(battleGroundSet("grass"), null);
-  assert.equal(new Set(BATTLE_GROUNDS).size, BATTLE_GROUNDS.length);
+test("a rejected table never leaves an orphan decorative chair", () => {
+  const s = state("GUILD");
+  s.map.decorations = [
+    { kind: "table", x: 6, y: 14, width: 3, height: 2 },
+    { kind: "chair", x: 7, y: 13 },
+  ];
+  s.map.lunar_resources = [{ x: 7, y: 16 }];
+  const p = planScenery(s);
+  assert(!p.fixtures.some((d) => d.kind === "table"));
+  assert(!p.fixtures.some((d) => d.kind === "chair"));
 });
 
-test("boss arenas remain dark but allow frost or ember themed variations", () => {
-  assert.equal(battleGroundSet("ritual", "moss_stone"), "ritual");
-  assert.equal(battleGroundSet("secret", "wild_ruins"), "secret");
-  assert.equal(battleGroundSet("ritual", "crystal_bones"), "boss_frost");
-  assert.equal(battleGroundSet("secret", "abandoned_wood"), "boss_ember");
-  assert.notEqual(battleTileFrame("ritual", 0), battleTileFrame("ruins", 0));
-  assert.notEqual(battleTileFrame("secret", 0), battleTileFrame("ritual", 0));
-  assert.notEqual(battleTileFrame("boss_frost", 0), battleTileFrame("boss_ember", 0));
-  for (const material of BATTLE_GROUNDS) {
-    const floor = Array.from({ length: 8 }, (_, i) => battleTileFrame(material, i));
-    const wall = Array.from({ length: 8 }, (_, i) => battleTileFrame(material, i, true));
-    assert.equal(new Set([...floor, ...wall]).size, 16);
-    assert.equal(wall[0] - floor[0], 8);
-  }
+test("full wall fixture bounds exclude door approach, NPCs and resources", () => {
+  const { wallMounts } = load("composition"),
+    s = state("COMMON");
+  s.map.walls = Array.from({ length: s.map.width }, (_, x) => [x, 0]);
+  s.room.exits = [{ x: 5, y: 1 }];
+  s.map.lunar_resources = [{ x: 13, y: 1 }];
+  const zones = buildZones(s),
+    mounts = wallMounts(s.map.width, zones);
+  assert(mounts.length > 0);
+  for (const m of mounts)
+    for (const k of m.cells)
+      for (const n of [
+        "PATH",
+        "DOOR_ACCESS",
+        "NPC_ZONE",
+        "INTERACTION_ZONE",
+        "RESOURCE_ZONE",
+        "SPAWN_ZONE",
+        "COMBAT_ZONE",
+        "BUILDING_FOOTPRINT",
+      ])
+        assert(!zones[n].has(k));
 });
 
 test("village never regenerates rejected crate, barrel, well, rock and station props", () => {
@@ -371,40 +388,142 @@ test("village never regenerates rejected crate, barrel, well, rock and station p
     s.map.seed = seed;
     const plan = planScenery(s);
     assert.deepEqual(plan.violations, []);
-    assert(!plan.props.some(p => ["well", "barrel", "crate", "rock", "alchemy", "forge"].includes(p.kind)));
+    assert(
+      !plan.props.some((p) =>
+        ["well", "barrel", "crate", "rock", "alchemy", "forge"].includes(
+          p.kind,
+        ),
+      ),
+    );
   }
 });
 
-test("ground-contact coordinates remain valid and consistent", () => {
-  const code = fs.readFileSync(path.resolve(__dirname, "../src/Map.tsx"), "utf8");
-  assert(!code.includes(".(y + 1)"), "broken actor coordinates");
-  assert(code.includes("this.hero.y - (c.y + 1) * 32"));
-  assert(code.includes("a.sprite.y - (e.y + 1) * 32"));
-  assert(code.includes("sp.y - (p.y + 1) * 32"));
-  assert(code.includes("g.fillEllipse(this.hero.x, this.hero.y - 2"));
-  assert(!code.includes("Math.sin(time/700+e.id)"), "boss must not float");
-});
-
-test("terrain sheets use Phaser TextureManager canvas registration", () => {
-  for (const name of ["villageTerrain.ts", "battleTerrain.ts"]) {
-    const source = fs.readFileSync(path.resolve(__dirname, "../src/visual", name), "utf8");
-    assert(source.includes("scene.textures.addCanvas("));
-    assert(source.includes('scene.textures.addSpriteSheet("", texture,'));
-  }
-});
-
-test("village tree canopies reserve four full tiles and never cover paths", () => {
+test("tree bounds derive from actual art and never cover paths", () => {
   const s = state("CITY");
   s.room.safe = true;
-  const { planScenery, placementViolations, visualFootprint } = load("placement");
+  const { planScenery, placementViolations, visualFootprint } =
+    load("placement");
   const planned = planScenery(s);
   assert.deepEqual(visualFootprint({ kind: "tree", x: 12, y: 12 }), {
-    kind: "tree", x: 10, y: 9, width: 4, height: 4,
+    kind: "tree",
+    x: 11,
+    y: 9,
+    width: 3,
+    height: 4,
   });
   for (const p of planned.props.filter((p) => p.kind === "tree")) {
-    assert.equal(p.footprint.width, 4);
+    assert.equal(p.footprint.width, 3);
     assert.equal(p.footprint.height, 4);
     assert.deepEqual(placementViolations(p.footprint, planned.zones), []);
   }
   assert.deepEqual(planned.violations, []);
+});
+
+const { mapModel } = load("model"),
+  { TILE, centreX, feetY } = load("scale");
+const { createGait, advanceGait, approach } = load("motion");
+test("continuous authoritative auto-route steps do not accumulate visual lag", () => {
+  const { synchronizedSpeed } = load("motion");
+  let x = 0;
+  for (let tile = 1; tile <= 30; tile++) {
+    const target = tile * TILE,
+      speed = synchronizedSpeed(target - x, 160);
+    for (let frame = 0; frame < 10; frame++)
+      x = approach(x, 0, target, 0, 16, speed).x;
+    assert(Math.abs(x - target) < 0.001);
+  }
+});
+test("new visual model preserves every logical coordinate and separates physical obstacles", () => {
+  const s = state("CITY");
+  s.map.buildings = [{ x: 7, y: 3, width: 6, height: 4 }];
+  s.map.walls = [
+    [0, 0],
+    [3, 3],
+    [7, 3],
+    [8, 3],
+    [20, 14],
+    [21, 14],
+  ];
+  const original = JSON.stringify(s),
+    m = mapModel(s);
+  assert.equal(JSON.stringify(s), original);
+  assert.deepEqual(m.obstacles, [[3, 3]]);
+  assert.deepEqual(m.boundary, [[0, 0]]);
+  assert.deepEqual(m.masonry, [
+    [20, 14],
+    [21, 14],
+  ]);
+  assert(m.buildingCells.has("7,3"));
+  assert.equal(centreX(9), 9 * TILE + TILE / 2);
+  assert.equal(feetY(7), 8 * TILE);
+});
+test("three reference families select new continuous materials", () => {
+  for (const [room, ground] of [
+    ["CITY", "grass"],
+    ["COMMON", "ruins"],
+    ["PROCEDURAL", "ruins"],
+    ["BOSS", "ritual"],
+    ["SECRET_DUNGEON", "ritual"],
+    ["GUILD", "wood"],
+  ])
+    assert.equal(mapModel(state(room)).ground, ground);
+});
+test("walking follows distance equally at different frame rates and stops without sliding", () => {
+  for (const fps of [30, 60, 120]) {
+    let gait = createGait(0, 0),
+      position = { x: 0, y: 0 };
+    for (let i = 0; i < fps; i++) {
+      position = approach(position.x, position.y, 100, 0, 1000 / fps, 100);
+      gait = advanceGait(gait, position.x, position.y);
+    }
+    assert(Math.abs(position.x - 100) < 0.00001);
+    assert.equal(gait.dir, 2);
+    assert.equal(Math.round(gait.distance), 100);
+    const stopped = advanceGait(gait, 100, 0);
+    assert.equal(stopped.moving, false);
+    assert(Math.abs(stopped.distance - gait.distance) < 0.00001);
+  }
+});
+test("teleport/reload and reduced motion do not synthesize walking distance", () => {
+  let gait = advanceGait(createGait(80, 80), 84, 80);
+  const stopped = advanceGait(gait, 84, 80);
+  assert.equal(stopped.distance, 4);
+  assert.equal(stopped.moving, false);
+  gait = advanceGait(gait, 800, 800);
+  assert.equal(gait.distance, 0);
+  assert.equal(gait.moving, false);
+  assert.equal(advanceGait(gait, 805, 800, true).tick, 0);
+});
+test("new source and shipping map assets have reproducible checksums within 1MB", () => {
+  const crypto = require("node:crypto"),
+    manifest = require("../src/visual/map-atlas.json");
+  let bytes = 0;
+  for (const [name, entry] of Object.entries(manifest.files)) {
+    const data = fs.readFileSync(
+      path.resolve(__dirname, "../public/assets/maps", name),
+    );
+    assert.equal(data.length, entry.bytes);
+    assert.equal(
+      crypto.createHash("sha256").update(data).digest("hex"),
+      entry.sha256,
+    );
+    bytes += data.length;
+  }
+  assert(bytes < 1000000);
+  assert(Object.keys(manifest.assets).length >= 40);
+});
+test("authored rendered tree bounds fit inside exactly the reserved cells", () => {
+  const manifest = require("../src/visual/map-atlas.json");
+  const { visualFootprint } = load("placement");
+  const p = { kind: "tree", x: 14, y: 14 },
+    f = visualFootprint(p);
+  for (const name of ["tree_1", "tree_2", "tree_3"]) {
+    const a = manifest.assets[name],
+      x = centreX(p.x),
+      y = feetY(p.y);
+    assert(x - a.width / 2 >= f.x * TILE);
+    assert(x + a.width / 2 <= (f.x + f.width) * TILE);
+    assert(y - a.height >= f.y * TILE);
+    assert(y <= (f.y + f.height) * TILE);
+  }
 });

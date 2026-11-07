@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "map_sprites": 44,
+  "alpha": "binary",
+  "identity_preserved": [
+    "hero",
+    "peer",
+    "merchant",
+    "alchemist",
+    "blacksmith",
+    "npc",
+    "goblin",
+    "goblin_elite"
+  ],
+  "unique_walk_frames_per_direction": 8,
+  "directions": 4,
+  "foot_row": 61,
+  "source": "atlas inspection; real in-game motion is recorded separately"
+}
