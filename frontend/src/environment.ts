@@ -65,13 +65,18 @@ export class Environment {
   private prop(p: PlannedProp) {
     const name =
       p.kind === "tree" ? "tree_green_0" + ((p.variant % 3) + 1) : p.kind;
+    // Village tree canopy is about three tiles across in the approved art.
+    // Previously the 128px atlas frame was doubled to 256px, spilling over
+    // streets and houses even when its logical placement mask was valid.
+    const villageTree = this.state.room.kind === "CITY" && p.kind === "tree";
+    const propScale = villageTree ? 0.85 : name in scenery ? 2 : 0.75;
     const sp = this.image(
       p.x * 32 + 16,
       (p.y + 1) * 32,
       name in scenery ? "scenery" : "effects",
       scenery[name] ?? effects[name] ?? effects.rock,
       100 + (p.y + 1) * 32,
-      name in scenery ? 2 : 0.75,
+      propScale,
     ).setOrigin(0.5, 1);
     if (["moss", "flower"].includes(p.kind)) sp.setDepth(2);
     this.props.push({ image: sp, canopy: p.kind === "tree" });
