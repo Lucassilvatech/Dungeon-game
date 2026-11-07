@@ -14,26 +14,25 @@ const GRASS = ["#5e8950", "#608b50", "#628b50", "#5d8850", "#618c50", "#5f8950",
 const STONE = ["#c3a78c", "#cbb398", "#c7ad94", "#d0b89d"];
 
 function drawGrass(ctx: CanvasRenderingContext2D, variant: number) {
+  // Gentle tile-to-tile tonal variation, as in the approved village image.
+  // No rectangular overlay patches: their straight edges made the grass
+  // look like a noisy checkerboard instead of a continuous meadow.
   ctx.fillStyle = GRASS[variant];
   ctx.fillRect(0, 0, SIZE, SIZE);
-  // Broad, subtle vegetation rather than high-frequency texture/noise.
-  ctx.fillStyle = variant % 2 ? "#60884c" : "#678e55";
-  ctx.fillRect(0, 19, 13, 10);
-  ctx.fillRect(13, 24, 12, 8);
-  ctx.fillStyle = variant % 3 === 0 ? "#6b9559" : "#628b50";
-  ctx.fillRect(18, 0, 14, 11);
-  ctx.fillRect(23, 7, 9, 7);
-  // A few discrete blades; no random stones, crates, wells or ground dirt.
-  const blades = [
-    [], [[7, 21]], [], [[5, 28]],
-    [[8, 8]], [], [[15, 5]], [],
-  ][variant];
-  for (const [x, y] of blades) {
-    ctx.fillStyle = "#557b43";
-    ctx.fillRect(x, y + 2, 2, 3);
-    ctx.fillStyle = "#789d61";
-    ctx.fillRect(x + 1, y, 1, 3);
+
+  // Each tile contains only a few tiny, low-contrast organic clusters.
+  // The positions remain deterministic and the borders stay visually calm.
+  const clusters: ReadonlyArray<ReadonlyArray<readonly [number, number]>> = [
+    [[9, 11]], [[21, 24]], [], [[7, 22]],
+    [[24, 9]], [], [[14, 17]], [[25, 26]],
+  ];
+  for (const [x, y] of clusters[variant]) {
+    ctx.fillStyle = "#5c844c";
+    ctx.fillRect(x, y + 2, 2, 2);
     ctx.fillRect(x + 3, y + 1, 1, 2);
+    ctx.fillStyle = "#6a9157";
+    ctx.fillRect(x + 1, y, 1, 3);
+    ctx.fillRect(x + 4, y + 2, 2, 1);
   }
 }
 
