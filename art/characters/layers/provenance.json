@@ -1,0 +1,75 @@
+{
+  "originals_unchanged": true,
+  "derivatives": [
+    {
+      "file": "art/characters/layers/body-occlusion-reconstruction-source.png",
+      "sha256": "ec76d3534cbea20312a181bb7c0bac611344574793eac5833fd1781501ff6b8a",
+      "method": "image_tool_occluded_body_reconstruction",
+      "mandatory_references": [
+        "01-character-body-directions-palettes.png",
+        "04-clothing-slots-four-directions.png"
+      ],
+      "purpose": "Only body/scalp hidden underneath source clothing and hair"
+    },
+    {
+      "file": "art/characters/layers/clothing-feet-repaired.png",
+      "sha256": "9b0f25f595658892f8c744348eef88c02ef45fde2e12d64a49451302c7d8e010",
+      "method": "image_tool_reference_repair",
+      "mandatory_references": [
+        "01-character-body-directions-palettes.png",
+        "04-clothing-slots-four-directions.png"
+      ],
+      "purpose": "Clean alpha, consistent four directions and wearable proportions"
+    },
+    {
+      "file": "art/characters/layers/clothing-head-repaired.png",
+      "sha256": "043067b355e2e67726d1eeb927b68f2043d2b232a271ee36adfd76d6da0d9f03",
+      "method": "image_tool_reference_repair",
+      "mandatory_references": [
+        "01-character-body-directions-palettes.png",
+        "04-clothing-slots-four-directions.png"
+      ],
+      "purpose": "Clean alpha, consistent four directions and wearable proportions"
+    },
+    {
+      "file": "art/characters/layers/clothing-legs-repaired.png",
+      "sha256": "f436ce1d13a09dfb6cbdffcdf00c6a52055bd1d871e6fa4d31582f3217b326c1",
+      "method": "image_tool_reference_repair",
+      "mandatory_references": [
+        "01-character-body-directions-palettes.png",
+        "04-clothing-slots-four-directions.png"
+      ],
+      "purpose": "Clean alpha, consistent four directions and wearable proportions"
+    },
+    {
+      "file": "art/characters/layers/clothing-torso-repaired.png",
+      "sha256": "2d0fafdedcfff21c4f0a4445af3e7101e263790d7ff1f29f018721f4b6e8c856",
+      "method": "image_tool_reference_repair",
+      "mandatory_references": [
+        "01-character-body-directions-palettes.png",
+        "04-clothing-slots-four-directions.png"
+      ],
+      "purpose": "Clean alpha, consistent four directions and wearable proportions"
+    },
+    {
+      "file": "art/characters/layers/light-greaves-back-repaired.png",
+      "sha256": "e311e0820067f36c06e6ec9242d164958009517fe9874c4e1dbf7ce966333ff2",
+      "method": "image_tool_reference_repair",
+      "mandatory_references": [
+        "01-character-body-directions-palettes.png",
+        "04-clothing-slots-four-directions.png"
+      ],
+      "purpose": "Correct rear fasteners, without front kneecaps"
+    },
+    {
+      "file": "art/maps/source/service-interiors-reference.png",
+      "sha256": "52b09fa8d3281f914a2a0c42fdc249c5e8c24c4bbbb43083ad7b435b6865eeae",
+      "method": "image_tool_reconstruction_of_occluded_props",
+      "mandatory_references": [
+        "03-character-interiors-village-art-guide.png"
+      ],
+      "purpose": "Separate furniture silhouettes where the original guide overlaps walls/objects; coherent merchant/barber furniture"
+    }
+  ],
+  "notes": "Derivatives are adaptations, not claims of byte-identical source sprites. Source cutouts and frame packing are deterministic and contain no runtime generation."
+}

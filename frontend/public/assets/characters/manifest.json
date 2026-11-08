@@ -1,0 +1,1340 @@
+{
+  "version": 2,
+  "anchors": {
+    "neck": [
+      32,
+      46
+    ],
+    "waist": [
+      32,
+      71
+    ],
+    "feet": [
+      32,
+      94
+    ]
+  },
+  "frame_width": 64,
+  "frame_height": 96,
+  "frames": 96,
+  "columns": 8,
+  "feet_y": 94,
+  "layers": {
+    "body-masculino": {
+      "file": "body-masculino.png",
+      "kind": "body",
+      "source": "art/characters/layers/body-occlusion-reconstruction-source.png",
+      "source_boxes": [
+        [
+          0,
+          0,
+          444,
+          444
+        ],
+        [
+          444,
+          0,
+          887,
+          444
+        ],
+        [
+          887,
+          0,
+          1330,
+          444
+        ],
+        [
+          1330,
+          0,
+          1774,
+          444
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "e3641c7bb3dbf10dc338e4d3bb8cfeb77d7a5fdc7d50440180d05ad9e19fd15e",
+      "mask": "body-masculino-skin.png"
+    },
+    "body-feminino": {
+      "file": "body-feminino.png",
+      "kind": "body",
+      "source": "art/characters/layers/body-occlusion-reconstruction-source.png",
+      "source_boxes": [
+        [
+          0,
+          444,
+          444,
+          887
+        ],
+        [
+          444,
+          444,
+          887,
+          887
+        ],
+        [
+          887,
+          444,
+          1330,
+          887
+        ],
+        [
+          1330,
+          444,
+          1774,
+          887
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "4dfa775fc9e8b7796bad564107764c5226095bdcacd5c41a9aeb40f7a6b6e2e3",
+      "mask": "body-feminino-skin.png"
+    },
+    "hair-short_swept": {
+      "file": "hair-short_swept.png",
+      "kind": "hair",
+      "source": "02-hair-styles-four-directions.png",
+      "source_boxes": [
+        [
+          65,
+          26,
+          224,
+          174
+        ],
+        [
+          224,
+          26,
+          382,
+          174
+        ],
+        [
+          382,
+          26,
+          537,
+          174
+        ],
+        [
+          537,
+          26,
+          697,
+          174
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "e4a4da38425fa88f6b5e5d424868904d7120155790d8f178081646debae2f357"
+    },
+    "hair-short_spiky": {
+      "file": "hair-short_spiky.png",
+      "kind": "hair",
+      "source": "02-hair-styles-four-directions.png",
+      "source_boxes": [
+        [
+          744,
+          26,
+          908,
+          174
+        ],
+        [
+          908,
+          26,
+          1067,
+          174
+        ],
+        [
+          1067,
+          26,
+          1223,
+          174
+        ],
+        [
+          1223,
+          26,
+          1400,
+          174
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "b4b76480dc762430f2388f6ca8fd22d3d0135d06a561b300a8256723051fd0b6"
+    },
+    "hair-side_swept": {
+      "file": "hair-side_swept.png",
+      "kind": "hair",
+      "source": "02-hair-styles-four-directions.png",
+      "source_boxes": [
+        [
+          65,
+          190,
+          224,
+          339
+        ],
+        [
+          224,
+          190,
+          382,
+          339
+        ],
+        [
+          382,
+          190,
+          537,
+          339
+        ],
+        [
+          537,
+          190,
+          697,
+          339
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "b888cf9da3fec0d30967663625864bab989342a9611e48b01fdd003bc0fbf6a0"
+    },
+    "hair-wild_spiky": {
+      "file": "hair-wild_spiky.png",
+      "kind": "hair",
+      "source": "02-hair-styles-four-directions.png",
+      "source_boxes": [
+        [
+          744,
+          190,
+          908,
+          339
+        ],
+        [
+          908,
+          190,
+          1067,
+          339
+        ],
+        [
+          1067,
+          190,
+          1223,
+          339
+        ],
+        [
+          1223,
+          190,
+          1400,
+          339
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "685eea72bbee30cd59197d4ef7e797aa366c8940bd038bf8588c45678028a43e"
+    },
+    "hair-medium_wavy": {
+      "file": "hair-medium_wavy.png",
+      "kind": "hair",
+      "source": "02-hair-styles-four-directions.png",
+      "source_boxes": [
+        [
+          65,
+          359,
+          224,
+          513
+        ],
+        [
+          224,
+          359,
+          382,
+          513
+        ],
+        [
+          382,
+          359,
+          537,
+          513
+        ],
+        [
+          537,
+          359,
+          697,
+          513
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "46dad0355a92baec355151b9be0ec5068d3235262adfa62499aade16062f1f72"
+    },
+    "hair-receding": {
+      "file": "hair-receding.png",
+      "kind": "hair",
+      "source": "02-hair-styles-four-directions.png",
+      "source_boxes": [
+        [
+          744,
+          359,
+          908,
+          513
+        ],
+        [
+          908,
+          359,
+          1067,
+          513
+        ],
+        [
+          1067,
+          359,
+          1223,
+          513
+        ],
+        [
+          1223,
+          359,
+          1400,
+          513
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "fdbb7cfd1770fde408e715f72b96597566223961f32b7a6a2987da7e511f564d"
+    },
+    "hair-bob": {
+      "file": "hair-bob.png",
+      "kind": "hair",
+      "source": "02-hair-styles-four-directions.png",
+      "source_boxes": [
+        [
+          65,
+          518,
+          224,
+          682
+        ],
+        [
+          224,
+          518,
+          382,
+          682
+        ],
+        [
+          382,
+          518,
+          537,
+          682
+        ],
+        [
+          537,
+          518,
+          697,
+          682
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "3b836ea2c8e1f36557a17caabfe404b1bf75abca896772b625d3f0b63a717551"
+    },
+    "hair-ponytail": {
+      "file": "hair-ponytail.png",
+      "kind": "hair",
+      "source": "02-hair-styles-four-directions.png",
+      "source_boxes": [
+        [
+          744,
+          518,
+          908,
+          682
+        ],
+        [
+          908,
+          518,
+          1067,
+          682
+        ],
+        [
+          1067,
+          518,
+          1223,
+          682
+        ],
+        [
+          1223,
+          518,
+          1400,
+          682
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "d9b4006468d490026bd569743d1c0cfde568b5c9d3a98249dba4a8c6419157f4"
+    },
+    "hair-long_straight": {
+      "file": "hair-long_straight.png",
+      "kind": "hair",
+      "source": "02-hair-styles-four-directions.png",
+      "source_boxes": [
+        [
+          65,
+          680,
+          224,
+          870
+        ],
+        [
+          224,
+          680,
+          382,
+          870
+        ],
+        [
+          382,
+          680,
+          537,
+          870
+        ],
+        [
+          537,
+          680,
+          697,
+          870
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "1120370609a6b97f19a8cd94bdd2853be1bc6c7e793c998386b54e67ea1e6bde"
+    },
+    "hair-long_wavy": {
+      "file": "hair-long_wavy.png",
+      "kind": "hair",
+      "source": "02-hair-styles-four-directions.png",
+      "source_boxes": [
+        [
+          744,
+          680,
+          908,
+          870
+        ],
+        [
+          908,
+          680,
+          1067,
+          870
+        ],
+        [
+          1067,
+          680,
+          1223,
+          870
+        ],
+        [
+          1223,
+          680,
+          1400,
+          870
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "ef6bf21cba2d9f16636e950079ca60f5933e46b3e135a766b7992b25fbf104d9"
+    },
+    "hair-braid": {
+      "file": "hair-braid.png",
+      "kind": "hair",
+      "source": "02-hair-styles-four-directions.png",
+      "source_boxes": [
+        [
+          65,
+          878,
+          224,
+          1075
+        ],
+        [
+          224,
+          878,
+          382,
+          1075
+        ],
+        [
+          382,
+          878,
+          537,
+          1075
+        ],
+        [
+          537,
+          878,
+          697,
+          1075
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "885ca160364fd30cccba4bfe18fade0bcd616c47cf3c4ca1bd4c435daf2f66f8"
+    },
+    "hair-short_curly": {
+      "file": "hair-short_curly.png",
+      "kind": "hair",
+      "source": "02-hair-styles-four-directions.png",
+      "source_boxes": [
+        [
+          744,
+          878,
+          908,
+          1075
+        ],
+        [
+          908,
+          878,
+          1067,
+          1075
+        ],
+        [
+          1067,
+          878,
+          1223,
+          1075
+        ],
+        [
+          1223,
+          878,
+          1400,
+          1075
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "03cab7b2619a3ed9c0da5a1dc163ba8d3c85e6c2d3b74fe54f8da3e5cf8c7bcb"
+    },
+    "head-cloth_cap": {
+      "file": "head-cloth_cap.png",
+      "kind": "head",
+      "source": "art/characters/layers/clothing-head-repaired.png",
+      "source_boxes": [
+        [
+          29,
+          44,
+          251,
+          260
+        ],
+        [
+          317,
+          44,
+          527,
+          260
+        ],
+        [
+          593,
+          44,
+          804,
+          260
+        ],
+        [
+          877,
+          44,
+          1086,
+          260
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "ff1ec31f618e030c2f6d63e6247c1424d860f34b9de8db0354b384f083044324"
+    },
+    "head-hood": {
+      "file": "head-hood.png",
+      "kind": "head",
+      "source": "art/characters/layers/clothing-head-repaired.png",
+      "source_boxes": [
+        [
+          29,
+          311,
+          249,
+          535
+        ],
+        [
+          308,
+          311,
+          520,
+          535
+        ],
+        [
+          592,
+          311,
+          803,
+          535
+        ],
+        [
+          871,
+          311,
+          1086,
+          535
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "b131b9acf54cd28f272c6658fe5b28b88a4daa2f85bc2f0392ac609919e1598d"
+    },
+    "head-headband": {
+      "file": "head-headband.png",
+      "kind": "head",
+      "source": "art/characters/layers/clothing-head-repaired.png",
+      "source_boxes": [
+        [
+          34,
+          607,
+          250,
+          811
+        ],
+        [
+          319,
+          607,
+          525,
+          811
+        ],
+        [
+          591,
+          607,
+          796,
+          811
+        ],
+        [
+          879,
+          607,
+          1071,
+          811
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "f65cf6c0881f525008122bf2ef9927c03e041750313ca94cde2e5507e1b509d1"
+    },
+    "head-circlet": {
+      "file": "head-circlet.png",
+      "kind": "head",
+      "source": "art/characters/layers/clothing-head-repaired.png",
+      "source_boxes": [
+        [
+          35,
+          874,
+          241,
+          1012
+        ],
+        [
+          319,
+          874,
+          513,
+          1012
+        ],
+        [
+          597,
+          874,
+          789,
+          1012
+        ],
+        [
+          877,
+          874,
+          1081,
+          1012
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "0a9f11d417540ee1a88c2686b1c73e01cf094e2a6b8a49ecff2a6dff9231ce50"
+    },
+    "head-light_helmet": {
+      "file": "head-light_helmet.png",
+      "kind": "head",
+      "source": "art/characters/layers/clothing-head-repaired.png",
+      "source_boxes": [
+        [
+          30,
+          1085,
+          247,
+          1294
+        ],
+        [
+          305,
+          1085,
+          521,
+          1294
+        ],
+        [
+          592,
+          1085,
+          804,
+          1294
+        ],
+        [
+          871,
+          1085,
+          1087,
+          1294
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "96bce138f137683f9ae61ec30ecf78d1c59f9b2ca50c07bca0086c8b3ed35166"
+    },
+    "torso-adventurer_tunic": {
+      "file": "torso-adventurer_tunic.png",
+      "kind": "torso",
+      "source": "art/characters/layers/clothing-torso-repaired.png",
+      "source_boxes": [
+        [
+          46,
+          66,
+          247,
+          240
+        ],
+        [
+          333,
+          66,
+          463,
+          240
+        ],
+        [
+          561,
+          66,
+          690,
+          240
+        ],
+        [
+          774,
+          66,
+          978,
+          240
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "abdbbd3c8f295a7b92b4fedb6184797d77fb3503e6f6be441a5dd2bbf785c456"
+    },
+    "torso-peasant_shirt": {
+      "file": "torso-peasant_shirt.png",
+      "kind": "torso",
+      "source": "art/characters/layers/clothing-torso-repaired.png",
+      "source_boxes": [
+        [
+          38,
+          308,
+          257,
+          478
+        ],
+        [
+          335,
+          308,
+          449,
+          478
+        ],
+        [
+          575,
+          308,
+          690,
+          478
+        ],
+        [
+          767,
+          308,
+          989,
+          478
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "3506b3d678fa7eab351c9ccbe7c590758addc180fbb3eb597f592b3e7b661a97"
+    },
+    "torso-leather_armor": {
+      "file": "torso-leather_armor.png",
+      "kind": "torso",
+      "source": "art/characters/layers/clothing-torso-repaired.png",
+      "source_boxes": [
+        [
+          44,
+          537,
+          244,
+          717
+        ],
+        [
+          335,
+          537,
+          460,
+          717
+        ],
+        [
+          565,
+          537,
+          687,
+          717
+        ],
+        [
+          780,
+          537,
+          978,
+          717
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "59b48f1f4803085b6c9adf9d2f7aef95faad90edb2b6789b748c30067dd9ff1f"
+    },
+    "torso-mage_robe": {
+      "file": "torso-mage_robe.png",
+      "kind": "torso",
+      "source": "art/characters/layers/clothing-torso-repaired.png",
+      "source_boxes": [
+        [
+          38,
+          778,
+          254,
+          986
+        ],
+        [
+          329,
+          778,
+          462,
+          986
+        ],
+        [
+          561,
+          778,
+          695,
+          986
+        ],
+        [
+          767,
+          778,
+          984,
+          986
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "089edafbe0eddb2ae032ee4af236a175562cada9d3208f05ca8c9f44ef93cf3a"
+    },
+    "torso-smith_apron": {
+      "file": "torso-smith_apron.png",
+      "kind": "torso",
+      "source": "art/characters/layers/clothing-torso-repaired.png",
+      "source_boxes": [
+        [
+          44,
+          1030,
+          247,
+          1222
+        ],
+        [
+          331,
+          1030,
+          448,
+          1222
+        ],
+        [
+          576,
+          1030,
+          692,
+          1222
+        ],
+        [
+          774,
+          1030,
+          980,
+          1222
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "f1ccbc8531f061690fd7662dcfcab6711b798186849af34f9d6de36f7c07be6d"
+    },
+    "torso-alchemist_coat": {
+      "file": "torso-alchemist_coat.png",
+      "kind": "torso",
+      "source": "art/characters/layers/clothing-torso-repaired.png",
+      "source_boxes": [
+        [
+          52,
+          1277,
+          239,
+          1504
+        ],
+        [
+          337,
+          1277,
+          464,
+          1504
+        ],
+        [
+          560,
+          1277,
+          687,
+          1504
+        ],
+        [
+          785,
+          1277,
+          970,
+          1504
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "b125b148e51cda523450f1695083fdb00dc606a0f19a931fce2fc0c12c05130d"
+    },
+    "legs-simple_trousers": {
+      "file": "legs-simple_trousers.png",
+      "kind": "legs",
+      "source": "art/characters/layers/clothing-legs-repaired.png",
+      "source_boxes": [
+        [
+          76,
+          83,
+          260,
+          277
+        ],
+        [
+          379,
+          83,
+          500,
+          277
+        ],
+        [
+          623,
+          83,
+          740,
+          277
+        ],
+        [
+          864,
+          83,
+          1047,
+          277
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "71d4cbac3b194048afda955028b93dff6ab4469cb6f0bb76024f5bdb9f3f705b"
+    },
+    "legs-reinforced_trousers": {
+      "file": "legs-reinforced_trousers.png",
+      "kind": "legs",
+      "source": "art/characters/layers/clothing-legs-repaired.png",
+      "source_boxes": [
+        [
+          77,
+          351,
+          259,
+          558
+        ],
+        [
+          382,
+          351,
+          499,
+          558
+        ],
+        [
+          623,
+          351,
+          740,
+          558
+        ],
+        [
+          863,
+          351,
+          1047,
+          558
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "0279928ad6848331156b203974ae523e0bc9ceaf36b58068bd4b6bb7889c7237"
+    },
+    "legs-skirt": {
+      "file": "legs-skirt.png",
+      "kind": "legs",
+      "source": "art/characters/layers/clothing-legs-repaired.png",
+      "source_boxes": [
+        [
+          70,
+          639,
+          265,
+          822
+        ],
+        [
+          371,
+          639,
+          521,
+          822
+        ],
+        [
+          600,
+          639,
+          753,
+          822
+        ],
+        [
+          857,
+          639,
+          1051,
+          822
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "48cc8910f0e11b07cfdadaac960e8e81b76a1911ce453b275ef86dd0396d3ecf"
+    },
+    "legs-shorts": {
+      "file": "legs-shorts.png",
+      "kind": "legs",
+      "source": "art/characters/layers/clothing-legs-repaired.png",
+      "source_boxes": [
+        [
+          74,
+          899,
+          256,
+          1051
+        ],
+        [
+          379,
+          899,
+          501,
+          1051
+        ],
+        [
+          621,
+          899,
+          744,
+          1051
+        ],
+        [
+          865,
+          899,
+          1049,
+          1051
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "06663169a88c203f5867fb8fe11c7b9eed22d9dae5931c5dc805bc271aa19189"
+    },
+    "legs-light_greaves": {
+      "file": "legs-light_greaves.png",
+      "kind": "legs",
+      "source": "art/characters/layers/clothing-legs-repaired.png",
+      "source_boxes": [
+        [
+          76,
+          1133,
+          258,
+          1346
+        ],
+        [
+          386,
+          1133,
+          500,
+          1346
+        ],
+        [
+          621,
+          1133,
+          736,
+          1346
+        ],
+        [
+          865,
+          1133,
+          1049,
+          1346
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "8cdc1f6714d0984d28d0accc16c9b8e00d11b58e80a270376d0cf26287f11711",
+      "direction_source_override": {
+        "up": "art/characters/layers/light-greaves-back-repaired.png"
+      }
+    },
+    "feet-simple_shoes": {
+      "file": "feet-simple_shoes.png",
+      "kind": "feet",
+      "source": "art/characters/layers/clothing-feet-repaired.png",
+      "source_boxes": [
+        [
+          73,
+          98,
+          312,
+          212
+        ],
+        [
+          411,
+          98,
+          674,
+          212
+        ],
+        [
+          773,
+          98,
+          1037,
+          212
+        ],
+        [
+          1137,
+          98,
+          1373,
+          212
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "7920eae39db65fa41546feadbbd9b51c9fd0644f410c4a4a3d4bffcf142590b6"
+    },
+    "feet-sandals": {
+      "file": "feet-sandals.png",
+      "kind": "feet",
+      "source": "art/characters/layers/clothing-feet-repaired.png",
+      "source_boxes": [
+        [
+          70,
+          345,
+          311,
+          478
+        ],
+        [
+          420,
+          345,
+          661,
+          478
+        ],
+        [
+          788,
+          345,
+          1028,
+          478
+        ],
+        [
+          1132,
+          345,
+          1381,
+          478
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "a630a82f0858b59d7efc234e24df2fd2df45cf621fd01952cb6d5737702f1e13"
+    },
+    "feet-leather_boots": {
+      "file": "feet-leather_boots.png",
+      "kind": "feet",
+      "source": "art/characters/layers/clothing-feet-repaired.png",
+      "source_boxes": [
+        [
+          62,
+          593,
+          319,
+          755
+        ],
+        [
+          421,
+          593,
+          675,
+          755
+        ],
+        [
+          773,
+          593,
+          1027,
+          755
+        ],
+        [
+          1134,
+          593,
+          1378,
+          755
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "7614067b297b717043329cdb3a50716afa4277cfe0188bd89e16d2a8fbf8b21e"
+    },
+    "feet-heavy_boots": {
+      "file": "feet-heavy_boots.png",
+      "kind": "feet",
+      "source": "art/characters/layers/clothing-feet-repaired.png",
+      "source_boxes": [
+        [
+          66,
+          864,
+          316,
+          1034
+        ],
+        [
+          416,
+          864,
+          668,
+          1034
+        ],
+        [
+          779,
+          864,
+          1032,
+          1034
+        ],
+        [
+          1126,
+          864,
+          1388,
+          1034
+        ]
+      ],
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "sha256": "bf0a49b8c5e1f3bb51273f0b60623784a3096e3dbebbdc533a32db8a7b0bb5b0"
+    }
+  },
+  "original_manifest": "art/characters/references/manifest.json",
+  "palettes": {
+    "skin_tone": {
+      "skin_1": "#f8d9bd",
+      "skin_2": "#efb48d",
+      "skin_3": "#d58e64",
+      "skin_4": "#b56c40",
+      "skin_5": "#884a36",
+      "skin_6": "#603a30"
+    },
+    "hair_color": {
+      "brown": "#70402c",
+      "black": "#29212a",
+      "copper": "#c26b2c",
+      "blonde": "#d9aa58",
+      "silver": "#aaa4aa",
+      "auburn": "#984a32"
+    }
+  }
+}

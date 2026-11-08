@@ -24,7 +24,7 @@ def validate():
             hashlib.sha256((folder / filename).read_bytes()).hexdigest()
             == metadata["sha256"]
         )
-    for name in ("village", "dungeon", "interior"):
+    for name in ("village", "dungeon", "interior", "services"):
         sheet = Image.open(folder / (name + ".png")).convert("RGBA")
         assert set(sheet.getchannel("A").get_flattened_data()) <= {0, 255}
         atlas = json.loads((folder / (name + ".json")).read_text())

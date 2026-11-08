@@ -226,6 +226,41 @@ def build():
             ],
         )
     )
+    # Reconstructed only where the supplied environment guide occludes the object.
+    # The untouched guide remains in art/characters/references.
+    service_source = Image.open(SOURCE / "service-interiors-reference.png")
+    service_names = [
+        ("service_forge", (104, 144)),
+        ("service_anvil", (56, 42)),
+        ("service_tools", (90, 70)),
+        ("service_potions", (80, 110)),
+        ("service_alchemy", (104, 80)),
+        ("service_goods", (80, 110)),
+        ("service_counter", (120, 70)),
+        ("service_mirror", (64, 100)),
+        ("service_chair", (48, 64)),
+        ("service_barber_sign", (32, 56)),
+        ("service_bed", (64, 80)),
+        ("service_barrels", (56, 40)),
+        ("garden_fence", (96, 58)),
+        ("garden_steps", (92, 52)),
+        ("garden_planter", (70, 52)),
+        ("market_stall", (132, 120)),
+    ]
+    # Reviewed gutters differ from a regular grid: preserve the complete fireplace
+    # and exclude the previous row's base from desks, chairs and barrels.
+    sx = [0, 320, 630, 950, service_source.width]
+    sy = [0, 360, 660, 970, service_source.height]
+    assets.update(
+        sprites(
+            "services",
+            "service-interiors-reference.png",
+            [
+                (name, (sx[i % 4], sy[i // 4], sx[i % 4 + 1], sy[i // 4 + 1]), size)
+                for i, (name, size) in enumerate(service_names)
+            ],
+        )
+    )
     source = Image.open(SOURCE / "materials.png").convert("RGB")
     for i, name in enumerate(
         ["grass", "path", "ruins", "ritual", "ruins_wall", "ritual_wall"]

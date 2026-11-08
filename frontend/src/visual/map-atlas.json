@@ -220,6 +220,86 @@
       "atlas": "interior",
       "width": 32,
       "height": 13
+    },
+    "service_forge": {
+      "atlas": "services",
+      "width": 104,
+      "height": 132
+    },
+    "service_anvil": {
+      "atlas": "services",
+      "width": 55,
+      "height": 42
+    },
+    "service_tools": {
+      "atlas": "services",
+      "width": 86,
+      "height": 70
+    },
+    "service_potions": {
+      "atlas": "services",
+      "width": 80,
+      "height": 87
+    },
+    "service_alchemy": {
+      "atlas": "services",
+      "width": 104,
+      "height": 80
+    },
+    "service_goods": {
+      "atlas": "services",
+      "width": 80,
+      "height": 93
+    },
+    "service_counter": {
+      "atlas": "services",
+      "width": 120,
+      "height": 70
+    },
+    "service_mirror": {
+      "atlas": "services",
+      "width": 64,
+      "height": 90
+    },
+    "service_chair": {
+      "atlas": "services",
+      "width": 48,
+      "height": 64
+    },
+    "service_barber_sign": {
+      "atlas": "services",
+      "width": 28,
+      "height": 56
+    },
+    "service_bed": {
+      "atlas": "services",
+      "width": 64,
+      "height": 66
+    },
+    "service_barrels": {
+      "atlas": "services",
+      "width": 56,
+      "height": 40
+    },
+    "garden_fence": {
+      "atlas": "services",
+      "width": 95,
+      "height": 58
+    },
+    "garden_steps": {
+      "atlas": "services",
+      "width": 92,
+      "height": 44
+    },
+    "garden_planter": {
+      "atlas": "services",
+      "width": 70,
+      "height": 49
+    },
+    "market_stall": {
+      "atlas": "services",
+      "width": 132,
+      "height": 117
     }
   },
   "files": {
@@ -263,6 +343,14 @@
       "sha256": "7d0436417ed07693a17bb68a05ccdb4df5c530bcc88ac53515c6a463cd3a40d0",
       "bytes": 46029
     },
+    "services.json": {
+      "sha256": "196c1d80e5db7415032b14ad894fd680d793ab7e19af6763351379e3500b23f1",
+      "bytes": 5476
+    },
+    "services.png": {
+      "sha256": "5b9f9a5a567404b6b8efa7118d29e701edea50cd29945c7c67de0e10522c982e",
+      "bytes": 136454
+    },
     "village.json": {
       "sha256": "4cbada97e69097a2e4ef426b9b7e50277682d2958fbef5a0e6818395486e28a1",
       "bytes": 5386
@@ -280,6 +368,7 @@
     "dungeon.png": "9649691afda47c9c6dba8aff869e8d980bba4165f3ab338cfd703099fccdfb3f",
     "interior.png": "26730d44ffe8995636dcc355790fe8d226a0b92675291edf79c47603b7eb4f3c",
     "materials.png": "6fb559ae9783b4c8110bf5f49ec94c4b05e228a425fc7e79321b89fbc7494c92",
+    "service-interiors-reference.png": "52b09fa8d3281f914a2a0c42fdc249c5e8c24c4bbbb43083ad7b435b6865eeae",
     "village.png": "750b8563e3df855fb898b9f41c9a93378c5d6c8a56cb49b92d8bcb6c060b9933"
   }
 }

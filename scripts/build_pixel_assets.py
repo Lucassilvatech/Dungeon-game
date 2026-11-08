@@ -462,3 +462,6 @@ print(
 )
 
 build_maps()
+
+from character_art.compile import build as build_character_layers
+build_character_layers()
