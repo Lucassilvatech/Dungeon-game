@@ -248,6 +248,7 @@ def view(
             "default_configuration": {
                 k: getattr(__import__("app.config", fromlist=["settings"]).settings, k)
                 for k in (
+                    "barber_fee_units",
                     "medical_fee_base",
                     "monster_reward",
                     "boss_reward",
@@ -272,9 +273,16 @@ def view(
         ]
     if module == "players":
         query = select(m.Character).where(m.Character.name.ilike("%" + q + "%"))
+        characters = db.scalars(
+            query.order_by(m.Character.id).offset(offset).limit(100)
+        ).all()
+        from .character_appearance import payloads as appearance_payloads
+
+        appearances = appearance_payloads(db, [c.id for c in characters])
         return [
             {
                 **data(c),
+                "appearance": appearances[c.id],
                 "account": {
                     "id": c.account_id,
                     "username": db.get(m.Account, c.account_id).username,
@@ -299,9 +307,7 @@ def view(
                     )
                 ),
             }
-            for c in db.scalars(
-                query.order_by(m.Character.id).offset(offset).limit(100)
-            )
+            for c in characters
         ]
     if module == "items":
         return {

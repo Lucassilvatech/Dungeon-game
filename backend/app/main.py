@@ -18,6 +18,7 @@ from .security import (
 )
 from .config import settings
 from . import game
+from . import character_appearance as looks
 
 from contextlib import asynccontextmanager
 import asyncio
@@ -67,7 +68,9 @@ class Credentials(BaseModel):
 
 
 class CharacterInput(BaseModel):
+    model_config = {"extra": "forbid"}
     name: str = Field(min_length=2, max_length=30, pattern=r"^[\w -]+$")
+    appearance: looks.AppearanceInput = Field(default_factory=looks.AppearanceInput)
 
 
 class Move(BaseModel):
@@ -120,6 +123,7 @@ def create(body: CharacterInput, a=Depends(current_account), db=Depends(get_db))
     c = Character(account_id=a.id, name=body.name)
     db.add(c)
     db.flush()
+    looks.create(db, c, body.appearance)
     from .finance import ensure
 
     ensure(db, f"player:{c.id}")
@@ -134,6 +138,30 @@ def create(body: CharacterInput, a=Depends(current_account), db=Depends(get_db))
 @app.get("/state")
 def state(a=Depends(current_account), db=Depends(get_db)):
     return game.snapshot(db, game.character(db, a), wander=True)
+
+
+@app.get("/appearance/catalog")
+def appearance_catalog(a=Depends(current_account), db=Depends(get_db)):
+    return looks.catalog(db)
+
+
+@app.get("/character/appearance")
+def character_appearance(a=Depends(current_account), db=Depends(get_db)):
+    return looks.payload(db, game.character(db, a).id)
+
+
+@app.post("/appearance/barber/preview")
+def barber_preview(
+    body: looks.AppearancePreview, a=Depends(current_account), db=Depends(get_db)
+):
+    return looks.preview(db, game.character(db, a), body)
+
+
+@app.post("/appearance/barber/confirm")
+def barber_confirm(
+    body: looks.AppearanceChange, a=Depends(current_account), db=Depends(get_db)
+):
+    return looks.update(db, game.character(db, a), body)
 
 
 @app.post("/move")
@@ -1083,5 +1111,12 @@ def npc_shop_trade(
 def npc_interact(npc_id: str, a=Depends(current_account), db=Depends(get_db)):
     from .npc_economy import require_service
 
-    require_service(db, game.character(db, a), npc_owner(db, npc_id))
+    c = game.character(db, a)
+    if npc_id == "barber":
+        looks.require_barber(db, c)
+        return {
+            "open_appearance": True,
+            "message": "Barbeiro: escolha seu novo visual.",
+        }
+    require_service(db, c, npc_owner(db, npc_id))
     return {"open_npc_shop": npc_id, "message": "Balcão aberto."}

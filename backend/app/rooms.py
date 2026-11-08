@@ -212,8 +212,7 @@ def enter(db, c, room):
         fail("Esse serviço foi transferido para a cidade")
     c.room_id = room.id
     c.floor = room.floor_id
-    c.x = 2
-    c.y = 2
+    c.x, c.y = room.data.get("entry_point", [2, 2])
     state = discover(db, c, room)
     state.visits += 1
     state.codex = {
@@ -250,8 +249,15 @@ def room_payload(db, c):
                 "id": e.id,
                 "x": e.x,
                 "y": e.y,
-                "name": target.name if known else "Caminho desconhecido",
+                "name": (
+                    target.name
+                    if known or target.data.get("service_site_version")
+                    else "Caminho desconhecido"
+                ),
                 "known": bool(known),
+                "target_id": (
+                    target.id if target.data.get("service_site_version") else None
+                ),
             }
         )
     return {
@@ -260,7 +266,8 @@ def room_payload(db, c):
         "kind": room.kind,
         "seed": room.seed,
         "danger_tier": room.danger_tier,
-        "safe": room.kind in (RoomType.CITY, RoomType.GUILD),
+        "safe": room.kind
+        in (RoomType.CITY, RoomType.GUILD, RoomType.BUILDING_INTERIOR),
         "completed": rs.completed,
         "codex": rs.codex,
         "exits": exits,

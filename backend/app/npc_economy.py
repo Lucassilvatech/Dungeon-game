@@ -169,11 +169,9 @@ RECIPES = [
         )
     ],
 ]
-SERVICES = [
-    {"id": "merchant", "name": "Comerciante", "x": 34, "y": 8, "sprite": "merchant"},
-    {"id": "alchemist", "name": "Alquimista", "x": 36, "y": 15, "sprite": "alchemist"},
-    {"id": "blacksmith", "name": "Ferreiro", "x": 16, "y": 22, "sprite": "blacksmith"},
-]
+from .village_sites import SERVICES as VILLAGE_SERVICES, SITES
+
+SERVICES = [n for n in VILLAGE_SERVICES if n["id"] != "barber"]
 
 
 def record(db, key, kind, **payload):
@@ -457,11 +455,6 @@ def initialize(db):
     pricing.refresh(
         db, "seed", "Inicialização idempotente da cadeia de produção autorizada"
     )
-    city = db.get(m.Room, "city1")
-    if city:
-        previous = city.data.get("service_npcs")
-        if previous is None:
-            city.data = {**city.data, "service_npcs": SERVICES}
 
 
 def require_service(db, c, owner):
@@ -479,11 +472,13 @@ def require_service(db, c, owner):
         None,
     )
     if (
-        c.room_id != "city1"
+        not profile
+        or profile.id not in SITES
+        or c.room_id != SITES[profile.id]["room"]
         or not service
         or distance((c.x, c.y), (service["x"], service["y"])) > 1
     ):
-        fail("Aproxime-se do NPC na vila")
+        fail("Aproxime-se do NPC dentro de sua loja na vila")
 
 
 def state(db, npc_id, admin=False):
@@ -590,6 +585,7 @@ def state(db, npc_id, admin=False):
             for key, value in current.items()
         ],
         "wallet": finance.cash(db, profile.account_id),
+        "location": SITES.get(npc_id),
         "items": rows,
         "market_revision": revision.id,
         "last_update": profile.updated_at.isoformat(),

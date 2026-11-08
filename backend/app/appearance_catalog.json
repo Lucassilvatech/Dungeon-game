@@ -1,0 +1,221 @@
+{
+  "version": 1,
+  "options": {
+    "sexo_visual": [
+      {
+        "id": "masculino",
+        "label": "Masculino"
+      },
+      {
+        "id": "feminino",
+        "label": "Feminino"
+      }
+    ],
+    "skin_tone": [
+      {
+        "id": "skin_1",
+        "label": "Marfim",
+        "color": "#f8d9bd"
+      },
+      {
+        "id": "skin_2",
+        "label": "Pêssego",
+        "color": "#efb48d"
+      },
+      {
+        "id": "skin_3",
+        "label": "Mel",
+        "color": "#d58e64"
+      },
+      {
+        "id": "skin_4",
+        "label": "Cobre",
+        "color": "#b56c40"
+      },
+      {
+        "id": "skin_5",
+        "label": "Castanho",
+        "color": "#884a36"
+      },
+      {
+        "id": "skin_6",
+        "label": "Ébano",
+        "color": "#603a30"
+      }
+    ],
+    "hair_style_id": [
+      {
+        "id": "short_swept",
+        "label": "Curto repartido"
+      },
+      {
+        "id": "short_spiky",
+        "label": "Curto espetado"
+      },
+      {
+        "id": "side_swept",
+        "label": "Franja lateral"
+      },
+      {
+        "id": "wild_spiky",
+        "label": "Espetado volumoso"
+      },
+      {
+        "id": "medium_wavy",
+        "label": "Médio ondulado"
+      },
+      {
+        "id": "receding",
+        "label": "Entradas"
+      },
+      {
+        "id": "bob",
+        "label": "Chanel"
+      },
+      {
+        "id": "ponytail",
+        "label": "Rabo de cavalo"
+      },
+      {
+        "id": "long_straight",
+        "label": "Longo liso"
+      },
+      {
+        "id": "long_wavy",
+        "label": "Longo ondulado"
+      },
+      {
+        "id": "braid",
+        "label": "Trança"
+      },
+      {
+        "id": "short_curly",
+        "label": "Curto cacheado"
+      }
+    ],
+    "hair_color": [
+      {
+        "id": "brown",
+        "label": "Castanho",
+        "color": "#70402c"
+      },
+      {
+        "id": "black",
+        "label": "Preto",
+        "color": "#29212a"
+      },
+      {
+        "id": "copper",
+        "label": "Ruivo",
+        "color": "#c26b2c"
+      },
+      {
+        "id": "blonde",
+        "label": "Loiro",
+        "color": "#d9aa58"
+      },
+      {
+        "id": "silver",
+        "label": "Prateado",
+        "color": "#aaa4aa"
+      },
+      {
+        "id": "auburn",
+        "label": "Acobreado",
+        "color": "#984a32"
+      }
+    ],
+    "appearance_head": [
+      {
+        "id": "none",
+        "label": "Sem acessório"
+      },
+      {
+        "id": "cloth_cap",
+        "label": "Touca de pano"
+      },
+      {
+        "id": "hood",
+        "label": "Capuz"
+      },
+      {
+        "id": "headband",
+        "label": "Faixa de cabeça"
+      },
+      {
+        "id": "circlet",
+        "label": "Diadema"
+      },
+      {
+        "id": "light_helmet",
+        "label": "Elmo leve"
+      }
+    ],
+    "appearance_torso": [
+      {
+        "id": "adventurer_tunic",
+        "label": "Túnica de aventureiro"
+      },
+      {
+        "id": "peasant_shirt",
+        "label": "Camisa de camponês"
+      },
+      {
+        "id": "leather_armor",
+        "label": "Armadura de couro"
+      },
+      {
+        "id": "mage_robe",
+        "label": "Robe de mago"
+      },
+      {
+        "id": "smith_apron",
+        "label": "Avental de ferreiro"
+      },
+      {
+        "id": "alchemist_coat",
+        "label": "Casaco de alquimista"
+      }
+    ],
+    "appearance_legs": [
+      {
+        "id": "simple_trousers",
+        "label": "Calça simples"
+      },
+      {
+        "id": "reinforced_trousers",
+        "label": "Calça reforçada"
+      },
+      {
+        "id": "skirt",
+        "label": "Saia"
+      },
+      {
+        "id": "shorts",
+        "label": "Bermuda"
+      },
+      {
+        "id": "light_greaves",
+        "label": "Grevas leves"
+      }
+    ],
+    "appearance_feet": [
+      {
+        "id": "simple_shoes",
+        "label": "Sapatos simples"
+      },
+      {
+        "id": "sandals",
+        "label": "Sandálias"
+      },
+      {
+        "id": "leather_boots",
+        "label": "Botas de couro"
+      },
+      {
+        "id": "heavy_boots",
+        "label": "Botas pesadas"
+      }
+    ]
+  }
+}

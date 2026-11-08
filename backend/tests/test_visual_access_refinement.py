@@ -166,7 +166,9 @@ def test_real_populated_visual_upgrade_changes_no_financial_or_actor_rows():
             )
         )
     migrate("head")
-    assert snapshot() == before
+    after = snapshot()
+    assert after.pop("character_appearances") == []
+    assert after == before
     with target.connect() as c:
         current = {r.id: r.data for r in c.execute(text("SELECT id,data FROM rooms"))}
         assert [10, 18] not in current["city1"]["walls"]
@@ -193,7 +195,9 @@ def test_real_populated_visual_upgrade_changes_no_financial_or_actor_rows():
             == 1
         )
     migrate("head")
-    assert snapshot() == before
+    after = snapshot()
+    assert after.pop("character_appearances") == []
+    assert after == before
     subprocess.run(
         [sys.executable, "-m", "alembic", "check"],
         cwd=root,

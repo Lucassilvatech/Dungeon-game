@@ -27,9 +27,21 @@ def read_presence(token, connected_ids):
                 Character.id != c.id,
             )
         ).all()
+        from .character_appearance import payloads
+
+        appearances = payloads(db, [p.id for p in rows])
         return c.id, {
             "room_id": c.room_id,
-            "players": [{"id": p.id, "name": p.name, "x": p.x, "y": p.y} for p in rows],
+            "players": [
+                {
+                    "id": p.id,
+                    "name": p.name,
+                    "x": p.x,
+                    "y": p.y,
+                    "appearance": appearances[p.id],
+                }
+                for p in rows
+            ],
         }
 
 

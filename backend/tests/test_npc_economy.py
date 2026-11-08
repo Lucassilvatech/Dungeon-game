@@ -72,7 +72,7 @@ def near(cid, id):
     service = next(s for s in npc.SERVICES if s["id"] == id)
     with Session.begin() as db:
         c = db.get(m.Character, cid)
-        c.room_id = "city1"
+        c.room_id = service["room_id"]
         c.x = service["x"]
         c.y = service["y"] + 1
 
@@ -751,6 +751,7 @@ def test_all_three_services_are_reachable_by_real_movement_and_interaction(clien
     ah, h, cid = ready(client)
     navigate(client, h, "city1")
     for service in npc.SERVICES:
+        navigate(client, h, service["room_id"])
         walk_tiles(client, h, (service["x"], service["y"]))
         response = client.post(
             "/economy/npcs/" + service["id"] + "/interact", headers=h, json={}

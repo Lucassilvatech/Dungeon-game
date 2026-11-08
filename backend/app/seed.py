@@ -100,6 +100,9 @@ def seed():
         from .npc_economy import initialize
 
         initialize(db)
+        from .village_sites import seed as seed_village_sites
+
+        seed_village_sites(db)
 
 
 if __name__ == "__main__":

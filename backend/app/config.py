@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     encounter_max_enemies: int = Field(default=2, ge=2, le=3)
     encounter_radius: int = Field(default=8, ge=1, le=12)
     npc_economy_tick_seconds: int = Field(default=30, ge=1, le=3600)
+    barber_fee_units: int = Field(default=1, ge=1, le=1000)
     collection_slots: int = Field(default=30, ge=1, le=1000)
     lunar_resource_spawn_enabled: bool = True
     lunar_resource_spawn_chance_ppm: int = Field(default=20000, ge=0, le=1000000)

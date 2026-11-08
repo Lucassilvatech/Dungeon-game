@@ -79,6 +79,19 @@ class Character(Base):
     )
 
 
+class CharacterAppearance(Base):
+    __tablename__ = "character_appearances"
+    __table_args__ = (
+        CheckConstraint("revision >= 1", name="appearance_revision_positive"),
+    )
+    character_id: Mapped[int] = mapped_column(
+        ForeignKey("characters.id"), primary_key=True
+    )
+    revision: Mapped[int] = mapped_column(default=1, server_default="1")
+    choices: Mapped[dict] = mapped_column(JSON)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
 class ItemDefinition(Base):
     __tablename__ = "item_definitions"
     __table_args__ = (

@@ -73,6 +73,7 @@ def inventory(db, c):
         select(Item, ItemDefinition)
         .join(ItemDefinition, Item.definition == ItemDefinition.id)
         .where(Item.owner == c.id, Item.location == "inventory")
+        .order_by(Item.id)
     ).all()
     return [
         dict(
@@ -137,8 +138,11 @@ def snapshot(db, c, wander=False):
     records = pending(db, c)
     summary = reward_summary_from(records)
     inventory_rows = inventory(db, c)
+    from .character_appearance import payload as appearance_payload
+
     db.flush()
     return {
+        "appearance": appearance_payload(db, c.id),
         "economy_mode": "LUNAR" if lunar_active(db) else "LEGACY",
         "guild_balance": str(institution(db, "guild")),
         "guild_rewards": summary,
@@ -281,7 +285,11 @@ def interact(db, c):
 
 def rest(db, c):
     idle(db, c)
-    if current(db, c).kind not in (RoomType.CITY, RoomType.GUILD):
+    if current(db, c).kind not in (
+        RoomType.CITY,
+        RoomType.GUILD,
+        RoomType.BUILDING_INTERIOR,
+    ):
         fail("Descanse na cidade ou na Guilda")
     c.hp = 30 + (c.level - 1) * 5
     c.energy = 10
@@ -309,7 +317,7 @@ def travel(db, c, floor):
 def start_battle(db, c, monster):
     idle(db, c)
     room = current(db, c)
-    if room.kind in (RoomType.CITY, RoomType.GUILD):
+    if room.kind in (RoomType.CITY, RoomType.GUILD, RoomType.BUILDING_INTERIOR):
         fail("Cidade e Guilda são zonas seguras")
     if room.kind == RoomType.PROCEDURAL:
         from .models import Expedition

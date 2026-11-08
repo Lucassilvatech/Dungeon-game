@@ -32,6 +32,13 @@ def exit_room(db, c, exit_id):
     if target.owner_id not in (None, c.id):
         game.fail("Sala privada", 403)
     enter(db, c, target)
+    from .village_sites import SITES, nearest_free
+
+    service = next((s for s in SITES.values() if s["room"] == edge.source), None)
+    if service and target.id == "city1":
+        c.x, c.y = nearest_free(
+            target.data, (service["door"][0], service["door"][1] + 1)
+        )
 
 
 def adventure(db, c, request_id):

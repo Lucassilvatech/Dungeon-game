@@ -470,6 +470,7 @@ def describe(db, action, target, p):
             }
 
         if target not in {
+            "barber_fee_units",
             "medical_fee_base",
             "monster_reward",
             "boss_reward",
@@ -479,6 +480,10 @@ def describe(db, action, target, p):
         }:
             fail("Parâmetro não administrável", 422)
         value = p.get("value")
+        if target == "barber_fee_units" and (
+            type(value) is not int or not 1 <= value <= 1000
+        ):
+            fail("Taxa do Barbeiro deve ser inteira entre 1 e 1000", 422)
         if target == "auction_proceeds_destination":
             if value not in ("treasury", "sink"):
                 fail("Destino inválido", 422)
