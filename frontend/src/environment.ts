@@ -36,6 +36,9 @@ export class Environment {
     this.canopies = drawScenery(this.layer, this.model, this.plan, state);
     drawSpecialRoom(this.layer, this.model, state);
     this.lighting = new RoomLighting(this.layer, this.model, this.plan.zones);
+    for (const d of state.map.decorations ?? [])
+      if (d.kind === "service_forge")
+        this.lighting.add((d.x + 2) * TILE, (d.y + 3) * TILE, d.x);
     for (const p of this.plan.props)
       if (p.kind === "candle")
         this.lighting.add(p.x * TILE + TILE / 2, (p.y + 1) * TILE - 40, p.x);

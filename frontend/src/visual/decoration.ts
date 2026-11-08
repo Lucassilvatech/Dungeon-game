@@ -60,6 +60,19 @@ export function drawScenery(
       .sprite(art, x * TILE + TILE / 2, (y + 1) * TILE)
       .setDisplaySize(TILE - 4, TILE - 4);
   }
+  // Authored service furniture occupies only its authoritative collision rectangle.
+  for (const d of state.map.decorations ?? []) {
+    if (!model.interior || !d.solid || !d.kind.startsWith("service_")) continue;
+    const width = (d.width ?? 1) * TILE,
+      height = (d.height ?? 1) * TILE;
+    const sp = layer.sprite(
+      assetFor(d.kind),
+      (d.x + (d.width ?? 1) / 2) * TILE,
+      (d.y + (d.height ?? 1)) * TILE,
+    );
+    const scale = Math.min(1, width / sp.width, height / sp.height);
+    sp.setScale(scale);
+  }
   for (const d of plan.fixtures) {
     const width = (d.width ?? 1) * TILE,
       height = (d.height ?? 1) * TILE;
@@ -68,12 +81,7 @@ export function drawScenery(
       d.x * TILE + width / 2,
       d.y * TILE + height,
     );
-    if ((d.width ?? 1) > 1) sprite.setDisplaySize(width, height);
-    else
-      sprite.setDisplaySize(
-        Math.min(width, sprite.width),
-        Math.min(height, sprite.height),
-      );
+    sprite.setScale(Math.min(1, width / sprite.width, height / sprite.height));
   }
   // A counter whose entire footprint already IS a server collider is architecture,
   // not extra decoration. Render it even when its service approach touches it.
@@ -111,11 +119,13 @@ export function drawScenery(
   for (const e of state.room.exits) {
     if (model.entrances.some((d) => d.exitId === e.id)) continue;
     const sprite = layer.sprite(
-      "door",
+      model.interior && state.map.interior_theme ? "garden_steps" : "door",
       e.x * TILE + TILE / 2,
       (e.y + 1) * TILE,
-      100 + (e.y + 1) * TILE,
+      model.interior && state.map.interior_theme ? 2 : 100 + (e.y + 1) * TILE,
     );
+    if (model.interior && state.map.interior_theme)
+      sprite.setDisplaySize(64, 31);
     if (model.village) sprite.setAlpha(0.8);
   }
   return canopies;

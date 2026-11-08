@@ -1,4 +1,5 @@
 export type Exit = {
+  target_id?: string | null;
   id: number;
   x: number;
   y: number;
@@ -15,11 +16,24 @@ export type Room = {
   codex: Record<string, { name: string; seen: boolean; defeated: boolean }>;
   exits: Exit[];
 };
-export type Peer = { id: number; name: string; x: number; y: number };
+export type Peer = {
+  id: number;
+  name: string;
+  x: number;
+  y: number;
+  appearance?: import("./appearance/types").SavedAppearance;
+};
 export type Target = {
   x: number;
   y: number;
-  kind: "ground" | "exit" | "npc" | "monster" | "resource" | "lunar" | "service";
+  kind:
+    | "ground"
+    | "exit"
+    | "npc"
+    | "monster"
+    | "resource"
+    | "lunar"
+    | "service";
   id?: number;
   monster?: string;
   serviceId?: string;

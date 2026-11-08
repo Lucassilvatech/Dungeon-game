@@ -8,7 +8,7 @@ from pathlib import Path
 from app.layouts import generate
 from app.rooms import EDGES
 from app.recovery_site import patch
-from app.npc_economy import SERVICES
+from app.village_sites import SITES, interior, patch_city
 
 parser = argparse.ArgumentParser()
 parser.add_argument("output")
@@ -48,7 +48,16 @@ for kind in [
         ]
         if kind == "CITY":
             data = patch(data)
-            data["service_npcs"] = SERVICES
+            data = patch_city(data)
+            exits += [
+                {
+                    "id": 200 + i,
+                    "x": site["door"][0],
+                    "y": site["door"][1],
+                    "target_id": site["room"],
+                }
+                for i, site in enumerate(SITES.values())
+            ]
         data.update(
             gather_nodes=[
                 {"x": x, "y": y, "definition": "herb", "remaining": 1, "enabled": True}
@@ -67,5 +76,17 @@ for kind in [
                 "map": data,
             }
         )
+for id, site in SITES.items():
+    fixtures.append(
+        {
+            "room": {
+                "id": site["room"],
+                "kind": "BUILDING_INTERIOR",
+                "safe": True,
+                "exits": [{"id": 300, "x": 10, "y": 15}],
+            },
+            "map": interior(id),
+        }
+    )
 Path(args.output).write_text(json.dumps(fixtures))
-print(f"Exported {len(fixtures)} real templates across10 room types")
+print(f"Exported {len(fixtures)} real templates including all four service interiors")

@@ -61,6 +61,14 @@ export function drawBuildings(
         .setOrigin(0, 1)
         .setDepth(100 + dy * TILE),
     );
+    if (b.service_id === "barber") {
+      layer.sprite(
+        "service_barber_sign",
+        (b.x + b.width - 0.65) * TILE,
+        dy * TILE - 20,
+        101 + dy * TILE,
+      );
+    }
     layer.disposers.push(() => layer.scene.textures.remove(key));
   }
   const tent = state.map.decorations?.find((d) => d.kind === "recovery_tent");

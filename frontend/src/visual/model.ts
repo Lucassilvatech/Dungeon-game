@@ -18,6 +18,19 @@ export function mapModel(s: Pick<State, "map" | "room">) {
     obstacles: number[][] = [];
   for (const [x, y] of m.walls) {
     if (buildingCells.has(cellKey(x, y))) continue;
+    // Service furnishings have their own complete silhouette over the same collider.
+    if (
+      m.decorations?.some(
+        (d) =>
+          d.solid &&
+          d.kind.startsWith("service_") &&
+          x >= d.x &&
+          x < d.x + (d.width ?? 1) &&
+          y >= d.y &&
+          y < d.y + (d.height ?? 1),
+      )
+    )
+      continue;
     if (x === 0 || y === 0 || x === m.width - 1 || y === m.height - 1)
       boundary.push([x, y]);
     else if (

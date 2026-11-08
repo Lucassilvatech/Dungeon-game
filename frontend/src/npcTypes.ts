@@ -22,6 +22,12 @@ export type NpcPolicy = {
   };
 };
 export type NpcEconomyState = {
+  location?: {
+    room: string;
+    name: string;
+    door: number[];
+    theme: string;
+  } | null;
   id: string;
   name: string;
   account_id: string;

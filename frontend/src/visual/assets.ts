@@ -14,7 +14,7 @@ export const materials = [
 ] as const;
 
 export function preloadMapAssets(scene: Phaser.Scene) {
-  for (const name of ["village", "dungeon", "interior"])
+  for (const name of ["village", "dungeon", "interior", "services"])
     scene.load.atlas(
       "map-" + name,
       `/assets/maps/${name}.png`,

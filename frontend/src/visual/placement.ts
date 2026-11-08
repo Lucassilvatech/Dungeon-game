@@ -231,6 +231,26 @@ export function planScenery(s: Pick<State, "map" | "room">) {
     inside = ["GUILD", "TRAINING", "BUILDING_INTERIOR"].includes(s.room.kind),
     arena = ["BOSS", "SECRET_DUNGEON"].includes(s.room.kind);
   if (city) {
+    // Small lived-in courtyards; every full silhouette passes the shared access mask.
+    for (const b of m.buildings ?? []) {
+      approve({ kind: "garden_planter", x: b.x - 2, y: b.y + b.height - 1 });
+      approve({
+        kind: "garden_fence",
+        x: b.x + b.width + 1,
+        y: b.y + b.height - 1,
+      });
+      approve({ kind: "service_barrels", x: b.x - 2, y: b.y + 2 });
+    }
+    for (const [x, y] of [
+      [27, 24],
+      [8, 22],
+    ])
+      approve({ kind: "market_stall", x, y });
+    for (const [x, y] of [
+      [29, 26],
+      [9, 24],
+    ])
+      approve({ kind: "garden_steps", x, y });
     for (const candidates of villageGroves(s)) {
       let count = 0;
       for (const q of candidates)

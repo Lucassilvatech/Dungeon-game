@@ -55,7 +55,6 @@ export function Shop({
   const nearNpc =
     !npcId ||
     (!!service &&
-      state.room.id === "city1" &&
       Math.abs(state.character.x - service.x) +
         Math.abs(state.character.y - service.y) <=
         1);

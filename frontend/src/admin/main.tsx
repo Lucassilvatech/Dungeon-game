@@ -1,20 +1,20 @@
-import {NpcEconomyAdmin} from "./NpcEconomy";
+import { NpcEconomyAdmin } from "./NpcEconomy";
 import React, { useEffect, useState, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
-import {PublishContract} from "./Contracts";
-import {LunarResourcesAdmin} from "./LunarResources";
-import {Royal} from "./Royal";
-import {CutoverPanel} from "./Cutover";
+import { PublishContract } from "./Contracts";
+import { LunarResourcesAdmin } from "./LunarResources";
+import { Royal } from "./Royal";
+import { CutoverPanel } from "./Cutover";
 import { WorldEvents } from "./WorldEvents";
 
 type Row = Record<string, any>;
 const modules = [
   ["npc-economy", "Economia dos NPCs"],
   ["overview", "Visão geral"],
-  ["royal","Administração do Rei"],
+  ["royal", "Administração do Rei"],
   ["bank", "Compatibilidade legada"],
- ["lunar", "Cutover Lunar"],
+  ["lunar", "Cutover Lunar"],
   ["economy", "Economia"],
   ["guilds", "Guildas"],
   ["players", "Jogadores"],
@@ -23,11 +23,17 @@ const modules = [
   ["auctions", "Leilões"],
   ["world", "Mundo e eventos"],
   ["audit", "Auditoria"],
- ["encounters","Encontros"],["collection","Coleta"],["contracts","Contratos"],["metrics","Métricas de jogo"],
+  ["encounters", "Encontros"],
+  ["collection", "Coleta"],
+  ["contracts", "Contratos"],
+  ["metrics", "Métricas de jogo"],
 ];
 const names: Record<string, string> = {
- "npc.stock":"Transferir item para estoque comercial finito",
- "contracts.publish":"Publicar contrato (formulário guiado)","contracts.cancel":"Retirar publicação preservando direitos", "collection.refill":"Repor estoque pessoal auditado", "collection.disable":"Suspender ponto de coleta",
+  "npc.stock": "Transferir item para estoque comercial finito",
+  "contracts.publish": "Publicar contrato (formulário guiado)",
+  "contracts.cancel": "Retirar publicação preservando direitos",
+  "collection.refill": "Repor estoque pessoal auditado",
+  "collection.disable": "Suspender ponto de coleta",
   "bank.issue": "Emitir moeda oficial",
   "bank.burn": "Retirar moeda de circulação",
   "bank.transfer": "Transferir reservas existentes",
@@ -52,8 +58,10 @@ const names: Record<string, string> = {
   "auctions.cancel": "Suspender leilão e devolver reservas",
 };
 const targetLabels: Record<string, string> = {
- "npc.stock":"ID do item para custódia NPC",
- "contracts.cancel":"ID da publicação","collection.refill":"ID do ponto pessoal","collection.disable":"ID do ponto pessoal",
+  "npc.stock": "ID do item para custódia NPC",
+  "contracts.cancel": "ID da publicação",
+  "collection.refill": "ID do ponto pessoal",
+  "collection.disable": "ID do ponto pessoal",
   "items.protect": "ID da definição",
   "items.transfer": "ID do item",
   "items.recover_starter": "ID do leilão",
@@ -69,7 +77,10 @@ const targetLabels: Record<string, string> = {
   "economy.configure": "Parâmetro econômico",
 };
 const params: Record<string, Record<string, string>> = {
- "npc.stock":{account_id:"Conta NPC (npc:ID) ou guild",price_weight_mg:"Preço total da pilha em mg (múltiplo de 1.000)"},
+  "npc.stock": {
+    account_id: "Conta NPC (npc:ID) ou guild",
+    price_weight_mg: "Preço total da pilha em mg (múltiplo de 1.000)",
+  },
   "bank.issue": {
     amount: "Quantidade de moedas",
     destination: "Conta de destino",
@@ -297,9 +308,11 @@ function App() {
         if (fields[k] !== undefined && fields[k] !== "") {
           p[k] = numericKeys.has(k)
             ? Number(fields[k])
-            : k === "value" && target.startsWith("lunar_") ? JSON.parse(fields[k]) : k === "value" && target !== "auction_proceeds_destination"
-              ? Number(fields[k])
-              : fields[k];
+            : k === "value" && target.startsWith("lunar_")
+              ? JSON.parse(fields[k])
+              : k === "value" && target !== "auction_proceeds_destination"
+                ? Number(fields[k])
+                : fields[k];
         }
       }
       setPreview(
@@ -365,7 +378,9 @@ function App() {
             {x} Nenhuma emissão é automática.
           </p>
         ))}
-        {values.unavailable?.map((x: string) => <p key={x}>{x}</p>)}
+        {values.unavailable?.map((x: string) => (
+          <p key={x}>{x}</p>
+        ))}
       </>
     );
   }
@@ -422,7 +437,9 @@ function App() {
           {modules
             .filter(([id]) =>
               session?.permissions?.includes(
-                (["bank","lunar","royal","npc-economy"].includes(id) ? "economy" : id) + ".read",
+                (["bank", "lunar", "royal", "npc-economy"].includes(id)
+                  ? "economy"
+                  : id) + ".read",
               ),
             )
             .map(([id, title]) => (
@@ -468,11 +485,40 @@ function App() {
         </p>
         {data && dataModule === module && (
           <section>
-            {module === "npc-economy"&&<NpcEconomyAdmin data={data} busy={busy} canManage={session?.permissions?.includes("economy.manage")} request={request} run={run} refresh={load}/>}
-            {module === "royal"&&<Royal data={data} busy={busy} canManage={session?.permissions?.includes("economy.manage")} request={request} run={run} refresh={load}/>}
-            {module === "lunar"&&<LunarResourcesAdmin request={request} busy={busy}/>}
-            {module === "lunar"&&<CutoverPanel data={data} busy={busy} canManage={session?.permissions?.includes("economy.manage")} request={request} run={run} refresh={load}/>}
- {module === "overview" && (
+            {module === "npc-economy" && (
+              <NpcEconomyAdmin
+                data={data}
+                busy={busy}
+                canManage={session?.permissions?.includes("economy.manage")}
+                request={request}
+                run={run}
+                refresh={load}
+              />
+            )}
+            {module === "royal" && (
+              <Royal
+                data={data}
+                busy={busy}
+                canManage={session?.permissions?.includes("economy.manage")}
+                request={request}
+                run={run}
+                refresh={load}
+              />
+            )}
+            {module === "lunar" && (
+              <LunarResourcesAdmin request={request} busy={busy} />
+            )}
+            {module === "lunar" && (
+              <CutoverPanel
+                data={data}
+                busy={busy}
+                canManage={session?.permissions?.includes("economy.manage")}
+                request={request}
+                run={run}
+                refresh={load}
+              />
+            )}
+            {module === "overview" && (
               <>
                 <p>
                   {data.players} personagens · {data.active_expeditions}{" "}
@@ -565,6 +611,7 @@ function App() {
                     "coins",
                     "room_id",
                     "inventory",
+                    "appearance",
                     "active_battle",
                     "active_expedition",
                   ]}
@@ -769,10 +816,107 @@ function App() {
                 <Table rows={data.events} columns={["id", "kind", "payload"]} />
               </>
             )}
-            {module === "encounters" && <Table rows={data} columns={["id","character_id","status","turn","size","damage_dealt","damage_received","enemies"]}/>}
-            {module === "collection" && <><p>Estoque por personagem e geração. Reposição é excepcional, com prévia e auditoria.</p><Table rows={data} columns={["id","character_id","room_id","name","remaining","capacity","enabled"]} onChoose={r=>chooseAction("collection.refill",String(r.id))}/></>}
-            {module === "contracts" && <><Table rows={data.definitions} columns={["id","name","kind","target","required","reward","slots","taken","reserved","status"]} onChoose={r=>chooseAction("contracts.cancel",String(r.id))}/><h3>Aceitações persistentes</h3><Table rows={data.acceptances} columns={["id","character_id","contract_id","progress","status"]}/>{session?.permissions?.includes("contracts.manage")&&<PublishContract busy={busy} preview={body=>run(async()=>{setPreview(await request("/operations/preview",body))})}/>}</>}
-            {module === "metrics" && <><p>Somente ações instrumentadas desde a atualização. Duração desconhecida de combates antigos não é estimada.</p><Table rows={Object.entries(data).filter(([k])=>k!=="totals").map(([key,value])=>({key,value}))} columns={["key","value"]}/><Table rows={Object.entries(data.totals??{}).map(([key,value])=>({key,value}))} columns={["key","value"]}/></>}
+            {module === "encounters" && (
+              <Table
+                rows={data}
+                columns={[
+                  "id",
+                  "character_id",
+                  "status",
+                  "turn",
+                  "size",
+                  "damage_dealt",
+                  "damage_received",
+                  "enemies",
+                ]}
+              />
+            )}
+            {module === "collection" && (
+              <>
+                <p>
+                  Estoque por personagem e geração. Reposição é excepcional, com
+                  prévia e auditoria.
+                </p>
+                <Table
+                  rows={data}
+                  columns={[
+                    "id",
+                    "character_id",
+                    "room_id",
+                    "name",
+                    "remaining",
+                    "capacity",
+                    "enabled",
+                  ]}
+                  onChoose={(r) =>
+                    chooseAction("collection.refill", String(r.id))
+                  }
+                />
+              </>
+            )}
+            {module === "contracts" && (
+              <>
+                <Table
+                  rows={data.definitions}
+                  columns={[
+                    "id",
+                    "name",
+                    "kind",
+                    "target",
+                    "required",
+                    "reward",
+                    "slots",
+                    "taken",
+                    "reserved",
+                    "status",
+                  ]}
+                  onChoose={(r) =>
+                    chooseAction("contracts.cancel", String(r.id))
+                  }
+                />
+                <h3>Aceitações persistentes</h3>
+                <Table
+                  rows={data.acceptances}
+                  columns={[
+                    "id",
+                    "character_id",
+                    "contract_id",
+                    "progress",
+                    "status",
+                  ]}
+                />
+                {session?.permissions?.includes("contracts.manage") && (
+                  <PublishContract
+                    busy={busy}
+                    preview={(body) =>
+                      run(async () => {
+                        setPreview(await request("/operations/preview", body));
+                      })
+                    }
+                  />
+                )}
+              </>
+            )}
+            {module === "metrics" && (
+              <>
+                <p>
+                  Somente ações instrumentadas desde a atualização. Duração
+                  desconhecida de combates antigos não é estimada.
+                </p>
+                <Table
+                  rows={Object.entries(data)
+                    .filter(([k]) => k !== "totals")
+                    .map(([key, value]) => ({ key, value }))}
+                  columns={["key", "value"]}
+                />
+                <Table
+                  rows={Object.entries(data.totals ?? {}).map(
+                    ([key, value]) => ({ key, value }),
+                  )}
+                  columns={["key", "value"]}
+                />
+              </>
+            )}
             {module === "audit" && (
               <Table
                 rows={data}
@@ -792,129 +936,141 @@ function App() {
             )}
           </section>
         )}
-        {allowed.length > 0 && module !== "royal" && module !== "npc-economy" && (
-          <section className="operation">
-            <h3>Operação autorizada</h3>
-            <label>
-              Ação
-              <select
-                aria-label="Ação"
-                value={action}
-                onChange={(e) => chooseAction(e.target.value)}
-              >
-                <option value="">Selecione uma operação</option>
-                {allowed
-                  .filter((k) => !["world.event_create","contracts.publish"].includes(k))
-                  .map((k) => (
-                    <option key={k} value={k}>
-                      {names[k]}
-                    </option>
-                  ))}
-              </select>
-            </label>
-            {action && (
-              <form onSubmit={makePreview}>
-                {!action.startsWith("bank.") && (
-                  <label>
-                    {targetLabels[action] ?? "ID da conta ou personagem"}
-                    {action === "economy.configure" ? (
-                      <select
-                        value={target}
-                        onChange={(e) => setTarget(e.target.value)}
-                        required
-                      >
-                        <option value="">Selecione</option>
-                        {[
-                          "medical_fee_base",
-                          "monster_reward",
-                          "boss_reward",
-                          "min_auction_start_price",
-                          "auction_duration_hours",
-                          "auction_proceeds_destination",
-                          "lunar_resource_spawn_enabled","lunar_resource_spawn_chance_ppm","lunar_resource_weight_bands","lunar_guild_buy_rate_milliunits_per_gram","royal_admin_extraordinary_controls_enabled",
-                        ].map((k) => (
-                          <option key={k}>{k}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input
-                        value={target}
-                        onChange={(e) => setTarget(e.target.value)}
-                        required
-                      />
-                    )}
-                  </label>
-                )}
-                {Object.entries(params[action] ?? {}).map(([key, label]) => (
-                  <label key={key}>
-                    {label}
-                    {action.startsWith("bank.") &&
-                    (key === "source" || key === "destination") ? (
-                      <>
+        {allowed.length > 0 &&
+          module !== "royal" &&
+          module !== "npc-economy" && (
+            <section className="operation">
+              <h3>Operação autorizada</h3>
+              <label>
+                Ação
+                <select
+                  aria-label="Ação"
+                  value={action}
+                  onChange={(e) => chooseAction(e.target.value)}
+                >
+                  <option value="">Selecione uma operação</option>
+                  {allowed
+                    .filter(
+                      (k) =>
+                        !["world.event_create", "contracts.publish"].includes(
+                          k,
+                        ),
+                    )
+                    .map((k) => (
+                      <option key={k} value={k}>
+                        {names[k]}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              {action && (
+                <form onSubmit={makePreview}>
+                  {!action.startsWith("bank.") && (
+                    <label>
+                      {targetLabels[action] ?? "ID da conta ou personagem"}
+                      {action === "economy.configure" ? (
+                        <select
+                          value={target}
+                          onChange={(e) => setTarget(e.target.value)}
+                          required
+                        >
+                          <option value="">Selecione</option>
+                          {[
+                            "barber_fee_units",
+                            "medical_fee_base",
+                            "monster_reward",
+                            "boss_reward",
+                            "min_auction_start_price",
+                            "auction_duration_hours",
+                            "auction_proceeds_destination",
+                            "lunar_resource_spawn_enabled",
+                            "lunar_resource_spawn_chance_ppm",
+                            "lunar_resource_weight_bands",
+                            "lunar_guild_buy_rate_milliunits_per_gram",
+                            "royal_admin_extraordinary_controls_enabled",
+                          ].map((k) => (
+                            <option key={k}>{k}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          value={target}
+                          onChange={(e) => setTarget(e.target.value)}
+                          required
+                        />
+                      )}
+                    </label>
+                  )}
+                  {Object.entries(params[action] ?? {}).map(([key, label]) => (
+                    <label key={key}>
+                      {label}
+                      {action.startsWith("bank.") &&
+                      (key === "source" || key === "destination") ? (
+                        <>
+                          <input
+                            value={fields[key] ?? ""}
+                            onChange={(e) =>
+                              setFields({ ...fields, [key]: e.target.value })
+                            }
+                            list="official-accounts"
+                            required
+                          />
+                          <small>
+                            central_bank, treasury ou character:ID. Recursos de
+                            teste são rejeitados.
+                          </small>
+                        </>
+                      ) : action === "auctions.cancel" &&
+                        key === "destination" ? (
+                        <select
+                          value={fields[key] ?? "custody"}
+                          onChange={(e) =>
+                            setFields({ ...fields, [key]: e.target.value })
+                          }
+                        >
+                          <option value="custody">
+                            Manter item arquivado em custódia
+                          </option>
+                          <option value="former_owner">
+                            Devolver ao antigo proprietário
+                          </option>
+                        </select>
+                      ) : (
                         <input
                           value={fields[key] ?? ""}
                           onChange={(e) =>
                             setFields({ ...fields, [key]: e.target.value })
                           }
-                          list="official-accounts"
+                          inputMode={
+                            numericKeys.has(key) || key === "amount"
+                              ? "numeric"
+                              : "text"
+                          }
                           required
                         />
-                        <small>
-                          central_bank, treasury ou character:ID. Recursos de
-                          teste são rejeitados.
-                        </small>
-                      </>
-                    ) : action === "auctions.cancel" &&
-                      key === "destination" ? (
-                      <select
-                        value={fields[key] ?? "custody"}
-                        onChange={(e) =>
-                          setFields({ ...fields, [key]: e.target.value })
-                        }
-                      >
-                        <option value="custody">
-                          Manter item arquivado em custódia
-                        </option>
-                        <option value="former_owner">
-                          Devolver ao antigo proprietário
-                        </option>
-                      </select>
-                    ) : (
-                      <input
-                        value={fields[key] ?? ""}
-                        onChange={(e) =>
-                          setFields({ ...fields, [key]: e.target.value })
-                        }
-                        inputMode={
-                          numericKeys.has(key) || key === "amount"
-                            ? "numeric"
-                            : "text"
-                        }
-                        required
-                      />
-                    )}
+                      )}
+                    </label>
+                  ))}
+                  <datalist id="official-accounts">
+                    <option value="central_bank" />
+                    <option value="treasury" />
+                  </datalist>
+                  <label>
+                    Justificativa auditável
+                    <textarea
+                      aria-label="Justificativa auditável"
+                      value={reason}
+                      onChange={(e) => setReason(e.target.value)}
+                      required
+                      minLength={10}
+                      maxLength={500}
+                    />
                   </label>
-                ))}
-                <datalist id="official-accounts">
-                  <option value="central_bank" />
-                  <option value="treasury" />
-                </datalist>
-                <label>
-                  Justificativa auditável
-                  <textarea
-                    aria-label="Justificativa auditável"
-                    value={reason}
-                    onChange={(e) => setReason(e.target.value)}
-                    required
-                    minLength={10}
-                    maxLength={500}
-                  />
-                </label>
-                <button disabled={busy}>Calcular prévia</button>
-              </form>
-            )}
-          </section>
-        )}
+                  <button disabled={busy}>Calcular prévia</button>
+                </form>
+              )}
+            </section>
+          )}
         <div className="pagination">
           <button
             className="secondary"

@@ -1,5 +1,10 @@
 import { TILE } from "./visual/scale";
 import {
+  characterTexture,
+  npcAppearance,
+  residentAppearance,
+} from "./appearance/compositor";
+import {
   createGait,
   advanceGait,
   approach,
@@ -147,12 +152,12 @@ export function Map({
             return;
           }
           // Visual body selection maps back to the existing authoritative actor tile.
-          const bodyHit = (xx: number, yy: number) =>
+          const bodyHit = (xx: number, yy: number, height = 62) =>
             Math.abs(p.x - (xx * TILE + TILE / 2)) <= 16 &&
-            p.y >= (yy + 1) * TILE - 62 &&
+            p.y >= (yy + 1) * TILE - height &&
             p.y <= (yy + 1) * TILE;
           const serviceBody = s.map.service_npcs?.find((n) =>
-            bodyHit(n.x, n.y),
+            bodyHit(n.x, n.y, 94),
           );
           if (serviceBody) {
             live.current.onTarget({
@@ -163,7 +168,14 @@ export function Map({
             });
             return;
           }
-          if (s.map.npc && bodyHit(s.map.npc[0], s.map.npc[1])) {
+          if (
+            s.map.npc &&
+            bodyHit(
+              s.map.npc[0],
+              s.map.npc[1],
+              s.map.npc_role === "recovery" ? 82 : 94,
+            )
+          ) {
             live.current.onTarget({
               x: s.map.npc[0],
               y: s.map.npc[1],
@@ -253,9 +265,11 @@ export function Map({
               .sprite(
                 x * TILE + TILE / 2,
                 (y + 1) * TILE,
-                s.map.npc_role === "recovery" ? "hooded" : "npc",
+                s.map.npc_role === "recovery"
+                  ? "hooded"
+                  : characterTexture(this, npcAppearance("merchant")),
               )
-              .setScale(1)
+              .setScale(s.map.npc_role === "recovery" ? 1.3 : 1)
               .setOrigin(0.5, 1)
               .setDepth(12),
           );
@@ -266,7 +280,7 @@ export function Map({
           });
           const caption = this.label(
             x * TILE + TILE / 2,
-            (y + 1) * TILE - 62,
+            (y + 1) * TILE - (s.map.npc_role === "recovery" ? 82 : 94),
             "E · " + (s.map.npc_name ?? "Serviço da Guilda"),
           );
           if (s.map.npc_role === "recovery") {
@@ -278,7 +292,11 @@ export function Map({
         for (const n of s.map.service_npcs ?? []) {
           this.npcs.push(
             this.add
-              .sprite(n.x * TILE + TILE / 2, (n.y + 1) * TILE, n.sprite)
+              .sprite(
+                n.x * TILE + TILE / 2,
+                (n.y + 1) * TILE,
+                characterTexture(this, npcAppearance(n.id)),
+              )
               .setScale(1)
               .setOrigin(0.5, 1)
               .setDepth(12),
@@ -289,13 +307,17 @@ export function Map({
             walk: false,
           });
           this.labels.push(
-            this.label(n.x * TILE + TILE / 2, (n.y + 1) * TILE - 62, n.name),
+            this.label(n.x * TILE + TILE / 2, (n.y + 1) * TILE - 94, n.name),
           );
         }
-        for (const n of s.map.npcs || []) {
+        for (const [index, n] of (s.map.npcs || []).entries()) {
           this.npcs.push(
             this.add
-              .sprite(n.x * TILE + TILE / 2, (n.y + 1) * TILE, "peer")
+              .sprite(
+                n.x * TILE + TILE / 2,
+                (n.y + 1) * TILE,
+                characterTexture(this, residentAppearance(index)),
+              )
               .setScale(1)
               .setOrigin(0.5, 1)
               .setDepth(11),
@@ -311,7 +333,7 @@ export function Map({
             this.label(
               e.x * TILE + TILE / 2,
               e.y * TILE - 45,
-              e.known ? e.name : "? Caminho",
+              e.known || e.target_id ? e.name : "? Caminho",
             ),
           );
         this.hero.setPosition(
@@ -434,6 +456,9 @@ export function Map({
           }
         }
         const frame = Math.floor(time / 220) % 4;
+        const heroTexture = characterTexture(this, s.appearance);
+        if (this.hero.texture.key !== heroTexture)
+          this.hero.setTexture(heroTexture).setScale(1);
         const c = s.character,
           key = `${c.x},${c.y}`;
         if (key !== this.lastTile) {
@@ -502,7 +527,13 @@ export function Map({
                   ? "walk"
                   : "idle",
               this.heroDir,
-              moving ? heroGait.tick : 0,
+              active
+                ? Math.floor(time / 120) % 4
+                : moving
+                  ? heroGait.tick
+                  : motion.matches
+                    ? 0
+                    : Math.floor(time / 650) % 4,
             ),
           )
           .setDepth(100 + this.hero.y);
@@ -613,7 +644,11 @@ export function Map({
             actorFrame(
               npcGait.moving ? "walk" : "idle",
               npcGait.dir,
-              npcGait.moving ? npcGait.tick : 0,
+              npcGait.moving
+                ? npcGait.tick
+                : motion.matches
+                  ? 0
+                  : Math.floor((time + i * 137) / 650) % 4,
             ),
           ).setDepth(100 + sp.y);
         });
@@ -634,6 +669,10 @@ export function Map({
               .setDepth(14);
             this.others.set(p.id, sp);
           }
+          if (p.appearance) {
+            const texture = characterTexture(this, p.appearance);
+            if (sp.texture.key !== texture) sp.setTexture(texture).setScale(1);
+          }
           const walk =
             Math.abs(sp.x - p.x * TILE - TILE / 2) +
               Math.abs(sp.y - (p.y + 1) * TILE) >
@@ -651,7 +690,11 @@ export function Map({
             actorFrame(
               walk ? "walk" : "idle",
               peerGait.dir,
-              walk ? peerGait.tick : 0,
+              walk
+                ? peerGait.tick
+                : motion.matches
+                  ? 0
+                  : Math.floor(time / 650) % 4,
             ),
           ).setDepth(100 + sp.y);
         }
@@ -684,6 +727,7 @@ export function Map({
           this.lastDiagnostic = time;
           el.current!.dataset.visual = JSON.stringify({
             hero: {
+              texture: this.hero.texture.key,
               x: this.hero.x,
               y: this.hero.y,
               frame: this.hero.frame.name,

@@ -175,7 +175,7 @@ const { chromium } = require("playwright"),
     }
     for (const width of [1280, 390]) {
       await page.setViewportSize({ width, height: width === 390 ? 844 : 720 });
-      await room("city1", 33, 8);
+      await room("merchant_shop", 10, 9);
       const d = await snapshot(),
         box = await page.locator("canvas").boundingBox();
       const request = page.waitForResponse(
@@ -188,7 +188,7 @@ const { chromium } = require("playwright"),
           ? page.touchscreen.tap.bind(page.touchscreen)
           : page.mouse.click.bind(page.mouse);
       await tap(
-        box.x + 34.5 * d.tileSize - d.camera.x,
+        box.x + 10.5 * d.tileSize - d.camera.x,
         box.y + (9 * d.tileSize - 40) - d.camera.y,
       );
       assert.equal((await request).status(), 200);

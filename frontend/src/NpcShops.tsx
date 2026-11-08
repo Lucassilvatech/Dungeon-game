@@ -53,6 +53,9 @@ export function NpcShops({
         .filter((n) => n.id === selected)
         .map((n) => {
           const service = state.map.service_npcs?.find((s) => s.id === n.id);
+          const door = state.room.exits.find(
+            (e) => e.target_id === n.location?.room,
+          );
           return (
             <section key={n.id}>
               {service && (
@@ -70,7 +73,22 @@ export function NpcShops({
                   Ir até {n.name}
                 </button>
               )}
-              {!service && <p>Visite a vila para negociar pessoalmente.</p>}
+              {!service && door && (
+                <button
+                  disabled={busy}
+                  onClick={() =>
+                    target({ x: door.x, y: door.y, kind: "exit", id: door.id })
+                  }
+                >
+                  Entrar: {n.location?.name}
+                </button>
+              )}
+              {!service && (
+                <p>
+                  Visite {n.location?.name ?? "a loja na vila"} para negociar
+                  pessoalmente.
+                </p>
+              )}
               <Shop
                 key={n.id}
                 npcId={n.id}

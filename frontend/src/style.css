@@ -944,3 +944,22 @@ button:focus-visible,a:focus-visible,input:focus-visible {outline:3px solid #e6c
 .stage-chip{border:1px solid #a68e65;background:#142b2de8;border-radius:1px;color:#f0dba7;box-shadow:2px 2px 0 #0b1b23a0}
 .map-tip{background:#14232bd9;border:1px solid #536b64;padding:5px 9px;border-radius:2px}
 @media(max-width:600px){.canvas{height:360px;min-height:0}.status-bar{height:auto;min-height:88px;gap:9px;padding:10px;flex-wrap:wrap}.status-bar .portrait{width:30px;height:34px;font-size:24px}.status-bar .meter{flex:1;min-width:66px}.status-bar .coins{font-size:12px}.status-bar .online{font-size:8px}.stage-chip{max-width:80%;letter-spacing:1px}}
+
+/* Modular character creation and Barber share the same responsive editor. */
+.panel.create{width:min(920px,100%);max-width:920px;margin-inline:auto}
+.appearance-editor{display:grid;grid-template-columns:minmax(0,1fr);gap:1rem;margin:1.25rem 0}
+.appearance-preview{max-width:560px;width:100%;margin:auto;padding:1rem;border:1px solid #7c6654;border-radius:8px;background:radial-gradient(ellipse at bottom,#435143,#1b2530);box-sizing:border-box}
+.appearance-preview canvas{display:block;width:100%;height:auto;image-rendering:pixelated}
+.appearance-directions{display:grid;grid-template-columns:repeat(4,1fr);font-size:.75rem;text-align:center;color:#d5c7ae}
+.appearance-animation{display:flex!important;align-items:center;justify-content:center;gap:.5rem;margin-top:1rem;font-size:.85rem}
+.appearance-animation input{width:auto!important;min-height:24px}
+.appearance-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.9rem 1.2rem}
+.appearance-fields label{display:flex;flex-direction:column;gap:.35rem;min-width:0;font-size:.9rem}
+.appearance-fields select{width:100%;min-width:0;min-height:44px;padding:.6rem}
+.appearance-colors{display:flex;gap:5px;padding:5px}
+.appearance-colors i{display:block;flex:1;max-width:30px;height:18px;border:1px solid #151c22;border-radius:3px}
+.appearance-note{font-size:.82rem;color:#bbcabd;line-height:1.5;margin:0}
+.appearance-confirm{border:1px solid #bea375;border-radius:7px;padding:1rem;margin-top:1rem}
+@media(max-width:480px){.appearance-fields{gap:.8rem}.appearance-preview{padding:.5rem}.appearance-fields label{font-size:.8rem}.appearance-fields select{font-size:.82rem}}
+
+.appearance-fields select {width:100%;min-height:44px;padding:.65rem;border:1px solid #53665e;border-radius:6px;color:var(--text,#e8e4d2);background:#1b3030;font:inherit;}

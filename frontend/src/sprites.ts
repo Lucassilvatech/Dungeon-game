@@ -1,9 +1,11 @@
 import Phaser from "phaser";
 import manifest from "./visual/atlas.json";
 import { preloadMapAssets } from "./visual/assets";
+import { preloadCharacterLayers } from "./appearance/compositor";
 /** Shipping PNG atlases; original source and compiler are versioned with the game. */
 export function preloadSprites(scene: Phaser.Scene) {
   preloadMapAssets(scene);
+  preloadCharacterLayers(scene);
   for (const [name, e] of Object.entries(manifest)) {
     scene.load.spritesheet(name, "/assets/pixel/" + e.file, {
       frameWidth: "frameWidth" in e.frames ? 48 : name === "effects" ? 64 : 128,

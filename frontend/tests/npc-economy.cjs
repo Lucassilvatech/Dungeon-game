@@ -253,7 +253,7 @@ const { chromium } = require("playwright"),
     assert.equal(stock(find(d, "merchant"), "crystal"), 20);
     const near = (id) =>
       sql(
-        `from app.database import Session\nfrom app import models as m\nfrom app.npc_economy import SERVICES\nwith Session.begin() as db:\n s=next(s for s in SERVICES if s['id']=='${id}');c=db.get(m.Character,${cid});c.room_id='city1';c.x=s['x'];c.y=s['y']+1`,
+        `from app.database import Session\nfrom app import models as m\nfrom app.npc_economy import SERVICES\nwith Session.begin() as db:\n s=next(s for s in SERVICES if s['id']=='${id}');c=db.get(m.Character,${cid});c.room_id=s['room_id'];c.x=s['x'];c.y=s['y']+1`,
       );
     await player.addInitScript(
       (t) => sessionStorage.setItem("token", t),

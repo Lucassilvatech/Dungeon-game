@@ -28,7 +28,7 @@ jobs:
       - run: alembic upgrade head && alembic check && python -m pytest -q
         working-directory: backend
       - name: Reproduce original pixel atlases
-        run: pip install -r scripts/requirements-art.txt && python scripts/build_pixel_assets.py && git diff --exit-code -- frontend/public/assets/pixel frontend/src/visual/atlas.json frontend/public/assets/maps frontend/src/visual/map-atlas.json
+        run: pip install -r scripts/requirements-art.txt && python scripts/build_pixel_assets.py && git diff --exit-code -- frontend/public/assets/pixel frontend/src/visual/atlas.json frontend/public/assets/maps frontend/src/visual/map-atlas.json frontend/public/assets/characters
       - run: npm ci && npm run build
         working-directory: frontend
       - run: npm test
@@ -111,8 +111,12 @@ jobs:
         run: python scripts/test_visual_stack.py
       - name: Grounded four-direction walking through actual movement API
         run: python scripts/test_visual_stack.py --suite movement
+      - name: Layered appearance, paid Barber and service interiors
+        run: python scripts/test_visual_stack.py --suite appearance
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: map-rebuild-review
-          path: artifacts/map-rebuild/
+          path: |
+            artifacts/map-rebuild/
+            artifacts/appearance/

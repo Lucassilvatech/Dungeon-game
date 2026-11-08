@@ -22,7 +22,7 @@ assert os.getenv("DATABASE_URL"), "Use an explicit test PostgreSQL server"
 args = argparse.ArgumentParser()
 args.add_argument(
     "--suite",
-    choices=["visual", "smoke", "npc-economy", "encounters", "movement"],
+    choices=["visual", "smoke", "npc-economy", "encounters", "movement", "appearance"],
     default="visual",
 )
 suite = args.parse_args().suite

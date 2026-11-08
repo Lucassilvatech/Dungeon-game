@@ -527,3 +527,43 @@ test("authored rendered tree bounds fit inside exactly the reserved cells", () =
     assert(y <= (f.y + f.height) * TILE);
   }
 });
+
+test("every appearance choice has four-direction layers and matching color palettes", () => {
+  const art = require("../public/assets/characters/manifest.json");
+  const catalog = require("../../backend/app/appearance_catalog.json").options;
+  for (const [field, prefix] of [
+    ["sexo_visual", "body"],
+    ["hair_style_id", "hair"],
+    ["appearance_head", "head"],
+    ["appearance_torso", "torso"],
+    ["appearance_legs", "legs"],
+    ["appearance_feet", "feet"],
+  ]) {
+    for (const value of catalog[field]) {
+      if (value.id === "none") continue;
+      const layer = art.layers[prefix + "-" + value.id];
+      assert(layer, "Missing " + field + ":" + value.id);
+      assert.deepEqual(layer.directions, ["down", "left", "right", "up"]);
+      assert.equal(layer.source_boxes.length, 4);
+    }
+  }
+  for (const field of ["skin_tone", "hair_color"])
+    assert.deepEqual(
+      art.palettes[field],
+      Object.fromEntries(catalog[field].map((o) => [o.id, o.color])),
+    );
+  assert.equal(art.frames, 96);
+});
+
+test("service furniture stays proportional to the reference character, not the collision box", () => {
+  const { assets } = require("../src/visual/map-atlas.json");
+  const standingHeight = 87;
+  assert(assets.service_counter.height <= standingHeight * 0.85);
+  assert(assets.service_barrels.height <= standingHeight * 0.6);
+  assert(assets.service_chair.height <= standingHeight * 0.9);
+  assert(
+    assets.service_goods.height >= standingHeight * 0.9 &&
+      assets.service_goods.height <= standingHeight * 1.4,
+  );
+  assert(assets.service_forge.height <= standingHeight * 1.8);
+});
