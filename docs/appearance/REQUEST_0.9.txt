@@ -1,0 +1,363 @@
+Implemente a próxima etapa do Dungeon Game na branch atual mais recente, sem criar nova branch, preservando todas as mecânicas já existentes e funcionando, mas adicionando um sistema completo de criação/edição de aparência do personagem, interiores dos NPCs principais, e uma vila mais viva visualmente.
+
+IMPORTANTE:
+- Não reimplemente Windows nem APK Android.
+- O foco continua sendo a versão web.
+- Não remova mecânicas existentes. Apenas integre os novos sistemas e a nova parte visual.
+- Use exatamente os assets visuais enviados como base principal para personagens, cabelos, roupas e ambientação. A intenção é ficar o mais próximo possível das referências.
+- Ao final, envie também os comandos para executar localmente.
+
+==================================================
+1. OBJETIVO GERAL
+==================================================
+
+Adicionar de uma vez só:
+
+1) Sistema de criação de personagem com personalização visual.
+2) Sistema de edição posterior de aparência via NPC específico.
+3) Integração dos assets de roupas/cabelos/personagem enviados.
+4) Salas/interiores para ferreiro, alquimista/mago e comerciante.
+5) Vila mais viva, mais orgânica e menos vazia.
+6) Manter o estilo visual coerente com as referências enviadas.
+7) Melhorar a animação dos personagens com mais movimento real, frame a frame.
+8) Tudo funcional tanto no jogo quanto no lado administrativo, onde fizer sentido.
+
+==================================================
+2. REFERÊNCIAS OBRIGATÓRIAS
+==================================================
+
+Use como referência direta os assets/imagens que já foram enviados nesta conversa, especialmente:
+
+A) PERSONAGENS
+- O estilo do personagem com proporção mais detalhada e bonita, semelhante ao sheet enviado.
+- O personagem pode ser masculino ou feminino.
+- Masculino e feminino NÃO limitam cabelo e roupa:
+  - personagem masculino pode usar cabelo longo / “feminino”
+  - personagem feminino pode usar cabelo curto / “masculino”
+  - isso deve ser totalmente livre.
+- O corpo base deve usar os assets enviados como referência.
+- A movimentação deve ter mais vida e não parecer “flutuando”.
+- Implementar animação frame a frame, com mais naturalidade no caminhar.
+
+B) CABELOS
+- Usar os assets de cabelo enviados.
+- Permitir seleção de modelo de cabelo.
+- Permitir cor de cabelo.
+- O mesmo catálogo de cabelo deve servir para qualquer sexo.
+
+C) ROUPAS
+- Usar os assets de roupa enviados.
+- As roupas enviadas devem estar disponíveis logo no início na criação do personagem.
+- O jogador deve poder escolher peças visuais na criação:
+  - cabeça
+  - peito
+  - pernas
+  - pés
+- As peças devem seguir a ideia visual dos assets enviados.
+- O objetivo aqui é visual/aparência, sem depender inicialmente de progressão de item equipado real (a menos que já exista integração simples e segura).
+
+D) AMBIENTAÇÃO / INTERIORES
+- Os interiores devem se inspirar fortemente na imagem enviada com exemplos de:
+  - quarto/ambiente aconchegante
+  - ferreiro
+  - sala mágica/alquimia
+- O comerciante deve ganhar um interior próprio de loja, mesmo que essa imagem específica não tenha sido enviada.
+  - Gere uma loja coerente com o mesmo estilo:
+    - balcão
+    - estantes
+    - barris/caixas
+    - itens expostos
+    - iluminação quente
+- O ferreiro deve ficar dentro de uma casa/oficina.
+- O alquimista deve ficar dentro de uma sala/casa de alquimia e feitiços.
+- O comerciante deve ficar dentro de uma loja.
+- Se for viável, adicionar também uma pousada/casa extra decorativa para deixar o mundo mais vivo (mesmo que nem tudo esteja funcional ainda).
+
+==================================================
+3. SISTEMA DE CRIAÇÃO DE PERSONAGEM
+==================================================
+
+Implementar uma tela de criação de personagem ao criar uma conta/personagem novo.
+
+Essa tela deve permitir:
+
+1. Escolher sexo:
+   - Masculino
+   - Feminino
+
+2. Escolher tom de pele:
+   - usar uma paleta coerente com os assets enviados
+   - pelo menos alguns tons selecionáveis
+
+3. Escolher cabelo:
+   - usar os modelos de cabelo enviados
+   - sem restrição por sexo
+
+4. Escolher cor de cabelo:
+   - usar uma paleta visual agradável e coerente com pixel art do projeto
+
+5. Escolher aparência das roupas iniciais:
+   - cabeça
+   - peito
+   - pernas
+   - pés
+   - usando os assets enviados
+   - sem restrição por sexo
+
+6. Pré-visualização em tempo real:
+   - mostrar o personagem montado com todas as escolhas
+   - idealmente com visual nas 4 direções principais (frente/lado/lado/costas) ou com preview rotativo simples se já houver suporte
+
+7. Salvar tudo no personagem:
+   - as escolhas precisam persistir no banco
+   - ao entrar no jogo, o personagem deve aparecer com essa aparência
+
+IMPORTANTE:
+- O sistema deve ser preparado para crescer depois.
+- Estruture os dados de forma modular:
+  - sexo
+  - tom de pele
+  - hair_style_id
+  - hair_color
+  - equipped_visual_head
+  - equipped_visual_torso
+  - equipped_visual_legs
+  - equipped_visual_feet
+- A aparência final deve ser montada por camadas, não como imagem única fixa.
+
+==================================================
+4. EDIÇÃO DE APARÊNCIA APÓS O INÍCIO (NPC)
+==================================================
+
+Adicionar um NPC específico para alterar aparência depois da criação do personagem.
+
+Use um nome de época apropriado: **Barbeiro**.
+
+Requisitos do Barbeiro:
+- Fica em um local próprio na vila.
+- Pode ter uma pequena loja/sala/barbearia.
+- O jogador interage com ele e abre a mesma interface de customização.
+- O jogador pode mudar:
+  - sexo visual do personagem
+  - tom de pele
+  - cabelo
+  - cor do cabelo
+  - roupas visuais iniciais
+- Essa alteração custa uma pequena quantia de moeda.
+- Use uma taxa simples e barata (ex.: 1 moeda lunar pequena / 1 unidade mínima de moeda), configurável.
+- O pagamento deve seguir o sistema de economia já existente.
+- Registrar a transação corretamente.
+- Não quebrar a economia.
+
+==================================================
+5. VILA MAIS VIVA E ORGÂNICA
+==================================================
+
+A vila precisa deixar de ser um espaço plano e vazio.
+
+Objetivo:
+- dar mais sensação de mundo vivo
+- sem precisar tornar tudo interativo agora
+
+Adicionar:
+- mais casinhas decorativas
+- escadinhas
+- cercas
+- barracas
+- canteiros
+- árvores
+- arbustos
+- caixas e barris onde fizer sentido
+- caminhos mais naturais
+- detalhes de cenário coerentes
+- pequenas variações de relevo visual (sem complicar a navegação)
+- áreas decorativas que pareçam habitadas
+
+Restrições:
+- Não poluir.
+- Não colocar objetos em lugares absurdos.
+- Não colocar elementos bloqueando caminho sem propósito.
+- Não colocar objetos “dentro” de paredes ou no meio de caminhos importantes.
+- A vila deve continuar legível e jogável.
+
+A ideia é se aproximar da referência da vila enviada:
+- mais aconchegante
+- mais charmosa
+- mais orgânica
+- mais “RPG de fantasia em pixel art”
+- sem ficar exagerada ou artificial
+
+==================================================
+6. NOVOS INTERIORES / SALAS DOS NPCS
+==================================================
+
+Transformar os NPCs principais em locais internos apropriados.
+
+6.1 Ferreiro
+- Não deve mais ficar “solto” no mapa.
+- Deve ficar em uma oficina/casa.
+- Interior inspirado no ambiente de forja enviado:
+  - bigorna
+  - fornalha/lareira
+  - ferramentas
+  - barris/caixas
+  - iluminação quente
+- A entrada deve estar no mapa da vila e levar ao interior.
+
+6.2 Alquimista / Feitiços
+- Não deve mais ficar “solto” no mapa.
+- Deve ficar em uma casa/sala própria.
+- Interior inspirado no laboratório mágico/alquimia enviado:
+  - estantes
+  - frascos
+  - mesa
+  - livros
+  - detalhes mágicos
+- Pode unificar alquimia + feitiços no mesmo espaço, se isso simplificar de forma boa.
+
+6.3 Comerciante
+- Deve ficar em uma loja própria.
+- Criar um interior de loja coerente com o estilo:
+  - balcão
+  - estantes
+  - mercadorias
+  - caixas/barris
+  - iluminação quente
+- Esse espaço servirá como base melhor para evoluir comércio depois.
+
+6.4 Opcional desejável
+- Se couber bem, adicionar uma pousada decorativa.
+- Não precisa ser complexa ainda.
+- Pode até não ter mecânica completa, mas ajuda a vila a parecer viva.
+
+==================================================
+7. ANIMAÇÃO DOS PERSONAGENS
+==================================================
+
+Melhorar a animação dos personagens para não parecerem cortados/duros/flutuando.
+
+Requisitos:
+- usar animação frame a frame
+- caminhada mais natural
+- leve movimento de corpo e pernas
+- manter o estilo visual coerente com os assets
+- não exagerar
+- preservar a leitura do personagem em mapas top-down/3-quarters
+
+Desejável:
+- idle com pequena respiração/movimento
+- caminhada nas quatro direções principais
+- se já existir suporte, manter compatibilidade com ações futuras
+
+==================================================
+8. IMPLEMENTAÇÃO TÉCNICA
+==================================================
+
+Faça a implementação de forma organizada e segura.
+
+8.1 Estrutura de dados
+Adicionar/ajustar modelos para armazenar aparência do personagem:
+- sexo_visual
+- skin_tone
+- hair_style_id
+- hair_color
+- appearance_head
+- appearance_torso
+- appearance_legs
+- appearance_feet
+
+Criar migrações necessárias sem perder dados existentes.
+
+8.2 Montagem visual
+Implementar composição em camadas do sprite:
+- corpo base
+- cabelo
+- roupa cabeça
+- roupa torso
+- roupa pernas
+- roupa pés
+
+A composição deve ser previsível e preparada para evolução.
+
+8.3 Frontend
+Adicionar:
+- tela de criação do personagem
+- tela de edição via Barbeiro
+- integração visual com preview
+
+8.4 Mapas
+- adicionar interiores dos NPCs
+- conectar portas/entradas/saídas
+- reorganizar a vila para parecer mais viva
+- manter navegação funcional
+
+8.5 Back-end
+- endpoints/serviços para:
+  - salvar criação inicial
+  - buscar aparência
+  - atualizar aparência via Barbeiro
+- integrar cobrança da taxa do Barbeiro
+
+==================================================
+9. REGRAS IMPORTANTES
+==================================================
+
+- Não quebrar as mecânicas atuais.
+- Não remover sistemas de economia já existentes.
+- Não remover o sistema de combate.
+- Não mexer na ideia de Discord como observação apenas.
+- Não evoluir Windows nem APK Android.
+- O foco é web.
+- Não simplificar visualmente de forma genérica: o objetivo é aproximar do estilo das referências.
+- Usar exatamente os assets enviados como base principal quando possível.
+- Se algum asset precisar de adaptação técnica, faça isso preservando ao máximo a aparência original.
+
+==================================================
+10. RESULTADO ESPERADO
+==================================================
+
+Ao final, o jogo deve ter:
+
+1. Criação de personagem funcional com:
+   - sexo
+   - tom de pele
+   - cabelo
+   - cor do cabelo
+   - roupas iniciais visuais
+
+2. Personagem aparecendo corretamente no mundo com aparência persistida.
+
+3. NPC Barbeiro funcional para mudar aparência pagando uma taxa pequena.
+
+4. Ferreiro em sua oficina/casa.
+
+5. Alquimista em sua sala/laboratório.
+
+6. Comerciante em sua loja.
+
+7. Vila mais viva e melhor ambientada.
+
+8. Personagens com animação melhor e mais natural.
+
+9. Estrutura pronta para crescer depois.
+
+==================================================
+11. ENTREGA
+==================================================
+
+Entregue:
+- código implementado
+- migrações necessárias
+- resumo do que foi alterado
+- observações importantes
+- limitações restantes, se houver
+- e os comandos para executar localmente
+
+IMPORTANTE:
+Nos comandos de execução local, envie apenas o necessário para atualizar o projeto local via git e rodar o ambiente web, sem focar em build de Windows/APK.
+
+Inclua no final algo como:
+1. comandos para dar pull/atualizar a branch atual
+2. comandos para subir backend/frontend/banco
+3. qualquer comando de migração necessário
+4. endereço local para testar

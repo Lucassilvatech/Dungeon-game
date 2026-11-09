@@ -1,6 +1,6 @@
 {
   "status": "PASS",
-  "map_sprites": 44,
+  "map_sprites": 60,
   "alpha": "binary",
   "identity_preserved": [
     "hero",

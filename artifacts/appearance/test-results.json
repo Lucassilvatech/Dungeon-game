@@ -1,0 +1,38 @@
+{
+  "status": "PASS",
+  "code_revision": "4e9dca7",
+  "backend": {
+    "command": ".venv/bin/python -m pytest backend/tests -q",
+    "database": "private PostgreSQL 17",
+    "scope": "one complete suite execution; not aggregated subsets",
+    "passed": 354,
+    "failed": 0,
+    "skipped": 0,
+    "warnings": 2,
+    "duration_seconds": 863.08,
+    "warning_details": ["AnyIO BlockingPortal alias deprecated", "Discord audioop deprecated for Python 3.13"]
+  },
+  "frontend": {
+    "command": "npm test",
+    "passed": 39,
+    "failed": 0,
+    "skipped": 0,
+    "duration_seconds": 0.698371005,
+    "build": "PASS: TypeScript and Vite",
+    "vite_duration_seconds": 5.76,
+    "build_warning": "Existing Phaser chunk exceeds 500 kB after minification"
+  },
+  "chromium": {
+    "appearance": "PASS: creation, 4 directions, mobile 390px, persistence, four interiors, paid Barber, idempotent retry and audit gap 0",
+    "visual": "PASS: five real server rooms, desktop/mobile, painted doors, click/touch, bounded effects",
+    "movement": "PASS: eight API moves, four directions, distinct grounded poses and reconnect",
+    "npc_economy": "PASS: actual worker, finite stocks/cash, physical purchases, admin/game sync, mobile and audit gap 0",
+    "composition": "PASS: every hair/clothing option in four directions, light/dark backgrounds and binary alpha"
+  },
+  "alembic": "PASS: upgrade head and check, fresh DB and private previous-revision upgrade fixture",
+  "docker": "PASS: backend/frontend image builds and production HTTP smoke; see docker-validation.json",
+  "placement": {"layouts": 254, "props_audited": 2410, "forbidden_intersections": 0, "paths_connect_building_doors": true},
+  "operational_database_accessed": false,
+  "godot_changed": false,
+  "discord_changed": false
+}

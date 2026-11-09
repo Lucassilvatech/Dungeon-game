@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "checks": [
+    "Creation, unrestricted hair/clothes, four-direction preview, 390px, persisted game texture and reload",
+    "Comerciante: facade entry, safe themed interior, real interaction, matching return door",
+    "Ferreiro: facade entry, safe themed interior, real interaction, matching return door",
+    "Alquimista: facade entry, safe themed interior, real interaction, matching return door",
+    "Paid edit, real 1-small-coin transfer, retry charges once, unchanged equipment/stats, gap=0, mobile and reconnect"
+  ],
+  "audit": {
+    "gap": "0",
+    "player": 9000,
+    "barber": 1000,
+    "receipts": 1
+  },
+  "browser_errors": [],
+  "duration_seconds": 35.248
+}

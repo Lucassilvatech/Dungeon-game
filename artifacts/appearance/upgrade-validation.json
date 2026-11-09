@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "baseline": "f96aa9c512d7cbdee18e98f63e01f57b8f2a34e9",
+  "migration": "65a7c9e21b04 \u2192 8c2a71e93d60",
+  "kind": "New private baseline fixture, not a production database copy",
+  "alembic_check": "PASS",
+  "preserved_tables": {
+    "lunar_cutovers": 1,
+    "lunar_entries": 1,
+    "lunar_holdings": 1,
+    "lunar_supply": 1,
+    "lunar_debts": 1,
+    "items": 13,
+    "npc_profiles": 4,
+    "npc_stocks": 12
+  },
+  "preserved_characters": 1,
+  "seed_idempotent": true,
+  "occupied_new_building_relocation": "nearest free tile, audited",
+  "legacy_appearance": "read-only fallback, zero inserted appearance rows",
+  "audit_gap_mg": "0"
+}

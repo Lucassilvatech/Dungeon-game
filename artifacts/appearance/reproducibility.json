@@ -1,0 +1,6 @@
+{
+  "status": "PASS",
+  "reproduced_files": 70,
+  "sha256_identical": true,
+  "source": "Committed source assets and deterministic compilers"
+}

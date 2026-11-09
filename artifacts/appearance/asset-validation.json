@@ -1,0 +1,58 @@
+{
+  "status": "PASS",
+  "originals": 4,
+  "layers": 34,
+  "frames_per_layer": 96,
+  "directions": 4,
+  "walking": [
+    {
+      "sex": "masculino",
+      "direction": 0,
+      "unique_frames": 8,
+      "feet_y": 94
+    },
+    {
+      "sex": "masculino",
+      "direction": 1,
+      "unique_frames": 8,
+      "feet_y": 94
+    },
+    {
+      "sex": "masculino",
+      "direction": 2,
+      "unique_frames": 8,
+      "feet_y": 94
+    },
+    {
+      "sex": "masculino",
+      "direction": 3,
+      "unique_frames": 8,
+      "feet_y": 94
+    },
+    {
+      "sex": "feminino",
+      "direction": 0,
+      "unique_frames": 8,
+      "feet_y": 94
+    },
+    {
+      "sex": "feminino",
+      "direction": 1,
+      "unique_frames": 8,
+      "feet_y": 94
+    },
+    {
+      "sex": "feminino",
+      "direction": 2,
+      "unique_frames": 8,
+      "feet_y": 94
+    },
+    {
+      "sex": "feminino",
+      "direction": 3,
+      "unique_frames": 8,
+      "feet_y": 94
+    }
+  ],
+  "source": "Source and derived image inspection; browser proofs are separate"
+}

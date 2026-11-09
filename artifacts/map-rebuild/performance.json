@@ -3,23 +3,23 @@
   "metrics": [
     {
       "room": "city1",
-      "phaser_fps": 58,
+      "phaser_fps": 57,
       "raf_median_ms": 16.699999999999818,
-      "raf_p95_ms": 16.799999999999727,
-      "objects": 60,
+      "raf_p95_ms": 16.700000000000273,
+      "objects": 57,
       "renderer": "CANVAS"
     },
     {
       "room": "common_a",
-      "phaser_fps": 60,
+      "phaser_fps": 59,
       "raf_median_ms": 16.699999999999818,
-      "raf_p95_ms": 16.800000000000182,
+      "raf_p95_ms": 16.799999999999727,
       "objects": 52,
       "renderer": "CANVAS"
     },
     {
       "room": "secret",
-      "phaser_fps": 60,
+      "phaser_fps": 59,
       "raf_median_ms": 16.699999999999818,
       "raf_p95_ms": 16.700000000000273,
       "objects": 43,
@@ -27,17 +27,17 @@
     },
     {
       "room": "boss",
-      "phaser_fps": 60,
+      "phaser_fps": 59,
       "raf_median_ms": 16.699999999999818,
-      "raf_p95_ms": 16.700000000000273,
+      "raf_p95_ms": 16.799999999999955,
       "objects": 38,
       "renderer": "CANVAS"
     },
     {
       "room": "guild",
-      "phaser_fps": 60,
+      "phaser_fps": 58,
       "raf_median_ms": 16.699999999999818,
-      "raf_p95_ms": 16.799999999999727,
+      "raf_p95_ms": 16.700000000000273,
       "objects": 56,
       "renderer": "CANVAS"
     }

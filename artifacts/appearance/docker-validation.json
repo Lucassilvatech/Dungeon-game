@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "backend_image": "sha256:aa771b82c03c8c32b90ab352ba89372b2ba58255c6adfe1188b3eb7567ab2246",
+  "frontend_image": "sha256:adf52098d456e669735835ea3f90c08a775483d4baf26bfdb3e8fda40ca29f72",
+  "checks": [
+    "Backend Docker CMD: additive upgrade, idempotent seed and Uvicorn",
+    "Nginx serves production Web build and proxies /api/health",
+    "34 character layers included in production image"
+  ],
+  "private_database": "appearance_docker_9335abfe",
+  "operational_database_accessed": false,
+  "duration_seconds": 3.714
+}
